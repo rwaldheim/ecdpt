@@ -6,6 +6,7 @@ require(shiny)
 require(DT)
 require(shinyjs)
 require(shinyalert)
+require(pracma)
 
 if (interactive()) {
   
@@ -137,6 +138,27 @@ if (interactive()) {
           
           tmp_excel$CC <- tmp_excel$Q.d - tmp_excel$Q.c
           
+          cycle_facts <- data.frame(cycle=NA, chV=NA, dchV=NA, avgV=NA)
+          cycles <- split(tmp_excel, tmp_excel$Cycle_Index)
+          dchV <- 0
+          chv <- 0
+          i <- 1
+          for (cycle in cycles) {
+            steps <- split(cycle, cycle$Step_Index)
+            for (step in steps) {
+              if (abs(tail(step$'Voltage(V)',1) - step$'Voltage(V)'[[1]]) > 0.5) {
+                if (step$'Current(A)'[[1]] > 0) {
+                  chV <- (1 / (input$highV - input$lowV)) * sum(cumtrapz(step$`Charge_Capacity(Ah)`, step$`Voltage(V)`))
+                } else {
+                  dchV <- (1 / (input$highV - input$lowV)) * sum(cumtrapz(step$`Discharge_Capacity(Ah)`, step$`Voltage(V)`))
+                }
+              }
+            }
+            avgV <- (dchV + chV) / 2
+            cycle_facts <- rbind(cycle_facts, data.frame(cycle=i, chV=chV, dchV=dchV, avgV=avgV))
+            i <- i + 1
+          }
+          
           final <<- rbind(final, tmp_excel)
           
           write.csv(tmp_excel, file = paste(getwd(),"/", input$dirLocation, "/", data$name[row], data$sheet[row], ".csv", sep = ""))
@@ -152,7 +174,7 @@ if (interactive()) {
       write.csv(stats, file = paste(getwd(),"/", input$dirLocation, "/", data$name[row], data$sheet[row], " Summary.csv", sep = ""))
       write.csv(final, file = paste(getwd(),"/", input$dirLocation, "/", data$name[row], data$sheet[row], " Total.csv", sep = ""))
       
-      save(data, file = paste("history/", input$dirLocation, ".RData"))
+      # save(data, file = paste("history/", input$dirLocation, ".RData"))
       
       shinyalert("Success!")
       
