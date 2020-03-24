@@ -146,7 +146,8 @@ if (interactive()) {
           dQdVData <- data.frame(cycle=NA, voltage=NA, dQdV=NA, F_L=NA)
           cycles <- split(tmp_excel, tmp_excel$Cycle_Index)
           prev_c <- 0
-          prev <- FALSE
+          ch_dch <- FALSE
+          prev <- TRUE
           dchV <- 0
           chV <- 0
           i <- 1
@@ -154,10 +155,11 @@ if (interactive()) {
             steps <- split(cycle, cycle$Step_Index)
             for (step in steps) {
               if (abs(tail(step$'Voltage(V)',1) - step$'Voltage(V)'[[1]]) > 0.5) {
+                ch_dch <- TRUE
                 if (step$'Current(A)'[[1]] > 0) {
                   chV <- (1 / (tail(step$`Charge_Capacity(Ah)`,1) - step$`Charge_Capacity(Ah)`[[1]])) * trapz(step$`Charge_Capacity(Ah)`, step$`Voltage(V)`)
                   dQCdV <- diff(step$`Charge_Capacity(Ah)`)/diff(step$`Voltage(V)`)
-                  dQdVData <- rbind(dQdVData, data.frame(cycle=rep(i, length(dQCdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQCdV), F_L=rep(0,length(dQCdV)+1)))
+                  dQdVData <- rbind(dQdVData, data.frame(cycle=rep(i, length(dQCdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQCdV), F_L=rep(if (prev) 1 else 0,length(dQCdV)+1)))
                 } else {
                   dchV <- (1 / (tail(step$`Discharge_Capacity(Ah)`,1) - step$`Discharge_Capacity(Ah)`[[1]])) * trapz(step$`Discharge_Capacity(Ah)`, step$`Voltage(V)`)
                   dQDdV <- diff(step$`Discharge_Capacity(Ah)`)/diff(step$`Voltage(V)`)
@@ -166,15 +168,22 @@ if (interactive()) {
                     dQdVData <- rbind(dQdVData, data.frame(cycle=rep(i, length(dQDdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQDdV), F_L=rep(1,length(dQDdV)+1)))
                     prev_c = step$`Current(A)`[[1]]
                   } else {
-                    dQdVData <- rbind(dQdVData, data.frame(cycle=rep(i, length(dQDdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQDdV), F_L=rep(0, length(dQDdV)+1)))
+                    dQdVData <- rbind(dQdVData, data.frame(cycle=rep(i, length(dQDdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQDdV), F_L=rep(if (prev) 1 else 0, length(dQDdV)+1)))
                   }
                 }
               }
             }
             
+            if (ch_dch) {
+              png(paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row], "Cycle ", toString(i)," dQdV Plot.png", sep = ""))
+              plot(dQdVData[dQdVData$cycle == i,]$voltage, dQdVData[dQdVData$cycle == i,]$dQdV, main=paste("dQdV Plot for ",  input$dirLocation, data$sheet[row], "Cycle ", toString(i)), xlab="Voltage (V)", ylab="dQdV (mAh/V)")
+              dev.off()
+            }
+            
             avgV <- (dchV + chV) / 2
             cycle_facts <- rbind(cycle_facts, data.frame(cycle=i, chV=chV, dchV=dchV, avgV=avgV))
             i <- i + 1
+            ch_dch <- FALSE
           }
           
           final <<- rbind(final, tmp_excel)
