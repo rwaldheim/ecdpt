@@ -6,6 +6,8 @@ require(shiny)
 require(DT)
 require(shinyjs)
 require(shinyalert)
+require(pracma)
+require(purrr)
 
 if (interactive()) {
   
@@ -119,17 +121,20 @@ if (interactive()) {
       
         for (row in 1:nrow(data)) {
           tmp_excel <- read_excel(toString(data$datapath[row]), toString(data$sheet[row]))
+          
+          dir.create(paste(input$dirLocation, data$sheet[row], sep = "/"))
+          
           tmp_excel$Q.d <- as.numeric(tmp_excel$`Discharge_Capacity(Ah)` * (1000 / data$Mass[[1]][row]))
           tmp_excel$Q.c <- as.numeric(tmp_excel$`Charge_Capacity(Ah)`* (1000 / data$Mass[[1]][row]))
           tmp_excel$Cell <- row
           
-          dQCdV <- diff(tmp_excel$`Charge_Capacity(Ah)`)/diff(tmp_excel$`Voltage(V)`)
-          dQDdV <- diff(tmp_excel$`Discharge_Capacity(Ah)`)/diff(tmp_excel$`Voltage(V)`)
-          tmp_excel$dQCdV <- c(0, dQCdV)
-          tmp_excel$dQDdV <- c(0, dQDdV)
-          
+          # dQCdV <- diff(tmp_excel$`Charge_Capacity(Ah)`)/diff(tmp_excel$`Voltage(V)`)
+          # dQDdV <- diff(tmp_excel$`Discharge_Capacity(Ah)`)/diff(tmp_excel$`Voltage(V)`)
+          # tmp_excel$dQCdV <- c(0, dQCdV)
+          # tmp_excel$dQDdV <- c(0, dQDdV)
+          # 
           # tmp <- tmp_excel %>% filter(tmp_excel$`Voltage(V)` > input$lowV & tmp_excel$`Voltage(V)` < input$highV)
-          # png(paste(getwd(),"/", input$dirLocation, "/", toString(data$name[row]), toString(data$sheet[row]), " dQdV Plot.png", sep = ""))
+          # png(paste(input$dirLocation, "/", data$sheet[row], "/", toString(data$name[row]), toString(data$sheet[row]), " dQdV Plot.png", sep = ""))
           # plot(tmp$`Voltage(V)`, tmp$dQCdV, col=tmp$Cycle_Index)
           # points(tmp$`Voltage(V)`, tmp$dQDdV, col=tmp$Cycle_Index)
           # legend("bottomleft", legend = unique(tmp$Cycle_Index), pch = 1, col=tmp$Cycle_Index)
@@ -137,9 +142,44 @@ if (interactive()) {
           
           tmp_excel$CC <- tmp_excel$Q.d - tmp_excel$Q.c
           
+          cycle_facts <- data.frame(cycle=NA, chV=NA, dchV=NA, avgV=NA)
+          dQdVData <- data.frame(cycle=NA, voltage=NA, dQdV=NA, F_L=NA)
+          cycles <- split(tmp_excel, tmp_excel$Cycle_Index)
+          prev_c <- 0
+          prev <- FALSE
+          dchV <- 0
+          chV <- 0
+          i <- 1
+          for (cycle in cycles) {
+            steps <- split(cycle, cycle$Step_Index)
+            for (step in steps) {
+              if (abs(tail(step$'Voltage(V)',1) - step$'Voltage(V)'[[1]]) > 0.5) {
+                if (step$'Current(A)'[[1]] > 0) {
+                  chV <- (1 / (tail(step$`Charge_Capacity(Ah)`,1) - step$`Charge_Capacity(Ah)`[[1]])) * trapz(step$`Charge_Capacity(Ah)`, step$`Voltage(V)`)
+                  dQCdV <- diff(step$`Charge_Capacity(Ah)`)/diff(step$`Voltage(V)`)
+                  dQdVData <- rbind(dQdVData, data.frame(cycle=rep(i, length(dQCdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQCdV), F_L=rep(0,length(dQCdV)+1)))
+                } else {
+                  dchV <- (1 / (tail(step$`Discharge_Capacity(Ah)`,1) - step$`Discharge_Capacity(Ah)`[[1]])) * trapz(step$`Discharge_Capacity(Ah)`, step$`Voltage(V)`)
+                  dQDdV <- diff(step$`Discharge_Capacity(Ah)`)/diff(step$`Voltage(V)`)
+                  
+                  if (abs(prev_c - step$`Current(A)`[[1]]) > 0.0005) {
+                    dQdVData <- rbind(dQdVData, data.frame(cycle=rep(i, length(dQDdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQDdV), F_L=rep(1,length(dQDdV)+1)))
+                    prev_c = step$`Current(A)`[[1]]
+                  } else {
+                    dQdVData <- rbind(dQdVData, data.frame(cycle=rep(i, length(dQDdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQDdV), F_L=rep(0, length(dQDdV)+1)))
+                  }
+                }
+              }
+            }
+            
+            avgV <- (dchV + chV) / 2
+            cycle_facts <- rbind(cycle_facts, data.frame(cycle=i, chV=chV, dchV=dchV, avgV=avgV))
+            i <- i + 1
+          }
+          
           final <<- rbind(final, tmp_excel)
           
-          write.csv(tmp_excel, file = paste(getwd(),"/", input$dirLocation, "/", data$name[row], data$sheet[row], ".csv", sep = ""))
+          write.csv(tmp_excel, file = paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row], ".csv", sep = ""))
           
           incProgress(row/nrow(data))
         }
@@ -152,7 +192,7 @@ if (interactive()) {
       write.csv(stats, file = paste(getwd(),"/", input$dirLocation, "/", data$name[row], data$sheet[row], " Summary.csv", sep = ""))
       write.csv(final, file = paste(getwd(),"/", input$dirLocation, "/", data$name[row], data$sheet[row], " Total.csv", sep = ""))
       
-      save(data, file = paste("history/", input$dirLocation, ".RData"))
+      # save(data, file = paste("history/", input$dirLocation, ".RData"))
       
       shinyalert("Success!")
       
@@ -165,80 +205,3 @@ if (interactive()) {
 }
 
 shinyApp(ui, server)
-
-
-# data = data.frame()
-# dir_name <- strsplit(file_path, "/")
-# dir_name <- strsplit(tail(dir_name[[1]], n=1), "_")
-# dir.create(dir_name[[1]][1])
-# 
-# total_excel <- data.frame()
-# summary_stats <- data.frame()
-# 
-# lowerV <- readline(prompt = "Enter lower voltage of cycle: ")
-# upperV <- readline(prompt = "Enter upper voltage of cycle: ")
-# 
-# se <- function(x) {sd(x) / sqrt(length(x))}
-# dlg_message("Copy the cell masses from excel now.")
-# 
-# masses <- read.table("clipboard",sep="\t")
-# i = 1
-# for (file in file_path) {file_name = tail(strsplit(file, "/")[[1]], 1)
-#  desired_sheets <- dlg_list(excel_sheets(file), multiple = TRUE, title = paste("Please select the desired sheets from ", file_name, 
-# "\n !!!Warning: Must select sheets in order of masses entered!!!"))
-#   for (sheet in desired_sheets$res) {
-#     tmp_excel <- read_excel(file, sheet)
-#     tmp_excel$Q.d <- as.numeric(tmp_excel$`Discharge_Capacity(Ah)` * (1000 / masses[[1]][i]))
-#     tmp_excel$Q.c <- as.numeric(tmp_excel$`Charge_Capacity(Ah)`* (1000 / masses[[1]][i]))
-#     tmp_excel$Cell <- i
-#     
-#     # Differential capacity using spline fitting
-#     dQCdV <- diff(tmp_excel$`Charge_Capacity(Ah)`)/diff(tmp_excel$`Voltage(V)`)
-#     dQDdV <- diff(tmp_excel$`Discharge_Capacity(Ah)`)/diff(tmp_excel$`Voltage(V)`)
-#     tmp_excel$dQCdV <- c(0, dQCdV)
-#     tmp_excel$dQDdV <- c(0, dQDdV)
-#     
-#     # Plotting differential capacity
-#     tmp <- tmp_excel %>% filter(tmp_excel$`Voltage(V)` > lowerV & tmp_excel$`Voltage(V)` < upperV)
-#     png(paste(getwd(),"/", dir_name[[1]][1], "/", file_name, sheet, " dQdV Plot.png", sep = ""))
-#     plot(tmp$`Voltage(V)`, tmp$dQCdV, col=tmp$Cycle_Index)
-#     points(tmp$`Voltage(V)`, tmp$dQDdV, col=tmp$Cycle_Index)
-#     legend("bottomleft", legend = unique(tmp$Cycle_Index), pch = 1, col=tmp$Cycle_Index)
-#     dev.off()
-#     
-#     # Continuous Capacity
-#     tmp_excel$CC <- tmp_excel$Q.d - tmp_excel$Q.c
-#     
-#     # stats <- data.frame("Cell" = i, "Mean Discharge Capacity (mAh/g)" = aggregate(tmp_excel[["Q.d"]], list(tmp_excel[["Cycle_Index"]]), mean), "Mean Charge Capacity (mAh/g)" = aggregate(tmp_excel[["Q.c"]], list(tmp_excel[["Cycle_Index"]]), mean),
-#     #                    "St. Error Discharge Capacity (mAh/g)" = aggregate(tmp_excel[["Q.d"]], list(tmp_excel[["Cycle_Index"]]),  se), "St. Error Charge Capacity (mAh/g)" =
-#     #                    aggregate(tmp_excel[["Q.c"]], list(tmp_excel[["Cycle_Index"]]), se))
-#     
-#     total_excel <- rbind(total_excel, tmp_excel)
-#     # summary_stats <- rbind(summary_stats, stats)
-#     
-#     write.csv(tmp_excel, file = paste(getwd(),"/", dir_name[[1]][1], "/", file_name, sheet, ".csv", sep = ""))
-#     
-#     i = i + 1
-#   }
-# }
-# 
-# # mean <- mean(total_excel[["Q.d"]])
-# 
-# stats <- data.frame("Cell" = "Total", "Mean Discharge Capacity (mAh/g)" = aggregate(total_excel[["Q.d"]], list(total_excel[["Cycle_Index"]]), mean), "Mean Charge Capacity (mAh/g)" = aggregate(total_excel[["Q.c"]], list(total_excel[["Cycle_Index"]]), mean),
-#                     "St. Error Discharge Capacity (mAh/g)" = aggregate(total_excel[["Q.d"]], list(total_excel[["Cycle_Index"]]), se), "St. Error Charge Capacity (mAh/g)" =
-#                       aggregate(total_excel[["Q.c"]], list(total_excel[["Cycle_Index"]]),  se))
-# 
-# summary_stats <- rbind(summary_stats, stats)
-# 
-# names(summary_stats)[names(summary_stats) == "Mean.Discharge.Capacity..mAh.g..Group.1"] <- "Cycle Index"
-# 
-# drop <- c("Mean.Charge.Capacity..mAh.g..Group.1","St..Error.Discharge.Capacity..mAh.g..Group.1", "St..Error.Charge.Capacity..mAh.g..Group.1")
-# summary_stats = summary_stats[,!(names(summary_stats) %in% drop)]
-# 
-# write.csv(total_excel[["Q.d"]], file = paste(getwd(),"/", dir_name[[1]][1], "/", file_name, "total.csv", sep = ""))
-# write.csv(summary_stats, file = paste(getwd(), "/", dir_name[[1]][1], "/", file_name, "Summary.csv", sep = ""))
-# #plot the capacity data, color by cell number to allow for trouble shooting. 
-# plot(total_excel[["Cycle_Index"]],total_excel[["Q.c"]], col=total_excel[["Cell"]], main=file_name)
-# legend('topright', legend = unique(total_excel[["Cell"]]), fill = unique(total_excel[["Cell"]]))
-# plot(total_excel[["Cycle_Index"]],total_excel[["Q.d"]], col=total_excel[["Cell"]], main=file_name)
-# legend('topright', legend = unique(total_excel[["Cell"]]), fill = unique(total_excel[["Cell"]]))
