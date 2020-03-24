@@ -143,8 +143,10 @@ if (interactive()) {
           tmp_excel$CC <- tmp_excel$Q.d - tmp_excel$Q.c
           
           cycle_facts <- data.frame(cycle=NA, chV=NA, dchV=NA, avgV=NA)
-          dQdVData <- data.frame(cycle=NA, voltage=NA, dQdV=NA)
+          dQdVData <- data.frame(cycle=NA, voltage=NA, dQdV=NA, F_L=NA)
           cycles <- split(tmp_excel, tmp_excel$Cycle_Index)
+          prev_c <- 0
+          prev <- FALSE
           dchV <- 0
           chV <- 0
           i <- 1
@@ -155,11 +157,17 @@ if (interactive()) {
                 if (step$'Current(A)'[[1]] > 0) {
                   chV <- (1 / (tail(step$`Charge_Capacity(Ah)`,1) - step$`Charge_Capacity(Ah)`[[1]])) * trapz(step$`Charge_Capacity(Ah)`, step$`Voltage(V)`)
                   dQCdV <- diff(step$`Charge_Capacity(Ah)`)/diff(step$`Voltage(V)`)
-                  dQdVData <- rbind(dQdVData, data.frame(cycle=rep(i, length(dQCdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQCdV)))
+                  dQdVData <- rbind(dQdVData, data.frame(cycle=rep(i, length(dQCdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQCdV), F_L=rep(0,length(dQCdV)+1)))
                 } else {
                   dchV <- (1 / (tail(step$`Discharge_Capacity(Ah)`,1) - step$`Discharge_Capacity(Ah)`[[1]])) * trapz(step$`Discharge_Capacity(Ah)`, step$`Voltage(V)`)
                   dQDdV <- diff(step$`Discharge_Capacity(Ah)`)/diff(step$`Voltage(V)`)
-                  dQdVData <- rbind(dQdVData, data.frame(cycle=rep(i, length(dQDdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQDdV)))
+                  
+                  if (abs(prev_c - step$`Current(A)`[[1]]) > 0.0005) {
+                    dQdVData <- rbind(dQdVData, data.frame(cycle=rep(i, length(dQDdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQDdV), F_L=rep(1,length(dQDdV)+1)))
+                    prev_c = step$`Current(A)`[[1]]
+                  } else {
+                    dQdVData <- rbind(dQdVData, data.frame(cycle=rep(i, length(dQDdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQDdV), F_L=rep(0, length(dQDdV)+1)))
+                  }
                 }
               }
             }
