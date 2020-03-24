@@ -121,6 +121,9 @@ if (interactive()) {
       
         for (row in 1:nrow(data)) {
           tmp_excel <- read_excel(toString(data$datapath[row]), toString(data$sheet[row]))
+          
+          dir.create(paste(input$dirLocation, data$sheet[row], sep = "/"))
+          
           tmp_excel$Q.d <- as.numeric(tmp_excel$`Discharge_Capacity(Ah)` * (1000 / data$Mass[[1]][row]))
           tmp_excel$Q.c <- as.numeric(tmp_excel$`Charge_Capacity(Ah)`* (1000 / data$Mass[[1]][row]))
           tmp_excel$Cell <- row
@@ -130,12 +133,12 @@ if (interactive()) {
           tmp_excel$dQCdV <- c(0, dQCdV)
           tmp_excel$dQDdV <- c(0, dQDdV)
           
-          # tmp <- tmp_excel %>% filter(tmp_excel$`Voltage(V)` > input$lowV & tmp_excel$`Voltage(V)` < input$highV)
-          # png(paste(getwd(),"/", input$dirLocation, "/", toString(data$name[row]), toString(data$sheet[row]), " dQdV Plot.png", sep = ""))
-          # plot(tmp$`Voltage(V)`, tmp$dQCdV, col=tmp$Cycle_Index)
-          # points(tmp$`Voltage(V)`, tmp$dQDdV, col=tmp$Cycle_Index)
-          # legend("bottomleft", legend = unique(tmp$Cycle_Index), pch = 1, col=tmp$Cycle_Index)
-          # dev.off()
+          tmp <- tmp_excel %>% filter(tmp_excel$`Voltage(V)` > input$lowV & tmp_excel$`Voltage(V)` < input$highV)
+          png(paste(input$dirLocation, "/", data$sheet[row], "/", toString(data$name[row]), toString(data$sheet[row]), " dQdV Plot.png", sep = ""))
+          plot(tmp$`Voltage(V)`, tmp$dQCdV, col=tmp$Cycle_Index)
+          points(tmp$`Voltage(V)`, tmp$dQDdV, col=tmp$Cycle_Index)
+          legend("bottomleft", legend = unique(tmp$Cycle_Index), pch = 1, col=tmp$Cycle_Index)
+          dev.off()
           
           tmp_excel$CC <- tmp_excel$Q.d - tmp_excel$Q.c
           
@@ -163,7 +166,7 @@ if (interactive()) {
           
           final <<- rbind(final, tmp_excel)
           
-          write.csv(tmp_excel, file = paste(getwd(),"/", input$dirLocation, "/", data$name[row], data$sheet[row], ".csv", sep = ""))
+          write.csv(tmp_excel, file = paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row], ".csv", sep = ""))
           
           incProgress(row/nrow(data))
         }
