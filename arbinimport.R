@@ -7,6 +7,7 @@ require(DT)
 require(shinyjs)
 require(shinyalert)
 require(pracma)
+require(purrr)
 
 if (interactive()) {
   
@@ -141,19 +142,20 @@ if (interactive()) {
           cycle_facts <- data.frame(cycle=NA, chV=NA, dchV=NA, avgV=NA)
           cycles <- split(tmp_excel, tmp_excel$Cycle_Index)
           dchV <- 0
-          chv <- 0
+          chV <- 0
           i <- 1
           for (cycle in cycles) {
             steps <- split(cycle, cycle$Step_Index)
             for (step in steps) {
               if (abs(tail(step$'Voltage(V)',1) - step$'Voltage(V)'[[1]]) > 0.5) {
                 if (step$'Current(A)'[[1]] > 0) {
-                  chV <- (1 / (input$highV - input$lowV)) * sum(cumtrapz(step$`Charge_Capacity(Ah)`, step$`Voltage(V)`))
+                  chV <- (1 / (tail(step$`Charge_Capacity(Ah)`,1) - step$`Charge_Capacity(Ah)`[[1]])) * trapz(step$`Charge_Capacity(Ah)`, step$`Voltage(V)`)
                 } else {
-                  dchV <- (1 / (input$highV - input$lowV)) * sum(cumtrapz(step$`Discharge_Capacity(Ah)`, step$`Voltage(V)`))
+                  dchV <- (1 / (tail(step$`Discharge_Capacity(Ah)`,1) - step$`Discharge_Capacity(Ah)`[[1]])) * trapz(step$`Discharge_Capacity(Ah)`, step$`Voltage(V)`)
                 }
               }
             }
+            
             avgV <- (dchV + chV) / 2
             cycle_facts <- rbind(cycle_facts, data.frame(cycle=i, chV=chV, dchV=dchV, avgV=avgV))
             i <- i + 1
