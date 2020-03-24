@@ -128,21 +128,22 @@ if (interactive()) {
           tmp_excel$Q.c <- as.numeric(tmp_excel$`Charge_Capacity(Ah)`* (1000 / data$Mass[[1]][row]))
           tmp_excel$Cell <- row
           
-          dQCdV <- diff(tmp_excel$`Charge_Capacity(Ah)`)/diff(tmp_excel$`Voltage(V)`)
-          dQDdV <- diff(tmp_excel$`Discharge_Capacity(Ah)`)/diff(tmp_excel$`Voltage(V)`)
-          tmp_excel$dQCdV <- c(0, dQCdV)
-          tmp_excel$dQDdV <- c(0, dQDdV)
-          
-          tmp <- tmp_excel %>% filter(tmp_excel$`Voltage(V)` > input$lowV & tmp_excel$`Voltage(V)` < input$highV)
-          png(paste(input$dirLocation, "/", data$sheet[row], "/", toString(data$name[row]), toString(data$sheet[row]), " dQdV Plot.png", sep = ""))
-          plot(tmp$`Voltage(V)`, tmp$dQCdV, col=tmp$Cycle_Index)
-          points(tmp$`Voltage(V)`, tmp$dQDdV, col=tmp$Cycle_Index)
-          legend("bottomleft", legend = unique(tmp$Cycle_Index), pch = 1, col=tmp$Cycle_Index)
-          dev.off()
+          # dQCdV <- diff(tmp_excel$`Charge_Capacity(Ah)`)/diff(tmp_excel$`Voltage(V)`)
+          # dQDdV <- diff(tmp_excel$`Discharge_Capacity(Ah)`)/diff(tmp_excel$`Voltage(V)`)
+          # tmp_excel$dQCdV <- c(0, dQCdV)
+          # tmp_excel$dQDdV <- c(0, dQDdV)
+          # 
+          # tmp <- tmp_excel %>% filter(tmp_excel$`Voltage(V)` > input$lowV & tmp_excel$`Voltage(V)` < input$highV)
+          # png(paste(input$dirLocation, "/", data$sheet[row], "/", toString(data$name[row]), toString(data$sheet[row]), " dQdV Plot.png", sep = ""))
+          # plot(tmp$`Voltage(V)`, tmp$dQCdV, col=tmp$Cycle_Index)
+          # points(tmp$`Voltage(V)`, tmp$dQDdV, col=tmp$Cycle_Index)
+          # legend("bottomleft", legend = unique(tmp$Cycle_Index), pch = 1, col=tmp$Cycle_Index)
+          # dev.off()
           
           tmp_excel$CC <- tmp_excel$Q.d - tmp_excel$Q.c
           
           cycle_facts <- data.frame(cycle=NA, chV=NA, dchV=NA, avgV=NA)
+          dQdVData <- data.frame(cycle=NA, voltage=NA, dQdV=NA)
           cycles <- split(tmp_excel, tmp_excel$Cycle_Index)
           dchV <- 0
           chV <- 0
@@ -153,8 +154,12 @@ if (interactive()) {
               if (abs(tail(step$'Voltage(V)',1) - step$'Voltage(V)'[[1]]) > 0.5) {
                 if (step$'Current(A)'[[1]] > 0) {
                   chV <- (1 / (tail(step$`Charge_Capacity(Ah)`,1) - step$`Charge_Capacity(Ah)`[[1]])) * trapz(step$`Charge_Capacity(Ah)`, step$`Voltage(V)`)
+                  dQCdV <- diff(step$`Charge_Capacity(Ah)`)/diff(step$`Voltage(V)`)
+                  dQdVData <- rbind(dQdVData, data.frame(cycle=rep(i, length(dQCdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQCdV)))
                 } else {
                   dchV <- (1 / (tail(step$`Discharge_Capacity(Ah)`,1) - step$`Discharge_Capacity(Ah)`[[1]])) * trapz(step$`Discharge_Capacity(Ah)`, step$`Voltage(V)`)
+                  dQDdV <- diff(step$`Discharge_Capacity(Ah)`)/diff(step$`Voltage(V)`)
+                  dQdVData <- rbind(dQdVData, data.frame(cycle=rep(i, length(dQDdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQDdV)))
                 }
               }
             }
