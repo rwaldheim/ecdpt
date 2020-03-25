@@ -130,8 +130,8 @@ if (interactive()) {
           
           tmp_excel$CC <- tmp_excel$Q.d - tmp_excel$Q.c
           
-          cycle_facts <- data.frame(cycle=NA, chV=NA, dchV=NA, avgV=NA)
-          dQdVData <- data.frame(cycle=NA, voltage=NA, dQdV=NA, F_L=NA)
+          cycle_facts <- data.frame()
+          dQdVData <- data.frame()
           cycles <- split(tmp_excel, tmp_excel$Cycle_Index)
           prev_c <- 0
           ch_dch <- FALSE
@@ -176,7 +176,16 @@ if (interactive()) {
           
           final <<- rbind(final, tmp_excel)
           
+          png(paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row]," Average Voltage Plot.png", sep = ""))
+          plot(cycle_facts$cycle, cycle_facts$chV, col="blue", main=paste("dQdV Plot for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)", ylim=c(min(cycle_facts[,2:4]), max(cycle_facts[,2:4])))
+          points(cycle_facts$cycle, cycle_facts$dchV, col="red", main=paste("dQdV Plot for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)")
+          points(cycle_facts$cycle, cycle_facts$avgV, col="black", main=paste("dQdV Plot for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)")
+          legend("top", c("Charge Voltage", "Discharge Voltage", "Average Voltage"), col=c("blue", "red", "black"), pch=19)
+          dev.off()
+          
           write.csv(tmp_excel, file = paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row], ".csv", sep = ""))
+          write.csv(dQdVData, file = paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row], " dQdV Data.csv", sep = ""))
+          write.csv(cycle_facts, file = paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row], " Charge-Discharge Voltages.csv", sep = ""))
           
           incProgress(row/nrow(data))
         }
@@ -186,8 +195,8 @@ if (interactive()) {
                           "St. Error Discharge Capacity (mAh/g)" = aggregate(final[["Q.d"]], list(final[["Cycle_Index"]]), se), "St. Error Charge Capacity (mAh/g)" =
                             aggregate(final[["Q.c"]], list(final[["Cycle_Index"]]),  se))
       
-      write.csv(stats, file = paste(getwd(),"/", input$dirLocation, "/", data$name[row], data$sheet[row], " Summary.csv", sep = ""))
-      write.csv(final, file = paste(getwd(),"/", input$dirLocation, "/", data$name[row], data$sheet[row], " Total.csv", sep = ""))
+      write.csv(stats, file = paste(getwd(),"/", input$dirLocation, "/", data$name[row], " Summary.csv", sep = ""))
+      write.csv(final, file = paste(getwd(),"/", input$dirLocation, "/", data$name[row], " Total.csv", sep = ""))
       
       # save(data, file = paste("history/", input$dirLocation, ".RData"))
       
