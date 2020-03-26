@@ -250,7 +250,9 @@ if (interactive()) {
           
           if (input$gGraphs == "genGraphs") {
             png(paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row]," Discharge Capacity Plot.png", sep = ""))
+            eol <- meanDCap[1,2] * 0.8
             plot(meanDCap[,1], meanDCap[,2], main=paste("Discharge Capacity for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Discharge Capacity (mAh/g)")
+            abline(h=eol, lty = "dotted")
             dev.off()
           }
 
