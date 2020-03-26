@@ -9,6 +9,7 @@ require(shinyalert)
 require(pracma)
 require(purrr)
 require(IDPmisc)
+require(zoo)
 
 if (interactive()) {
   
@@ -135,6 +136,17 @@ if (interactive()) {
       dir.create(input$dirLocation)
       
       se <- function(x) {sd(x) / sqrt(length(x))}
+      
+      argmax <- function(cycle, w, span) {
+          n <- length(cycle$y)
+          y.smooth <- loess(cycle$y ~ cycle$x, span=span)$fitted
+          y.max <- rollapply(zoo(y.smooth), 2*w+1, max, align="center")
+          x.max <- rollapply(zoo(cycle$x), 2*w+1, median, align="center")
+          delta <- y.max - y.smooth[-c(1:w, n+1-1:w)]
+          i.max <- which(delta <= 0) + w
+          list(x=cycle$x[i.max], i=i.max, y.hat=y.smooth)
+      }
+      
       loading <- TRUE
       
       withProgress(message = "Computing...", {
@@ -200,14 +212,25 @@ if (interactive()) {
               dev.off()
               
               if (input$peakFit == "fit") {
-                png(paste(input$dirLocation, "/", data$sheet[row], "/", "dQdV Peak Fitting/", data$name[row], data$sheet[row], "Cycle ", toString(i)," dQdV Plot.png", sep = ""))
-                plot(dQdVData[dQdVData$cycle == i,]$voltage, dQdVData[dQdVData$cycle == i,]$dQdV, main=paste("dQdV Plot for ",  input$dirLocation, data$sheet[row], "Cycle ", toString(i)), xlab="Voltage (V)", ylab="dQdV (mAh/V)")
-                chargeCycle <- data.frame(x=dQdVData[dQdVData$cycle == i & dQdVData$c_d == 0,]$voltage, y=dQdVData[dQdVData$cycle == i & dQdVData$c_d == 0,]$dQdV)
-                dischargeCycle <- data.frame(x=dQdVData[dQdVData$cycle == i & dQdVData$c_d == 1,]$voltage, y=dQdVData[dQdVData$cycle == i & dQdVData$c_d == 1,]$dQdV)
-                p <- peaks(ksmooth(c(chargeCycle$x, abs(dischargeCycle$x)), c(chargeCycle$y, abs(dischargeCycle$y)), "normal", bandwidth = 0.005), minPH = 0.0005, minPW = 0.0001)
-                abline(v=p$x)
-                text(p$x + 0.01, rep(0,length(p$x)), labels = round(p$x,2), srt = 90)
-                dev.off()
+                w = 20
+                span = 0.05
+                
+                tryCatch({
+                  png(paste(input$dirLocation, "/", data$sheet[row], "/", "dQdV Peak Fitting/", data$name[row], data$sheet[row], "Cycle ", toString(i)," dQdV Plot.png", sep = ""))
+                  plot(dQdVData[dQdVData$cycle == i,]$voltage, dQdVData[dQdVData$cycle == i,]$dQdV, main=paste("dQdV Plot for ",  input$dirLocation, data$sheet[row], "Cycle ", toString(i)), xlab="Voltage (V)", ylab="dQdV (mAh/V)")
+                  chargeCycle <- data.frame(x=dQdVData[dQdVData$cycle == i & dQdVData$c_d == 0,]$voltage, y=dQdVData[dQdVData$cycle == i & dQdVData$c_d == 0,]$dQdV)
+                  dischargeCycle <- data.frame(x=dQdVData[dQdVData$cycle == i & dQdVData$c_d == 1,]$voltage, y=dQdVData[dQdVData$cycle == i & dQdVData$c_d == 1,]$dQdV)
+                  cPeaks <- argmax(chargeCycle, w, span)
+                  dPeaks <- argmax(abs(dischargeCycle), w, span)
+                  abline(v=c(cPeaks$x, dPeaks$x))
+                  text(c(cPeaks$x, dPeaks$x) + 0.01, rep(0,length(c(cPeaks$x, dPeaks$x))), labels = round(c(cPeaks$x, dPeaks$x),2), srt = 90)
+                  dev.off()
+                }, 
+                error=function(cond) {
+                  graphics.off()
+                  return(NA)
+                }
+                )
               }
             }
             
