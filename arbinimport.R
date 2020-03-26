@@ -165,6 +165,8 @@ if (interactive()) {
               }
             }
             
+            
+            
             if (ch_dch) {
               png(paste(input$dirLocation, "/", data$sheet[row], "/", "dQdV Plots/", data$name[row], data$sheet[row], "Cycle ", toString(i)," dQdV Plot.png", sep = ""))
               plot(dQdVData[dQdVData$cycle == i,]$voltage, dQdVData[dQdVData$cycle == i,]$dQdV, main=paste("dQdV Plot for ",  input$dirLocation, data$sheet[row], "Cycle ", toString(i)), xlab="Voltage (V)", ylab="dQdV (mAh/V)")
@@ -198,9 +200,9 @@ if (interactive()) {
           legend("top", c("Charge Voltage", "Discharge Voltage", "Average Voltage"), col=c("blue", "red", "black"), pch=19)
           dev.off()
           
-          write.csv(tmp_excel, file = paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row], ".csv", sep = ""))
-          write.csv(dQdVData, file = paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row], " dQdV Data.csv", sep = ""))
-          write.csv(cycle_facts, file = paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row], " Charge-Discharge Voltages.csv", sep = ""))
+          write.csv(tmp_excel, file = paste(input$dirLocation, "/", data$sheet[row], "/", data$sheet[row], ".csv", sep = ""))
+          write.csv(dQdVData, file = paste(input$dirLocation, "/", data$sheet[row], "/", data$sheet[row], " dQdV Data.csv", sep = ""))
+          write.csv(cycle_facts, file = paste(input$dirLocation, "/", data$sheet[row], "/", data$sheet[row], " Charge-Discharge Voltages.csv", sep = ""))
           
           final <<- rbind(final, tmp_excel)
           
