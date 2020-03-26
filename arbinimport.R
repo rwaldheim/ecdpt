@@ -186,7 +186,7 @@ if (interactive()) {
             if (input$gGraphs == "genGraphs") {
               png(paste(input$dirLocation, "/", data$sheet[row], "/", "Voltage v Time/", data$name[row], data$sheet[row], "Cycle ", toString(i)," Voltage Profile Plot.png", sep = ""))
               plot((tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Test_Time(s)` - tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Test_Time(s)`[[1]]) / 60, (tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)` - tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)`[[1]]) / 60, type="l", main=paste("Voltage vs. Time for ",  input$dirLocation, data$sheet[row]), xlab="Time (min)", ylab="Voltage (V)")
-              dev.off
+              dev.off()
             }
             
             avgV <- (dchV + chV) / 2
@@ -231,7 +231,7 @@ if (interactive()) {
       
       # save(data, file = paste("history/", input$dirLocation, ".RData"))
       
-      shinyalert("Success!")
+      shinyalert("Analysis Complete!", paste("All your data is now in ", input$dirLocation), "success")
       
       remove(list=ls())
     })
