@@ -44,14 +44,18 @@ if (interactive()) {
       ),
     ),
     
-    column(8,
+    column(8, align = "center",
       fluidRow(
         actionButton("submit", "Enter", width = '100%', class = 'btn-success')
       ),
       
       fluidRow(
         actionButton("excelImport", "Import Masses from Excel", width = '100%', class = "btn-secondary")
-      )
+      ),
+      
+      fluidRow(
+        radioButtons("gGraphs", "Generate Graphs?", choices = c("Yes (may take longer)" = "genGraphs", "No" = "noGenGraphs"), inline = TRUE)
+      ),
     ),
     
     fluidRow(
@@ -123,9 +127,11 @@ if (interactive()) {
           tmp_excel <- read_excel(toString(data$datapath[row]), toString(data$sheet[row]))
           
           dir.create(paste(input$dirLocation, data$sheet[row], sep = "/"))
-          dir.create(paste(input$dirLocation, data$sheet[row], "dQdV Plots", sep = "/"))
-          dir.create(paste(input$dirLocation, data$sheet[row], "Voltage Profiles", sep = "/"))
-          dir.create(paste(input$dirLocation, data$sheet[row], "Voltage v Time", sep = "/"))
+          if (input$gGraphs == "genGraphs") {
+            dir.create(paste(input$dirLocation, data$sheet[row], "dQdV Plots", sep = "/"))
+            dir.create(paste(input$dirLocation, data$sheet[row], "Voltage Profiles", sep = "/"))
+            dir.create(paste(input$dirLocation, data$sheet[row], "Voltage v Time", sep = "/"))
+          }
           
           tmp_excel$Q.d <- as.numeric(tmp_excel$`Discharge_Capacity(Ah)` * (1000 / data$Mass[[1]][row]))
           tmp_excel$Q.c <- as.numeric(tmp_excel$`Charge_Capacity(Ah)`* (1000 / data$Mass[[1]][row]))
@@ -167,7 +173,7 @@ if (interactive()) {
             
             
             
-            if (ch_dch) {
+            if (ch_dch && input$gGraphs == "genGraphs") {
               png(paste(input$dirLocation, "/", data$sheet[row], "/", "dQdV Plots/", data$name[row], data$sheet[row], "Cycle ", toString(i)," dQdV Plot.png", sep = ""))
               plot(dQdVData[dQdVData$cycle == i,]$voltage, dQdVData[dQdVData$cycle == i,]$dQdV, main=paste("dQdV Plot for ",  input$dirLocation, data$sheet[row], "Cycle ", toString(i)), xlab="Voltage (V)", ylab="dQdV (mAh/V)")
               dev.off()
@@ -177,9 +183,11 @@ if (interactive()) {
               dev.off()
             }
             
-            png(paste(input$dirLocation, "/", data$sheet[row], "/", "Voltage v Time/", data$name[row], data$sheet[row], "Cycle ", toString(i)," Voltage Profile Plot.png", sep = ""))
-            plot((tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Test_Time(s)` - tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Test_Time(s)`[[1]]) / 60, (tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)` - tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)`[[1]]) / 60, type="l", main=paste("Voltage vs. Time for ",  input$dirLocation, data$sheet[row]), xlab="Time (min)", ylab="Voltage (V)")
-            dev.off()
+            if (input$gGraphs == "genGraphs") {
+              png(paste(input$dirLocation, "/", data$sheet[row], "/", "Voltage v Time/", data$name[row], data$sheet[row], "Cycle ", toString(i)," Voltage Profile Plot.png", sep = ""))
+              plot((tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Test_Time(s)` - tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Test_Time(s)`[[1]]) / 60, (tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)` - tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)`[[1]]) / 60, type="l", main=paste("Voltage vs. Time for ",  input$dirLocation, data$sheet[row]), xlab="Time (min)", ylab="Voltage (V)")
+              dev.off
+            }
             
             avgV <- (dchV + chV) / 2
             cycle_facts <- rbind(cycle_facts, data.frame(cycle=i, chV=chV, dchV=dchV, avgV=avgV))
@@ -189,16 +197,20 @@ if (interactive()) {
           
           meanDCap <- aggregate(tmp_excel$`Q.d`, by=list(tmp_excel$`Cycle_Index`), last)
           
-          png(paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row]," Discharge Capacity Plot.png", sep = ""))
-          plot(meanDCap[,1], meanDCap[,2], main=paste("Discharge Capacity for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Discharge Capacity (mAh/g)")
-          dev.off()
+          if (input$gGraphs == "genGraphs") {
+            png(paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row]," Discharge Capacity Plot.png", sep = ""))
+            plot(meanDCap[,1], meanDCap[,2], main=paste("Discharge Capacity for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Discharge Capacity (mAh/g)")
+            dev.off()
+          }
 
-          png(paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row]," Average Voltage Plot.png", sep = ""))
-          plot(cycle_facts$cycle, cycle_facts$chV, col="blue", main=paste("dQdV Plot for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)", ylim=c(min(cycle_facts[,2:4]), max(cycle_facts[,2:4])))
-          points(cycle_facts$cycle, cycle_facts$dchV, col="red", main=paste("dQdV Plot for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)")
-          points(cycle_facts$cycle, cycle_facts$avgV, col="black", main=paste("dQdV Plot for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)")
-          legend("top", c("Charge Voltage", "Discharge Voltage", "Average Voltage"), col=c("blue", "red", "black"), pch=19)
-          dev.off()
+          if (input$gGraphs == "genGraphs") {
+            png(paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row]," Average Voltage Plot.png", sep = ""))
+            plot(cycle_facts$cycle, cycle_facts$chV, col="blue", main=paste("dQdV Plot for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)", ylim=c(min(cycle_facts[,2:4]), max(cycle_facts[,2:4])))
+            points(cycle_facts$cycle, cycle_facts$dchV, col="red", main=paste("dQdV Plot for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)")
+            points(cycle_facts$cycle, cycle_facts$avgV, col="black", main=paste("dQdV Plot for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)")
+            legend("top", c("Charge Voltage", "Discharge Voltage", "Average Voltage"), col=c("blue", "red", "black"), pch=19)
+            dev.off()
+          }
           
           write.csv(tmp_excel, file = paste(input$dirLocation, "/", data$sheet[row], "/", data$sheet[row], ".csv", sep = ""))
           write.csv(dQdVData, file = paste(input$dirLocation, "/", data$sheet[row], "/", data$sheet[row], " dQdV Data.csv", sep = ""))
