@@ -8,6 +8,7 @@ require(shinyjs)
 require(shinyalert)
 require(pracma)
 require(purrr)
+require(IDPmisc)
 
 if (interactive()) {
   
@@ -55,6 +56,10 @@ if (interactive()) {
       
       fluidRow(
         radioButtons("gGraphs", "Generate Graphs?", choices = c("Yes (may take longer)" = "genGraphs", "No" = "noGenGraphs"), inline = TRUE)
+      ),
+      
+      fluidRow(
+        radioButtons("peakFit", "Do Peak Fitting on  dQdV Graphs? (BETA)", choices = c("Yes" = "fit", "No" = "noGenGraphs"), inline = TRUE)
       ),
     ),
     
@@ -117,6 +122,7 @@ if (interactive()) {
     })
     
     observeEvent(input$submit, {
+      graphics.off()
       dir.create(input$dirLocation)
       
       se <- function(x) {sd(x) / sqrt(length(x))}
@@ -131,6 +137,7 @@ if (interactive()) {
             dir.create(paste(input$dirLocation, data$sheet[row], "dQdV Plots", sep = "/"))
             dir.create(paste(input$dirLocation, data$sheet[row], "Voltage Profiles", sep = "/"))
             dir.create(paste(input$dirLocation, data$sheet[row], "Voltage v Time", sep = "/"))
+            dir.create(paste(input$dirLocation, data$sheet[row], "dQdV Peak Fitting", sep = "/"))
           }
           
           tmp_excel$Q.d <- as.numeric(tmp_excel$`Discharge_Capacity(Ah)` * (1000 / data$Mass[[1]][row]))
@@ -181,6 +188,15 @@ if (interactive()) {
               png(paste(input$dirLocation, "/", data$sheet[row], "/", "Voltage Profiles/", data$name[row], data$sheet[row], "Cycle ", toString(i)," Voltage Profile Plot.png", sep = ""))
               plot(tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Q.d`, tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)`, type="l", main=paste("Voltage Profile for ",  input$dirLocation, data$sheet[row]), xlab="Discharge Capacity (mAh/g)", ylab="Voltage (V)")
               dev.off()
+              
+              if (input$peakFit == "fit") {
+                png(paste(input$dirLocation, "/", data$sheet[row], "/", "dQdV Peak Fitting/", data$name[row], data$sheet[row], "Cycle ", toString(i)," dQdV Plot.png", sep = ""))
+                plot(dQdVData[dQdVData$cycle == i,]$voltage, dQdVData[dQdVData$cycle == i,]$dQdV, main=paste("dQdV Plot for ",  input$dirLocation, data$sheet[row], "Cycle ", toString(i)), xlab="Voltage (V)", ylab="dQdV (mAh/V)")
+                p <- peaks(dQdVData[dQdVData$cycle == i,]$voltage, abs(dQdVData[dQdVData$cycle == i,]$dQdV), minPH = 0.0003, minPW = 0.0001)
+                abline(v=p$x)
+                text(p$x + 0.01, rep(0,length(p$x)), labels = round(p$x,2), srt = 90)
+                dev.off()
+              }
             }
             
             if (input$gGraphs == "genGraphs") {
