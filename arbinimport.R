@@ -126,6 +126,7 @@ if (interactive()) {
       dir.create(input$dirLocation)
       
       se <- function(x) {sd(x) / sqrt(length(x))}
+      loading <- TRUE
       
       withProgress(message = "Computing...", {
       
@@ -236,22 +237,25 @@ if (interactive()) {
           
           final <<- rbind(final, tmp_excel)
           
-          incProgress(row/nrow(data))
+          incProgress(row/(nrow(data)+ 1))
         }
+      
+      
+        stats <- data.frame("Cell" = "Total", "Mean Discharge Capacity (mAh/g)" = aggregate(final[["Q.d"]], list(final[["Cycle_Index"]]), mean), "Mean Charge Capacity (mAh/g)" = aggregate(final[["Q.c"]], list(final[["Cycle_Index"]]), mean),
+                            "St. Error Discharge Capacity (mAh/g)" = aggregate(final[["Q.d"]], list(final[["Cycle_Index"]]), se), "St. Error Charge Capacity (mAh/g)" =
+                              aggregate(final[["Q.c"]], list(final[["Cycle_Index"]]),  se))
+        
+        write.csv(stats, file = paste(getwd(),"/", input$dirLocation, "/", data$name[row], " Summary.csv", sep = ""))
+        write.csv(final, file = paste(getwd(),"/", input$dirLocation, "/", data$name[row], " Total.csv", sep = ""))
+        
+        # save(data, file = paste("history/", input$dirLocation, ".RData"))
+        
+        shinyalert("Analysis Complete!", paste("All your data is now in ", input$dirLocation), "success")
+        
+        remove(list=ls())
+        
+        incProgress((nrow(data)+ 1)/(nrow(data)+ 1))
       })
-      
-      stats <- data.frame("Cell" = "Total", "Mean Discharge Capacity (mAh/g)" = aggregate(final[["Q.d"]], list(final[["Cycle_Index"]]), mean), "Mean Charge Capacity (mAh/g)" = aggregate(final[["Q.c"]], list(final[["Cycle_Index"]]), mean),
-                          "St. Error Discharge Capacity (mAh/g)" = aggregate(final[["Q.d"]], list(final[["Cycle_Index"]]), se), "St. Error Charge Capacity (mAh/g)" =
-                            aggregate(final[["Q.c"]], list(final[["Cycle_Index"]]),  se))
-      
-      write.csv(stats, file = paste(getwd(),"/", input$dirLocation, "/", data$name[row], " Summary.csv", sep = ""))
-      write.csv(final, file = paste(getwd(),"/", input$dirLocation, "/", data$name[row], " Total.csv", sep = ""))
-      
-      # save(data, file = paste("history/", input$dirLocation, ".RData"))
-      
-      shinyalert("Analysis Complete!", paste("All your data is now in ", input$dirLocation), "success")
-      
-      remove(list=ls())
     })
     
   }
