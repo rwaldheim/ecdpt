@@ -123,6 +123,15 @@ if (interactive()) {
     
     observeEvent(input$submit, {
       graphics.off()
+      disable("files")
+      disable("lowV")
+      disable("highV")
+      disable("dirLocation")
+      disable("submit")
+      disable("excelImport")
+      disable("gGraphs")
+      disable("peakFit")
+
       dir.create(input$dirLocation)
       
       se <- function(x) {sd(x) / sqrt(length(x))}
