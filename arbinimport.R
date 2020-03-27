@@ -10,6 +10,7 @@ require(pracma)
 require(purrr)
 require(IDPmisc)
 require(zoo)
+require(animation)
 
 if (interactive()) {
   
@@ -234,6 +235,12 @@ if (interactive()) {
               }
             }
             
+            # saveGIF({
+            #   for (cycle in unique(dQdVData$cycle)) {
+            #     plot(dQdVData[dQdVData$cycle == cycle,]$voltage, dQdVData[dQdVData$cycle == cycle,]$dQdV, main=paste("dQdV Plot for ",  input$dirLocation, data$sheet[row], "Cycle ", toString(i)), xlab="Voltage (V)", ylab="dQdV (mAh/V)")
+            #   }
+            # }, movie.name = "All dQdV cycles.gif")
+            
             if (input$gGraphs == "genGraphs") {
               png(paste(input$dirLocation, "/", data$sheet[row], "/", "Voltage v Time/", data$name[row], data$sheet[row], "Cycle ", toString(i)," Voltage Profile Plot.png", sep = ""))
               plot((tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Test_Time(s)` - tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Test_Time(s)`[[1]]) / 60, (tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)` - tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)`[[1]]) / 60, type="l", main=paste("Voltage vs. Time for ",  input$dirLocation, data$sheet[row]), xlab="Time (min)", ylab="Voltage (V)")
@@ -252,6 +259,12 @@ if (interactive()) {
             png(paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row]," Discharge Capacity Plot.png", sep = ""))
             eol <- meanDCap[1,2] * 0.8
             plot(meanDCap[,1], meanDCap[,2], main=paste("Discharge Capacity for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Discharge Capacity (mAh/g)")
+            abline(h=eol, lty = "dotted")
+            dev.off()
+            
+            png(paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row]," Discharge Areal Capacity Plot.png", sep = ""))
+            eol <- ((meanDCap[1,2] * 1000) / data$Mass[[1]][row]) * 0.8
+            plot(meanDCap[,1], ((meanDCap[,2] * 1000) / data$Mass[[1]][row]), main=paste("Discharge Capacity for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Discharge Capacity (mAh/cm^2)")
             abline(h=eol, lty = "dotted")
             dev.off()
           }
