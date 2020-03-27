@@ -125,6 +125,7 @@ if (interactive()) {
     
     observeEvent(input$submit, {
       graphics.off()
+      
       disable("files")
       disable("lowV")
       disable("highV")
@@ -287,9 +288,19 @@ if (interactive()) {
         }
       
       
-        stats <- data.frame("Cell" = "Total", "Mean Discharge Capacity (mAh/g)" = aggregate(final[["Q.d"]], list(final[["Cycle_Index"]]), mean), "Mean Charge Capacity (mAh/g)" = aggregate(final[["Q.c"]], list(final[["Cycle_Index"]]), mean),
-                            "St. Error Discharge Capacity (mAh/g)" = aggregate(final[["Q.d"]], list(final[["Cycle_Index"]]), se), "St. Error Charge Capacity (mAh/g)" =
+        stats <- data.frame("Cell" = "Total", "Mean Discharge Capacity" = aggregate(final[["Q.d"]], list(final[["Cycle_Index"]]), mean), "Mean Charge Capacity" = aggregate(final[["Q.c"]], list(final[["Cycle_Index"]]), mean),
+                            "St. Error Discharge Capacity" = aggregate(final[["Q.d"]], list(final[["Cycle_Index"]]), se), "St. Error Charge Capacity" =
                               aggregate(final[["Q.c"]], list(final[["Cycle_Index"]]),  se))
+        
+        stats <- select(stats, Mean.Discharge.Capacity.x, Mean.Charge.Capacity.x, St..Error.Discharge.Capacity.x, St..Error.Charge.Capacity.x)
+        stats$Cycle <- 1:length(stats[,1])
+
+        png(paste(getwd(),"/", input$dirLocation, "/", data$name[row], "Total Discharge Capacity Plot.png", sep = ""))
+        eol <- stats[1,2] * 0.8
+        plot(stats$Cycle, stats$`Mean.Discharge.Capacity.x`, main=paste("Discharge Capacity for ",  input$dirLocation), xlab="Cycle", ylab="Discharge Capacity (mAh/g)")
+        arrows(stats$Cycle, stats$`Mean.Discharge.Capacity.x`+stats$`St..Error.Discharge.Capacity.x`, stats$Cycle, stats$`Mean.Discharge.Capacity.x`+stats$`St..Error.Discharge.Capacity.x`, length=0.05, angle=90, code=3)
+        abline(h=eol, lty = "dotted")
+        dev.off()
         
         write.csv(stats, file = paste(getwd(),"/", input$dirLocation, "/", data$name[row], " Summary.csv", sep = ""))
         write.csv(final, file = paste(getwd(),"/", input$dirLocation, "/", data$name[row], " Total.csv", sep = ""))
