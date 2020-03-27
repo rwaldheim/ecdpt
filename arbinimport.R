@@ -10,7 +10,7 @@ require(pracma)
 require(purrr)
 require(IDPmisc)
 require(zoo)
-require(animation)
+library(gifski)
 
 if (interactive()) {
   
@@ -160,7 +160,9 @@ if (interactive()) {
             dir.create(paste(input$dirLocation, data$sheet[row], "dQdV Plots", sep = "/"))
             dir.create(paste(input$dirLocation, data$sheet[row], "Voltage Profiles", sep = "/"))
             dir.create(paste(input$dirLocation, data$sheet[row], "Voltage v Time", sep = "/"))
-            dir.create(paste(input$dirLocation, data$sheet[row], "dQdV Peak Fitting", sep = "/"))
+            if (input$peakFit == "fit") {
+              dir.create(paste(input$dirLocation, data$sheet[row], "dQdV Peak Fitting", sep = "/"))
+            }
           }
           
           tmp_excel$Q.d <- as.numeric(tmp_excel$`Discharge_Capacity(Ah)` * (1000 / data$Mass[[1]][row]))
@@ -235,12 +237,6 @@ if (interactive()) {
               }
             }
             
-            # saveGIF({
-            #   for (cycle in unique(dQdVData$cycle)) {
-            #     plot(dQdVData[dQdVData$cycle == cycle,]$voltage, dQdVData[dQdVData$cycle == cycle,]$dQdV, main=paste("dQdV Plot for ",  input$dirLocation, data$sheet[row], "Cycle ", toString(i)), xlab="Voltage (V)", ylab="dQdV (mAh/V)")
-            #   }
-            # }, movie.name = "All dQdV cycles.gif")
-            
             if (input$gGraphs == "genGraphs") {
               png(paste(input$dirLocation, "/", data$sheet[row], "/", "Voltage v Time/", data$name[row], data$sheet[row], "Cycle ", toString(i)," Voltage Profile Plot.png", sep = ""))
               plot((tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Test_Time(s)` - tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Test_Time(s)`[[1]]) / 60, (tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)` - tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)`[[1]]) / 60, type="l", main=paste("Voltage vs. Time for ",  input$dirLocation, data$sheet[row]), xlab="Time (min)", ylab="Voltage (V)")
@@ -267,6 +263,9 @@ if (interactive()) {
             plot(meanDCap[,1], ((meanDCap[,2] * 1000) / data$Mass[[1]][row]), main=paste("Discharge Capacity for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Discharge Capacity (mAh/cm^2)")
             abline(h=eol, lty = "dotted")
             dev.off()
+            
+            png_files <- list.files(paste(input$dirLocation, data$sheet[row], "dQdV Plots", sep="/"), pattern = "*.png", full.names = TRUE)
+            gifski(png_files, gif_file = paste(input$dirLocation, data$sheet[row], "dQdV Plots", "dQdV All Cycles.gif", sep = "/"), delay = 0.1)
           }
 
           if (input$gGraphs == "genGraphs") {
