@@ -309,9 +309,9 @@ if (interactive()) {
         stats$Cycle <- 1:length(stats[,1])
 
         png(paste(getwd(),"/", input$dirLocation, "/", data$name[row], "Total Discharge Capacity Plot.png", sep = ""))
-        eol <- stats[1,2] * 0.8
+        eol <- stats[1,1] * 0.8
         plot(stats$Cycle, stats$`Mean.Discharge.Capacity.x`, main=paste("Discharge Capacity for ",  input$dirLocation), xlab="Cycle", ylab="Discharge Capacity (mAh/g)")
-        arrows(stats$Cycle, stats$`Mean.Discharge.Capacity.x`+stats$`St..Error.Discharge.Capacity.x`, stats$Cycle, stats$`Mean.Discharge.Capacity.x`+stats$`St..Error.Discharge.Capacity.x`, length=0.05, angle=90, code=3)
+        arrows(stats$Cycle, stats[,1] - stats[,3], stats$Cycle, stats[,1] + stats[,3], length=0.05, angle=90, code=3)
         abline(h=eol, lty = "dotted")
         dev.off()
         
