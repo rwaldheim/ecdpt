@@ -124,6 +124,19 @@ if (interactive()) {
     })
     
     observeEvent(input$submit, {
+      
+      if (!grepl("OneDrive", getwd())) {
+        shinyReturn <- ""
+        shinyalert("Uh Oh!", "You do not appear to be in a shared directory!", type = "error",
+             showConfirmButton = TRUE, confirmButtonText = "Ignore", showCancelButton = TRUE,
+             cancelButtonText = "Cancel",
+             callbackR = function(x) {
+               runscript()
+             })
+      }
+    })
+    
+    runscript <- function() {
       graphics.off()
       
       disable("files")
@@ -313,7 +326,7 @@ if (interactive()) {
         
         incProgress((nrow(data)+ 1)/(nrow(data)+ 1))
       })
-    })
+    }
     
   }
   
