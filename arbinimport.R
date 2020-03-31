@@ -136,6 +136,8 @@ if (interactive()) {
                  runscript()
                }
              })
+      } else {
+        runscript()
       }
     })
     
