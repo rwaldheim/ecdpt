@@ -65,7 +65,7 @@ if (interactive()) {
       
       fluidRow(
         checkboxGroupInput("gGraphs", "Choose Graphs to Generate:", choices = c("dQdV Graphs", "Voltage Profiles", "Voltage vs. Time", "Discharge Capacity", "Discharge Areal Capacity",
-                                                                      "Total Discharge Capacity", "Average Voltage"), inline = TRUE)
+                                                                      "Total Discharge Capacity", "Average Voltage", "Delta Voltage"), inline = TRUE)
       ),
       
       fluidRow(
@@ -287,7 +287,7 @@ if (interactive()) {
             }
             
             avgV <- (dchV + chV) / 2
-            cycle_facts <- rbind(cycle_facts, data.frame(cycle=i, chV=chV, dchV=dchV, avgV=avgV))
+            cycle_facts <- rbind(cycle_facts, data.frame(cycle=i, chV=chV, dchV=dchV, avgV=avgV, dV=chV-dchV))
             i <- i + 1
             ch_dch <- FALSE
           }
@@ -328,7 +328,13 @@ if (interactive()) {
             points(cycle_facts$cycle, cycle_facts$avgV, col="black", main=paste("Average Voltage Plot for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)")
             legend("top", c("Charge Voltage", "Discharge Voltage", "Average Voltage"), col=c("blue", "red", "black"), pch=19)
             dev.off()
-          }
+         }
+          
+         if (is.element("Delta Voltage", input$gGraphs)) {
+            png(paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row]," Delta Voltage Plot.png", sep = ""))
+            plot(cycle_facts$cycle, cycle_facts$dV, main=paste("Delta Voltage Plot for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)", ylim =c(0, 0.5))
+            dev.off()
+         }
           
           write.csv(tmp_excel, file = paste(input$dirLocation, "/", data$sheet[row], "/", data$sheet[row], ".csv", sep = ""))
           write.csv(dQdVData, file = paste(input$dirLocation, "/", data$sheet[row], "/", data$sheet[row], " dQdV Data.csv", sep = ""))
