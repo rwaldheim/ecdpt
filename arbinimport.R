@@ -38,14 +38,14 @@ if (interactive()) {
       ),
       
       fluidRow(
-        numericInput("lowV", "Lower Voltage [V]", 2.8, min = 0, max = 5),
-        numericInput("highV", "Upper Voltage [V]", 4.25, min = 0, max = 5),
+        numericInput("lowV", "Lower Voltage (V)", 2.8, min = 0, max = 5),
+        numericInput("highV", "Upper Voltage (V)", 4.25, min = 0, max = 5),
       ),
       
       fluidRow(
-        numericInput("area", "Limiting Electrode Area [cm^2]", 2.74, min = 0),
-        numericInput( "perActive","Active Loading of Limiting Electrode [wt%]", 96, min = 0, max = 100),
-        numericInput( "capActive","Capacity of Limiting Active Material [mAh/g]", 155, min = 0, max = 100),
+        numericInput("area", "Limiting Electrode Area (cm^2)", 2.74, min = 0),
+        numericInput( "perActive","Active Loading of Limiting Electrode (wt%)", 96, min = 0, max = 100),
+        numericInput( "capActive","Capacity of Limiting Active Material (mAh/g)", 155, min = 0, max = 100),
       ),
       
       fluidRow(
@@ -88,7 +88,8 @@ if (interactive()) {
       data <<- filter(data, grepl('Channel', sheet))
       
       output$channels <- renderDataTable(data, editable = TRUE, options=list(columnDefs = list(list(visible=FALSE, targets=c(4)))), 
-                                         colnames = c("File", "Sheet", "Mass (g)", "Filepath", "Lower Voltage", "Upper Voltage"))
+                                         colnames = c("File", "Sheet", "Mass (g)", "Filepath", "Limiting Electrode Area (cm^2)", "Active Material Loading (wt%)", 
+                                                      "Active Mateial Capacity (mAh/g)", "Lower Voltage (V)", "Upper Voltage (V)"))
     })
     
     output$channels <- renderDataTable({
@@ -102,8 +103,9 @@ if (interactive()) {
       for (i in 1:nrow(files)) {
         sheets <- excel_sheets(files[i, 4])
         file_sheet <- rbind(file_sheet, data.frame(name = rep(files[["name"]][i], length(sheets)), "sheet" = sheets, "Mass" = rep(0, length(sheets)),
-                                                   datapath = rep(files[["datapath"]][i], length(sheets)), lowV = rep(input$lowV, length(sheets)),
-                                                   highV = rep(input$highV, length(sheets))))
+                                                   datapath = rep(files[["datapath"]][i], length(sheets)), area = rep(input$area, length(sheets)),
+                                                   perActive = rep(input$perActive, length(sheets)), capActive = rep(input$capActive, length(sheets)),
+                                                   lowV = rep(input$lowV, length(sheets)), highV = rep(input$highV, length(sheets))))
       }
       
       data <<- filter(file_sheet, grepl('Channel', sheet))
@@ -111,7 +113,8 @@ if (interactive()) {
       data
 
     }, editable = TRUE, options=list(columnDefs = list(list(visible=FALSE, targets=c(4)))), 
-    colnames = c("File", "Sheet", "Mass (g)", "Filepath", "Lower Voltage", "Upper Voltage"))
+    colnames = c("File", "Sheet", "Mass (g)", "Filepath", "Limiting Electrode Area (cm^2)", "Active Material Loading (wt%)", 
+                 "Active Mateial Capacity (mAh/g)", "Lower Voltage (V)", "Upper Voltage (V)"))
     
     observeEvent(input$excelImport, {
       showModal(excelModal)
