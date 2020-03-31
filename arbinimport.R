@@ -180,9 +180,11 @@ if (interactive()) {
           if (is.element("Voltage vs. Time", input$gGraphs)) dir.create(paste(input$dirLocation, data$sheet[row], "Voltage v Time", sep = "/"))
           if (input$peakFit == "fit") dir.create(paste(input$dirLocation, data$sheet[row], "dQdV Peak Fitting", sep = "/"))
           
-          tmp_excel$Q.d <- as.numeric(tmp_excel$`Discharge_Capacity(Ah)` * (1000 / data$Mass[[1]][row]))
-          tmp_excel$Q.c <- as.numeric(tmp_excel$`Charge_Capacity(Ah)`* (1000 / data$Mass[[1]][row]))
-          tmp_excel$Cell <- row
+          if (is.element("Mass", data)) {
+            tmp_excel$Q.d <- as.numeric(tmp_excel$`Discharge_Capacity(Ah)` * (1000 / data$Mass[[1]][row]))
+            tmp_excel$Q.c <- as.numeric(tmp_excel$`Charge_Capacity(Ah)`* (1000 / data$Mass[[1]][row]))
+            tmp_excel$Cell <- row
+          }
           
           tmp_excel$CC <- tmp_excel$Q.d - tmp_excel$Q.c
           
@@ -229,7 +231,11 @@ if (interactive()) {
                 
               if (is.element("Voltage Profiles", input$gGraphs)) {
                 png(paste(input$dirLocation, "/", data$sheet[row], "/", "Voltage Profiles/", data$name[row], data$sheet[row], "Cycle ", toString(i)," Voltage Profile Plot.png", sep = ""))
-                plot(tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Q.d`, tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)`, type="l", main=paste("Voltage Profile for ",  input$dirLocation, data$sheet[row]), xlab="Discharge Capacity (mAh/g)", ylab="Voltage (V)")
+                if (is.element("Mass", data)) {
+                  plot(tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Q.d`, tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)`, type="l", main=paste("Voltage Profile for ",  input$dirLocation, data$sheet[row]), xlab="Discharge Capacity (mAh/g)", ylab="Voltage (V)")
+                } else {
+                  plot(tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Discharge_Capacity(Ah)`, tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)`, type="l", main=paste("Voltage Profile for ",  input$dirLocation, data$sheet[row]), xlab="Discharge Capacity (Ah)", ylab="Voltage (V)")
+                }
                 dev.off()
               }
               
@@ -293,9 +299,9 @@ if (interactive()) {
 
          if (is.element("Average Voltage", input$gGraphs)) {
             png(paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row]," Average Voltage Plot.png", sep = ""))
-            plot(cycle_facts$cycle, cycle_facts$chV, col="blue", main=paste("dQdV Plot for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)", ylim=c(min(cycle_facts[,2:4]), max(cycle_facts[,2:4])))
-            points(cycle_facts$cycle, cycle_facts$dchV, col="red", main=paste("dQdV Plot for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)")
-            points(cycle_facts$cycle, cycle_facts$avgV, col="black", main=paste("dQdV Plot for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)")
+            plot(cycle_facts$cycle, cycle_facts$chV, col="blue", main=paste("Average Voltage Plot for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)", ylim=c(min(cycle_facts[,2:4]), max(cycle_facts[,2:4])))
+            points(cycle_facts$cycle, cycle_facts$dchV, col="red", main=paste("Average Voltage Plot for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)")
+            points(cycle_facts$cycle, cycle_facts$avgV, col="black", main=paste("Average Voltage Plot for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)")
             legend("top", c("Charge Voltage", "Discharge Voltage", "Average Voltage"), col=c("blue", "red", "black"), pch=19)
             dev.off()
           }
@@ -309,10 +315,15 @@ if (interactive()) {
           incProgress(row/(nrow(data)+ 1))
         }
       
-      
+        if (is.element("Mass", data)) {
         stats <- data.frame("Cell" = "Total", "Mean Discharge Capacity" = aggregate(final[["Q.d"]], list(final[["Cycle_Index"]]), mean), "Mean Charge Capacity" = aggregate(final[["Q.c"]], list(final[["Cycle_Index"]]), mean),
                             "St. Error Discharge Capacity" = aggregate(final[["Q.d"]], list(final[["Cycle_Index"]]), se), "St. Error Charge Capacity" =
                               aggregate(final[["Q.c"]], list(final[["Cycle_Index"]]),  se))
+        } else {
+          stats <- data.frame("Cell" = "Total", "Mean Discharge Capacity" = aggregate(final[["Discharge_Capacity(Ah)"]], list(final[["Cycle_Index"]]), mean), "Mean Charge Capacity" = aggregate(final[["Charge_Capacity(Ah)"]], list(final[["Cycle_Index"]]), mean),
+                              "St. Error Discharge Capacity" = aggregate(final[["Discharge_Capacity(Ah)"]], list(final[["Cycle_Index"]]), se), "St. Error Charge Capacity" =
+                                aggregate(final[["Charge_Capacity(Ah)"]], list(final[["Cycle_Index"]]),  se))
+        }
         
         stats <- select(stats, Mean.Discharge.Capacity.x, Mean.Charge.Capacity.x, St..Error.Discharge.Capacity.x, St..Error.Charge.Capacity.x)
         stats$Cycle <- 1:length(stats[,1])
@@ -320,7 +331,7 @@ if (interactive()) {
         if (is.element("Total Discharge Capacity", input$gGraphs)) {
           png(paste(getwd(),"/", input$dirLocation, "/", data$name[row], "Total Discharge Capacity Plot.png", sep = ""))
           eol <- stats[1,1] * 0.8
-          plot(stats$Cycle, stats$`Mean.Discharge.Capacity.x`, main=paste("Discharge Capacity for ",  input$dirLocation), xlab="Cycle", ylab="Discharge Capacity (mAh/g)")
+          plot(stats$Cycle, stats$`Mean.Discharge.Capacity.x`, main=paste("Discharge Capacity for ",  input$dirLocation), xlab="Cycle", if (is.element("Mass", data)) ylab="Discharge Capacity (mAh/g)" else ylab="Discharge Capacity (Ah)")
           # arrows(stats$Cycle, stats[,1] - stats[,3], stats$Cycle, stats[,1] + stats[,3], length=0.05, angle=90, code=3)
           abline(h=eol, lty = "dotted")
           dev.off()
@@ -329,7 +340,13 @@ if (interactive()) {
         write.csv(stats, file = paste(getwd(),"/", input$dirLocation, "/", data$name[row], " Summary.csv", sep = ""))
         write.csv(final, file = paste(getwd(),"/", input$dirLocation, "/", data$name[row], " Total.csv", sep = ""))
         
-        save(data, file = paste("history/", input$dirLocation, ".RData"))
+        if (!dir.exists("history/")) {
+          dir.create("history/")
+          save(data, file = paste("history/", input$dirLocation, ".RData"))
+        } else {
+          save(data, file = paste("history/", input$dirLocation, ".RData"))
+        }
+        
         
         shinyalert("Analysis Complete!", paste("All your data are now in ", input$dirLocation), "success")
         
