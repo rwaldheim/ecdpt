@@ -20,6 +20,7 @@ if (interactive()) {
   lowV <- reactiveVal(0)
   highV <- reactiveVal(0)
   dirLocation <- reactiveVal("")
+  numCycles <- reactiveValues(data = data.frame())
   
   ui <- fluidPage(
     useShinyjs(),
@@ -78,8 +79,10 @@ if (interactive()) {
     )
   )
   
-  server <- function(input, output) {
+  server <- function(input, output, session) {
     options(shiny.maxRequestSize=30*1024^2)
+    
+    dQdVData <- data.frame()
     
     excelModal <- modalDialog("Copy masses from Excel now.", footer = actionButton("excelMasses", "Import"))
     
@@ -88,20 +91,39 @@ if (interactive()) {
         useShinyjs(),
         useShinyalert(),
         
+        tags$head(tags$style(".modal-dialog{width:80%}")),
+        tags$head(tags$style(".modal-body{ min-height:1000px}")),
+
         fluidRow(headerPanel("Arbin Import")),
         
         column(10,
-           plotOutput("outputPlot")
+           plotOutput("outputPlot", height = "800px")
         ),
         
         column(2,
            fluidRow(
-             radioButtons("gGraphs", "Choose the Type of Graph:", choices = c("dQdV Graphs", "Voltage Profiles", "Voltage vs. Time", "Discharge Capacity", "Discharge Areal Capacity",
+             radioButtons("typeGraph", "Graph Type:", choices = c("dQdV Graphs", "Voltage Profiles", "Voltage vs. Time", "Discharge Capacity", "Discharge Areal Capacity",
                                                                                     "Total Discharge Capacity", "Average Voltage", "Delta Voltage"), inline = FALSE)
            ),
            
            fluidRow(
+             radioButtons("cells", "Cell to Analyze:", choices = 1, inline = FALSE)
+           ),
+           
+           fluidRow(
+             actionButton("loadCells", "Load Cells", width = '100%', class = 'btn-secondary')
+           ),
+           
+           fluidRow(
+             selectInput("renderCycles", "Cycles of Interest:", choices = 1, multiple = TRUE)
+           ),
+           
+           fluidRow(
              actionButton("rGraph", "Render Graph", width = '100%', class = 'btn-success')
+           ),
+           
+           fluidRow(
+             actionButton("saveGraph", "Save Graph", width = '100%', class = 'btn-secondary')
            ),
         )
       )
@@ -231,7 +253,6 @@ if (interactive()) {
           tmp_excel$CE[is.infinite(tmp_excel$CE)|is.nan(tmp_excel$CE)|tmp_excel$CE > 200] <- 0;
           
           cycle_facts <- data.frame()
-          dQdVData <- data.frame()
           cycles <- split(tmp_excel, tmp_excel$Cycle_Index)
           prev_c <- 0
           ch_dch <- FALSE
@@ -247,16 +268,16 @@ if (interactive()) {
                 if (step$'Current(A)'[[1]] > 0) {
                   chV <- (1 / (tail(step$`Charge_Capacity(Ah)`,1) - step$`Charge_Capacity(Ah)`[[1]])) * trapz(step$`Charge_Capacity(Ah)`, step$`Voltage(V)`)
                   dQCdV <- diff(step$`Charge_Capacity(Ah)`)/diff(step$`Voltage(V)`)
-                  dQdVData <- rbind(dQdVData, data.frame(cycle=rep(i, length(dQCdV)+1), c_d=rep(0, length(dQCdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQCdV), F_L=rep(0,length(dQCdV)+1)))
+                  dQdVData <<- rbind(dQdVData, data.frame(cycle=rep(i, length(dQCdV)+1), c_d=rep(0, length(dQCdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQCdV), F_L=rep(0,length(dQCdV)+1)))
                 } else {
                   dchV <- (1 / (tail(step$`Discharge_Capacity(Ah)`,1) - step$`Discharge_Capacity(Ah)`[[1]])) * trapz(step$`Discharge_Capacity(Ah)`, step$`Voltage(V)`)
-                  dQDdV <- diff(step$`Discharge_Capacity(Ah)`)/diff(step$`Voltage(V)`)
+                  dQDdV <<- diff(step$`Discharge_Capacity(Ah)`)/diff(step$`Voltage(V)`)
                   
                   if (abs(prev_c - step$`Current(A)`[[1]]) > 0.0005) {
-                    dQdVData <- rbind(dQdVData, data.frame(cycle=rep(i, length(dQDdV)+1),  c_d=rep(1, length(dQDdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQDdV), F_L=rep(1,length(dQDdV)+1)))
+                    dQdVData <<- rbind(dQdVData, data.frame(cycle=rep(i, length(dQDdV)+1),  c_d=rep(1, length(dQDdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQDdV), F_L=rep(1,length(dQDdV)+1)))
                     prev_c = step$`Current(A)`[[1]]
                   } else {
-                    dQdVData <- rbind(dQdVData, data.frame(cycle=rep(i, length(dQDdV)+1),  c_d=rep(1, length(dQDdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQDdV), F_L=rep(0, length(dQDdV)+1)))
+                    dQdVData <<- rbind(dQdVData, data.frame(cycle=rep(i, length(dQDdV)+1),  c_d=rep(1, length(dQDdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQDdV), F_L=rep(0, length(dQDdV)+1)))
                   }
                 }
               }
@@ -365,6 +386,7 @@ if (interactive()) {
           write.csv(cycle_facts, file = paste(input$dirLocation, "/", data$sheet[row], "/", data$sheet[row], " Charge-Discharge Voltages.csv", sep = ""))
           
           final <<- rbind(final, cbind(tmp_excel, data.frame("Cell" = rep(row, nrow(tmp_excel)))))
+          numCycles$data <- rbind(numCycles$data, data.frame(sheet=data$sheet[row], cycles=nrow(cycle_facts)))
           
           incProgress(row/(nrow(data)+ 1))
         }
@@ -408,6 +430,8 @@ if (interactive()) {
                    showConfirmButton = TRUE,
                    confirmButtonText = "Graph Builder",
                    callbackR = function(x) {
+                     updateRadioButtons(session, "cells",
+                                        choices = data$sheet)
                      showModal(graphbuilder)
                    })
         
@@ -427,9 +451,44 @@ if (interactive()) {
     }
     
     observeEvent(input$rGraph, {
-      output$outputPlot <- renderPlot({
-        plot(1:100, 1:100)
-      })
+      output$outputPlot <- renderPlot({ switch(input$typeGraph,
+                                                 "dQdV Graphs" = {
+                                                   if (length(data$sheet) == 1) {
+                                                     sheetName <- data$sheet
+                                                   } else {
+                                                     sheetName <- data$sheet[[input$loadCells]]
+                                                   }
+                                                   
+                                                   plot(dQdVData[dQdVData$cycle == as.numeric(input$renderCycles),]$voltage, dQdVData[dQdVData$cycle == as.numeric(input$renderCycles),]$dQdV, col = rainbow(length(input$renderCycles))[dQdVData$cycle], main=paste("dQdV Plot for ",  input$dirLocation, sheetName), xlab="Voltage (V)", ylab="dQdV (mAh/V)")
+                                                 },
+                                                 "Voltage Profiles" = {
+                                                   
+                                                 },
+                                                 "Voltage vs. Time" = {
+                                                   
+                                                 }, 
+                                                 "Discharge Capacity" = {
+                                                   
+                                                 },
+                                                 "Discharge Areal Capacity" = {
+                                                   
+                                                 },
+                                                 "Total Discharge Capacity" = {
+                                                   
+                                                 },
+                                                 "Average Voltage" = {
+                                                   
+                                                 },
+                                                 "Delta Voltage" = {
+                                                   
+                                                 }
+                                           )
+                                      })
+    })
+    
+    observeEvent(input$loadCells, {
+      updateSelectInput(session, "renderCycles",
+                                choices = 1:numCycles$data[input$loadCells, 2])
     })
     
   }
