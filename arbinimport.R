@@ -10,7 +10,8 @@ require(pracma)
 require(purrr)
 require(IDPmisc)
 require(zoo)
-library(gifski)
+require(gifski)
+require(plotrix)
 
 if (interactive()) {
   
@@ -195,7 +196,11 @@ if (interactive()) {
             tmp_excel$Cell <- row
             
             tmp_excel$CC <- tmp_excel$Q.d - tmp_excel$Q.c
+            tmp_excel$CE <- (tmp_excel$Q.d / tmp_excel$Q.c) * 100
+          } else {
+            tmp_excel$CE <- (tmp_excel$`Discharge_Capacity(Ah)` / tmp_excel$`Charge_Capacity(Ah)`) * 100
           }
+          tmp_excel$CE[is.infinite(tmp_excel$CE)|is.nan(tmp_excel$CE)|tmp_excel$CE > 200] <- 0;
           
           cycle_facts <- data.frame()
           dQdVData <- data.frame()
@@ -285,14 +290,16 @@ if (interactive()) {
           
           if (is.element("Mass", data)) {
             meanDCap <- aggregate(tmp_excel$`Q.d`, by=list(tmp_excel$`Cycle_Index`), last)
+            meanCE <- aggregate(tmp_excel$CE, by=list(tmp_excel$`Cycle_Index`), last)
           } else {
             meanDCap <- aggregate(tmp_excel$`Discharge_Capacity(Ah)`, by=list(tmp_excel$`Cycle_Index`), last)
+            meanCE <- aggregate(tmp_excel$CE, by=list(tmp_excel$`Cycle_Index`), last)
           }
           
           if (is.element("Discharge Capacity", input$gGraphs)) {
             png(paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row]," Discharge Capacity Plot.png", sep = ""))
             eol <- meanDCap[1,2] * 0.8
-            plot(meanDCap[,1], meanDCap[,2], main=paste("Discharge Capacity for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", if (is.element("Mass", data)) ylab="Discharge Capacity (mAh/g)" else ylab="Discharge Capacity (Ah)")
+            twoord.plot(meanDCap[,1], meanDCap[,2], meanCE[,1], meanCE[,2], type="p", main=paste("Discharge Capacity for ",  input$dirLocation, data$sheet[row]), xlab="Cycle",ylab="Discharge Capacity (Ah)")
             abline(h=eol, lty = "dotted")
             dev.off()
           }
