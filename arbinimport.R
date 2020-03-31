@@ -327,7 +327,13 @@ if (interactive()) {
         write.csv(stats, file = paste(getwd(),"/", input$dirLocation, "/", data$name[row], " Summary.csv", sep = ""))
         write.csv(final, file = paste(getwd(),"/", input$dirLocation, "/", data$name[row], " Total.csv", sep = ""))
         
-        save(data, file = paste("history/", input$dirLocation, ".RData"))
+        if (!dir.exists("history/")) {
+          dir.create("history/")
+          save(data, file = paste("history/", input$dirLocation, ".RData"))
+        } else {
+          save(data, file = paste("history/", input$dirLocation, ".RData"))
+        }
+        
         
         shinyalert("Analysis Complete!", paste("All your data are now in ", input$dirLocation), "success")
         
