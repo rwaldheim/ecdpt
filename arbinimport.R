@@ -184,9 +184,9 @@ if (interactive()) {
             tmp_excel$Q.d <- as.numeric(tmp_excel$`Discharge_Capacity(Ah)` * (1000 / data$Mass[[1]][row]))
             tmp_excel$Q.c <- as.numeric(tmp_excel$`Charge_Capacity(Ah)`* (1000 / data$Mass[[1]][row]))
             tmp_excel$Cell <- row
+            
+            tmp_excel$CC <- tmp_excel$Q.d - tmp_excel$Q.c
           }
-          
-          tmp_excel$CC <- tmp_excel$Q.d - tmp_excel$Q.c
           
           cycle_facts <- data.frame()
           dQdVData <- data.frame()
@@ -274,23 +274,27 @@ if (interactive()) {
             ch_dch <- FALSE
           }
           
-          meanDCap <- aggregate(tmp_excel$`Q.d`, by=list(tmp_excel$`Cycle_Index`), last)
+          if (is.element("Mass", data)) {
+            meanDCap <- aggregate(tmp_excel$`Q.d`, by=list(tmp_excel$`Cycle_Index`), last)
+          } else {
+            meanDCap <- aggregate(tmp_excel$`Discharge_Capacity(Ah)`, by=list(tmp_excel$`Cycle_Index`), last)
+          }
           
           if (is.element("Discharge Capacity", input$gGraphs)) {
             png(paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row]," Discharge Capacity Plot.png", sep = ""))
             eol <- meanDCap[1,2] * 0.8
-            plot(meanDCap[,1], meanDCap[,2], main=paste("Discharge Capacity for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Discharge Capacity (mAh/g)")
+            plot(meanDCap[,1], meanDCap[,2], main=paste("Discharge Capacity for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", if (is.element("Mass", data)) ylab="Discharge Capacity (mAh/g)" else ylab="Discharge Capacity (Ah)")
             abline(h=eol, lty = "dotted")
             dev.off()
           }
            
-          if (is.element("Discharge Areal Capacity", input$gGraphs)) {
-            png(paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row]," Discharge Areal Capacity Plot.png", sep = ""))
-            eol <- ((meanDCap[1,2] * 1000) / data$Mass[[1]][row]) * 0.8
-            plot(meanDCap[,1], ((meanDCap[,2] * 1000) / data$Mass[[1]][row]), main=paste("Discharge Capacity for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Discharge Capacity (mAh/cm^2)")
-            abline(h=eol, lty = "dotted")
-            dev.off()
-          }
+          # if (is.element("Discharge Areal Capacity", input$gGraphs)) {
+          #   png(paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row]," Discharge Areal Capacity Plot.png", sep = ""))
+          #   eol <- ((meanDCap[1,2] * 1000) / data$Mass[[1]][row]) * 0.8
+          #   plot(meanDCap[,1], ((meanDCap[,2] * 1000) / data$Mass[[1]][row]), main=paste("Discharge Capacity for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Discharge Capacity (mAh/cm^2)")
+          #   abline(h=eol, lty = "dotted")
+          #   dev.off()
+          # }
             
           if (is.element("dQdV Graphs", input$gGraphs)) {
             png_files <- list.files(paste(input$dirLocation, data$sheet[row], "dQdV Plots", sep="/"), pattern = "*.png", full.names = TRUE)
