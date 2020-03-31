@@ -297,13 +297,13 @@ if (interactive()) {
             dev.off()
           }
            
-          # if (is.element("Discharge Areal Capacity", input$gGraphs)) {
-          #   png(paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row]," Discharge Areal Capacity Plot.png", sep = ""))
-          #   eol <- ((meanDCap[1,2] * 1000) / data$Mass[[1]][row]) * 0.8
-          #   plot(meanDCap[,1], ((meanDCap[,2] * 1000) / data$Mass[[1]][row]), main=paste("Discharge Capacity for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Discharge Capacity (mAh/cm^2)")
-          #   abline(h=eol, lty = "dotted")
-          #   dev.off()
-          # }
+          if (is.element("Discharge Areal Capacity", input$gGraphs)) {
+            png(paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row]," Discharge Areal Capacity Plot.png", sep = ""))
+            eol <- ((meanDCap[1,2] * 1000) / data$area[row]) * 0.8
+            plot(meanDCap[,1], ((meanDCap[,2] * 1000) / data$area[row]), main=paste("Discharge Capacity for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Discharge Capacity (mAh/cm^2)")
+            abline(h=eol, lty = "dotted")
+            dev.off()
+          }
             
           if (is.element("dQdV Graphs", input$gGraphs)) {
             png_files <- list.files(paste(input$dirLocation, data$sheet[row], "dQdV Plots", sep="/"), pattern = "*.png", full.names = TRUE)
