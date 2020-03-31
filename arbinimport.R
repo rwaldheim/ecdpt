@@ -83,6 +83,30 @@ if (interactive()) {
     
     excelModal <- modalDialog("Copy masses from Excel now.", footer = actionButton("excelMasses", "Import"))
     
+    graphbuilder <- modalDialog({
+      fluidPage(
+        useShinyjs(),
+        useShinyalert(),
+        
+        fluidRow(headerPanel("Arbin Import")),
+        
+        column(10,
+           plotOutput("outputPlot")
+        ),
+        
+        column(2,
+           fluidRow(
+             radioButtons("gGraphs", "Choose the Type of Graph:", choices = c("dQdV Graphs", "Voltage Profiles", "Voltage vs. Time", "Discharge Capacity", "Discharge Areal Capacity",
+                                                                                    "Total Discharge Capacity", "Average Voltage", "Delta Voltage"), inline = FALSE)
+           ),
+           
+           fluidRow(
+             actionButton("rGraph", "Render Graph", width = '100%', class = 'btn-success')
+           ),
+        )
+      )
+    }, size = "l", title = "Post-Processing Graph Builder")
+    
     observeEvent(input$load, {
       load(paste("history/", input$rerun[[1]], sep = ""))
       
@@ -377,7 +401,15 @@ if (interactive()) {
         }
         
         
-        shinyalert("Analysis Complete!", paste("All your data are now in ", input$dirLocation), "success")
+        shinyalert("Analysis Complete!", paste("All your data are now in ", input$dirLocation), 
+                   type = "success",
+                   showCancelButton = TRUE,
+                   cancelButtonText = "Exit",
+                   showConfirmButton = TRUE,
+                   confirmButtonText = "Graph Builder",
+                   callbackR = function(x) {
+                     showModal(graphbuilder)
+                   })
         
         remove(list=ls())
         
@@ -393,6 +425,12 @@ if (interactive()) {
         enable("peakFit")
       })
     }
+    
+    observeEvent(input$rGraph, {
+      output$outputPlot <- renderPlot({
+        plot(1:100, 1:100)
+      })
+    })
     
   }
   
