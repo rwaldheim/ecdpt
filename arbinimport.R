@@ -39,7 +39,7 @@ if (interactive()) {
       
       fluidRow(
         numericInput("lowV", "Lower Voltage", 2.8, min = 0, max = 5),
-        numericInput("highV", "Upper Voltage", 4.25, min = 0, max = 5)
+        numericInput("highV", "Upper Voltage", 4.25, min = 0, max = 5),
       ),
       
       fluidRow(
@@ -57,12 +57,17 @@ if (interactive()) {
       ),
       
       fluidRow(
-        checkboxGroupInput("gGraphs", "Generate Graphs?", choices = c("dQdV Graphs", "Voltage Profiles", "Voltage vs. Time", "Discharge Capacity", "Discharge Areal Capacity",
+        checkboxGroupInput("gGraphs", "Choose Graphs to Generate:", choices = c("dQdV Graphs", "Voltage Profiles", "Voltage vs. Time", "Discharge Capacity", "Discharge Areal Capacity",
                                                                       "Total Discharge Capacity", "Average Voltage"), inline = TRUE)
       ),
       
       fluidRow(
         radioButtons("peakFit", "Do Peak Fitting on  dQdV Graphs? (BETA)", choices = c("Yes" = "fit", "No" = "noGenGraphs"), inline = TRUE)
+      ),
+      
+      fluidRow(
+        numericInput("area", "Electrode Area [cm^2]", 2.74, min = 0),
+        numericInput("Active Material Loading in Limiting Electrode", "perActive [wt%]", 96, min = 0, max = 100),
       ),
     ),
     
