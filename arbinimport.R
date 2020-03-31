@@ -330,29 +330,28 @@ if (interactive()) {
           write.csv(dQdVData, file = paste(input$dirLocation, "/", data$sheet[row], "/", data$sheet[row], " dQdV Data.csv", sep = ""))
           write.csv(cycle_facts, file = paste(input$dirLocation, "/", data$sheet[row], "/", data$sheet[row], " Charge-Discharge Voltages.csv", sep = ""))
           
-          final <<- rbind(final, tmp_excel)
+          final <<- rbind(final, cbind(tmp_excel, data.frame("Cell" = rep(row, nrow(tmp_excel)))))
           
           incProgress(row/(nrow(data)+ 1))
         }
-      
-        if (is.element("Mass", data)) {
-        stats <- data.frame("Cell" = "Total", "Mean Discharge Capacity" = aggregate(final[["Q.d"]], list(final[["Cycle_Index"]]), mean), "Mean Charge Capacity" = aggregate(final[["Q.c"]], list(final[["Cycle_Index"]]), mean),
-                            "St. Error Discharge Capacity" = aggregate(final[["Q.d"]], list(final[["Cycle_Index"]]), se), "St. Error Charge Capacity" =
-                              aggregate(final[["Q.c"]], list(final[["Cycle_Index"]]),  se))
-        } else {
-          stats <- data.frame("Cell" = "Total", "Mean Discharge Capacity" = aggregate(final[["Discharge_Capacity(Ah)"]], list(final[["Cycle_Index"]]), mean), "Mean Charge Capacity" = aggregate(final[["Charge_Capacity(Ah)"]], list(final[["Cycle_Index"]]), mean),
-                              "St. Error Discharge Capacity" = aggregate(final[["Discharge_Capacity(Ah)"]], list(final[["Cycle_Index"]]), se), "St. Error Charge Capacity" =
-                                aggregate(final[["Charge_Capacity(Ah)"]], list(final[["Cycle_Index"]]),  se))
-        }
         
-        stats <- select(stats, Mean.Discharge.Capacity.x, Mean.Charge.Capacity.x, St..Error.Discharge.Capacity.x, St..Error.Charge.Capacity.x)
-        stats$Cycle <- 1:length(stats[,1])
+        stats <- final %>% group_by(Cell, Cycle_Index) %>% summarise_each(last)
+        
+        if (is.element("Mass", data)) {
+          totalDCap <- aggregate(stats$Q.d, list(stats$`Cycle_Index`), mean)
+          totalDCapSE <- aggregate(stats$Q.d, list(stats$`Cycle_Index`), se)
+        } else {
+          totalDCap <- aggregate(stats$`Discharge_Capacity(Ah)`, list(stats$`Cycle_Index`), mean)
+          totalDCapSE <- aggregate(stats$`Discharge_Capacity(Ah)`, list(stats$`Cycle_Index`), se)
+        }
+        totalCE <- aggregate(stats$CE, list(stats$`Cycle_Index`), mean)
+        totalCESE <- aggregate(stats$CE, list(stats$`Cycle_Index`), se)
 
         if (is.element("Total Discharge Capacity", input$gGraphs)) {
           png(paste(getwd(),"/", input$dirLocation, "/", data$name[row], "Total Discharge Capacity Plot.png", sep = ""))
-          eol <- stats[1,1] * 0.8
-          plot(stats$Cycle, stats$`Mean.Discharge.Capacity.x`, main=paste("Discharge Capacity for ",  input$dirLocation), xlab="Cycle", if (is.element("Mass", data)) ylab="Discharge Capacity (mAh/g)" else ylab="Discharge Capacity (Ah)")
-          # arrows(stats$Cycle, stats[,1] - stats[,3], stats$Cycle, stats[,1] + stats[,3], length=0.05, angle=90, code=3)
+          eol <- totalDCap[1,2] * 0.8
+          twoord.plot(totalDCap[,1], totalDCap[,2], totalDCap[,1], totalCE[,2], type = "p", main=paste("Discharge Capacity for ",  input$dirLocation), xlab="Cycle", ylab="Discharge Capacity (Ah)", rylab = "Coulombic efficiency (%)")
+          arrows(totalDCap[,1], totalDCap[,2] - totalDCapSE[,2], totalDCap[,1], totalDCap[,2] + totalDCapSE[,2], length=0.05, angle=90, code=3)
           abline(h=eol, lty = "dotted")
           dev.off()
         }
