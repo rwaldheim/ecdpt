@@ -126,7 +126,6 @@ if (interactive()) {
            fluidRow(
              actionButton("rGraph", "Render Graph", width = '100%', class = 'btn-primary')
            ),
-           
            fluidRow(
              actionButton("saveGraph", "Save Graph", width = '100%', class = 'btn-secondary')
            ),
@@ -421,11 +420,8 @@ if (interactive()) {
         
         if (!dir.exists("history/")) {
           dir.create("history/")
-          save(data, file = paste("history/", input$dirLocation, ".RData"))
-        } else {
-          save(data, file = paste("history/", input$dirLocation, ".RData"))
-        }
-        
+        } 
+        save(data, dQdVData, final, cycle_facts, file = paste("history/", input$dirLocation, ".RData"))
         
         shinyalert("Analysis Complete!", paste("All your data are now in ", input$dirLocation), 
                    type = "success",
