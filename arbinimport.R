@@ -70,7 +70,7 @@ if (interactive()) {
       ),
       
       fluidRow(
-        radioButtons("peakFit", "Do Peak Fitting on  dQdV Graphs? (BETA)", choices = c("Yes" = "fit", "No" = "noGenGraphs"), inline = TRUE)
+        radioButtons("peakFit", "Do Peak Fitting on  dQdV Graphs? (BETA)", choices = c("Yes" = "fit", "No" = "noGenGraphs"), selected = "No", inline = TRUE)
       ),
     ),
     
@@ -86,6 +86,7 @@ if (interactive()) {
     final <- data.frame()
     cycle_facts <- data.frame()
     tmp_data <- data.frame()
+    data_pull <- data.frame()
     
     excelModal <- modalDialog("Copy masses from Excel now.", footer = actionButton("excelMasses", "Import"))
     
@@ -97,15 +98,13 @@ if (interactive()) {
         tags$head(tags$style(".modal-dialog{width:80%}")),
         tags$head(tags$style(".modal-body{ min-height:1000px}")),
 
-        fluidRow(headerPanel("Arbin Import")),
-        
         column(10,
            plotOutput("outputPlot", height = "800px")
         ),
         
         column(2,
            fluidRow(
-             radioButtons("typeGraph", "Graph Type:", choices = c("dQdV Graphs", "Voltage Profiles", "Voltage vs. Time", "Discharge Capacity", "Discharge Areal Capacity"), inline = FALSE)
+             radioButtons("typeGraph", "Graph Type:", choices = c("dQdV Graphs", "Voltage Profiles", "Voltage vs. Time"), inline = FALSE)
            ),
            
            fluidRow(
@@ -113,7 +112,7 @@ if (interactive()) {
            ),
            
            fluidRow(
-             actionButton("loadCells", "Load Cells", width = '100%', class = 'btn-secondary')
+             actionButton("loadCells", "Load Cell", width = '100%', class = 'btn-secondary')
            ),
            
            fluidRow(
@@ -457,6 +456,7 @@ if (interactive()) {
     
     observeEvent(input$rGraph, {
       tmp_data <<- data.frame()
+      data_pull <- data.frame()
       
       output$outputPlot <- renderPlot({
         if (length(data$sheet) == 1) {
@@ -518,6 +518,7 @@ if (interactive()) {
     
     observeEvent(input$clearParams, {
       tmp_data <<- data.frame()
+      data_pull <<- data.frame()
     })
     
   }
