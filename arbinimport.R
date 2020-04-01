@@ -20,7 +20,12 @@ if (interactive()) {
   lowV <- reactiveVal(0)
   highV <- reactiveVal(0)
   dirLocation <- reactiveVal("")
-  numCycles <- reactiveValues(data = data.frame())
+  numCycles <- data.frame()
+  dQdVData <- data.frame()
+  final <- data.frame()
+  cycle_facts <- data.frame()
+  tmp_data <- data.frame()
+  data_pull <- data.frame()
   
   ui <- fluidPage(
     useShinyjs(),
@@ -65,6 +70,10 @@ if (interactive()) {
       ),
       
       fluidRow(
+        actionButton("graphBuilder", "Launch Graph Builder", width = '100%', class = "btn-primary")
+      ),
+      
+      fluidRow(
         checkboxGroupInput("gGraphs", "Choose Graphs to Generate:", choices = c("dQdV Graphs", "Voltage Profiles", "Voltage vs. Time", "Discharge Capacity", "Discharge Areal Capacity",
                                                                       "Total Discharge Capacity", "Average Voltage", "Delta Voltage"), inline = TRUE)
       ),
@@ -82,12 +91,6 @@ if (interactive()) {
   server <- function(input, output, session) {
     options(shiny.maxRequestSize=30*1024^2)
     
-    dQdVData <- data.frame()
-    final <- data.frame()
-    cycle_facts <- data.frame()
-    tmp_data <- data.frame()
-    data_pull <- data.frame()
-    
     excelModal <- modalDialog("Copy masses from Excel now.", footer = actionButton("excelMasses", "Import"))
     
     graphbuilder <- modalDialog({
@@ -103,6 +106,12 @@ if (interactive()) {
         ),
         
         column(2,
+           fluidRow(
+             fileInput("dataImport", "Optional: Import Previous R Environment", multiple = FALSE, accept = ".RData"),
+             actionButton("load", "Load"),
+             style = "border: 4px double red;"
+           ),
+           
            fluidRow(
              radioButtons("typeGraph", "Graph Type:", choices = c("dQdV Graphs", "Voltage Profiles", "Voltage vs. Time"), inline = FALSE)
            ),
@@ -137,6 +146,10 @@ if (interactive()) {
       load(paste("history/", input$rerun[[1]], sep = ""))
       
       data <<- filter(data, grepl('Channel', sheet))
+      numCycles <<- numCycles
+      dQdVData <<- dQdVData
+      final <<- final
+      cycle_facts <<- cycle_facts
       
       output$channels <- renderDataTable(data, editable = TRUE, options=list(columnDefs = list(list(visible=FALSE, targets=c(4)))), 
                                          colnames = c("File", "Sheet", "Mass (g)", "Filepath", "Limiting Electrode Area (cm^2)", "Active Material Loading (wt%)", 
@@ -389,7 +402,7 @@ if (interactive()) {
           write.csv(cycle_facts, file = paste(input$dirLocation, "/", data$sheet[row], "/", data$sheet[row], " Charge-Discharge Voltages.csv", sep = ""))
           
           final <<- rbind(final, cbind(tmp_excel, data.frame("Cell" = rep(row, nrow(tmp_excel)))))
-          numCycles$data <- rbind(numCycles$data, data.frame(sheet=data$sheet[row], cycles=nrow(cycle_facts)))
+          numCycles <- rbind(numCycles, data.frame(sheet=data$sheet[row], cycles=nrow(cycle_facts)))
           
           incProgress(row/(nrow(data)+ 1))
         }
@@ -421,7 +434,7 @@ if (interactive()) {
         if (!dir.exists("history/")) {
           dir.create("history/")
         } 
-        save(data, dQdVData, final, cycle_facts, file = paste("history/", input$dirLocation, ".RData"))
+        save(data, dQdVData, final, cycle_facts, numCycles, file = paste("history/", input$dirLocation, ".RData"))
         
         shinyalert("Analysis Complete!", paste("All your data are now in ", input$dirLocation), 
                    type = "success",
@@ -430,9 +443,10 @@ if (interactive()) {
                    showConfirmButton = TRUE,
                    confirmButtonText = "Graph Builder",
                    callbackR = function(x) {
-                     updateRadioButtons(session, "cells",
-                                        choices = data$sheet)
-                     showModal(graphbuilder)
+                     if (x) {
+                       updateRadioButtons(session, "cells", choices = data$sheet)
+                       showModal(graphbuilder)
+                     }
                    })
         
         remove(list=ls())
@@ -508,8 +522,7 @@ if (interactive()) {
     })
     
     observeEvent(input$loadCells, {
-      updateSelectInput(session, "renderCycles",
-                                choices = 1:numCycles$data[input$loadCells, 2])
+      updateSelectInput(session, "renderCycles", choices = 1:numCycles[input$loadCells, 2])
     })
     
     observeEvent(input$clearParams, {
@@ -517,6 +530,11 @@ if (interactive()) {
       data_pull <<- data.frame()
     })
     
+    observeEvent(input$graphBuilder, {
+      updateRadioButtons(session, "cells",
+                         choices = data$sheet)
+      showModal(graphbuilder)
+    })
   }
   
   shinyApp(ui, server)
