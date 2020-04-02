@@ -30,7 +30,7 @@ if (interactive()) {
   titleLabel <- ""
   xlabel <- ""
   ylabel <- ""
-  
+
   ui <- fluidPage(
     useShinyjs(),
     useShinyalert(),
@@ -110,6 +110,10 @@ if (interactive()) {
           sidebarPanel(
              fluidRow(
                radioButtons("typeGraph", "Graph Type:", choices = c("dQdV Graphs", "Voltage Profiles", "Voltage vs. Time"), inline = FALSE)
+             ),
+             
+             fluidRow(
+               radioButtons("plotStyle", "Plot Style:", choiceNames = c("Point", "Line"), choiceValues = c("p", "l"),  inline = TRUE)
              ),
              
              fluidRow(
@@ -510,11 +514,14 @@ if (interactive()) {
       tryCatch({
         tmp_data <<- tmp_data[tmp_data$cycle == sort(as.numeric(input$renderCycles)),]
         
-        plot(tmp_data$x, tmp_data$y, type = "b", col = tmp_data$cycle, main=paste(titleLabel, "for ",  input$dirLocation, sheetName), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+        # tmp_data$color <<- colorRampPalette(c("red", "blue"), length(input$renderCycles))[tmp_data$cycle / max(tmp_data$cycle)]
+        
+        plot(tmp_data$x, tmp_data$y, type = input$plotStyle, col = tmp_data$cycle, main=paste(titleLabel, "for ",  input$dirLocation, sheetName), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
         legend("bottomright", legend = sort(as.numeric(input$renderCycles)), col = sort(as.numeric(input$renderCycles)), pch = 19)
       },
       error=function(cond) {
         text(0.5, 0.5, labels = "You don messed up A-aron!\n (no data to plot)")
+        print(cond)
         return(NA)
       })
     })
