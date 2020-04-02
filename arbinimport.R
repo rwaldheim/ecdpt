@@ -465,6 +465,8 @@ if (interactive()) {
       switch(input$typeGraph,
              "dQdV Graphs" = {
                tmp_data <<- data.frame(x=dQdVData[dQdVData$cell == cellIndex,]$voltage, y=dQdVData[dQdVData$cell == cellIndex,]$dQdV, cycle=dQdVData[dQdVData$cell == cellIndex,]$cycle)
+               
+               titleLabel <- "dQdV Plot "
                xlabel <- "Voltage (V)"
                ylabel <- "dQdV (mAh/V)"
              },
@@ -477,6 +479,7 @@ if (interactive()) {
                  xlabel <- "Discharge Capacity (Ah)"
                }
                
+               titleLabel <- "Voltage Profile "
                ylabel <- "Voltage (V)"
              },
              "Voltage vs. Time" = {
@@ -489,6 +492,7 @@ if (interactive()) {
                
                tmp_data <<- tmp_data[tmp_data$y >= 0.01,]
                
+               titleLabel <- "Voltge vs. Time Plot "
                xlabel <- "Time (min)"
                ylabel <- "Voltage (V)"
              }, 
@@ -503,7 +507,7 @@ if (interactive()) {
       tryCatch({
         tmp_data <<- tmp_data[tmp_data$cycle == sort(as.numeric(input$renderCycles)),]
         
-        plot(tmp_data$x, tmp_data$y, type = "b", col = tmp_data$cycle, main=paste("Plot for ",  input$dirLocation, sheetName), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+        plot(tmp_data$x, tmp_data$y, type = "b", col = tmp_data$cycle, main=paste(titleLabel, "for ",  input$dirLocation, sheetName), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
         legend("bottomright", legend = sort(as.numeric(input$renderCycles)), col = sort(as.numeric(input$renderCycles)), pch = 19)
       },
       error=function(cond) {
