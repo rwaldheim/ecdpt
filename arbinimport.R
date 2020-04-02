@@ -538,7 +538,7 @@ if (interactive()) {
     
     observeEvent(input$saveGraph, {
       png(paste(input$fileName, ".png"))
-      plot(tmp_data$x, tmp_data$y, type = "b", col = tmp_data$cycle, main=paste(titleLabel, "for ",  input$dirLocation, input$cells), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+      plot(tmp_data$x, tmp_data$y, type = input$plotStyle, col = tmp_data$cycle, main=paste(titleLabel, "for ",  input$dirLocation, input$cells), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
       legend("bottomright", legend = sort(as.numeric(input$renderCycles)), col = sort(as.numeric(input$renderCycles)), pch = 19)
       dev.off()
       
