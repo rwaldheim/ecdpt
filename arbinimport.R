@@ -30,6 +30,7 @@ if (interactive()) {
   titleLabel <- ""
   xlabel <- ""
   ylabel <- ""
+  graphColor <- function() {}
 
   ui <- fluidPage(
     useShinyjs(),
@@ -113,7 +114,7 @@ if (interactive()) {
              ),
              
              fluidRow(
-               radioButtons("plotStyle", "Plot Style:", choiceNames = c("Point", "Line"), choiceValues = c("p", "l"),  inline = TRUE)
+               radioButtons("plotStyle", "Plot Style:", choiceNames = c("Point", "Line"), choiceValues = c("o", "l"),  inline = TRUE)
              ),
              
              fluidRow(
@@ -514,10 +515,23 @@ if (interactive()) {
       tryCatch({
         tmp_data <<- tmp_data[tmp_data$cycle == sort(as.numeric(input$renderCycles)),]
         
-        # tmp_data$color <<- colorRampPalette(c("red", "blue"), length(input$renderCycles))[tmp_data$cycle / max(tmp_data$cycle)]
+        graphColors <<- colorRamp(c("red", "blue"))
+        tmp_data$color <<- sapply(tmp_data$cycle, function(x) {match(x, input$renderCycles)})
         
-        plot(tmp_data$x, tmp_data$y, type = input$plotStyle, col = tmp_data$cycle, main=paste(titleLabel, "for ",  input$dirLocation, sheetName), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
-        legend("bottomright", legend = sort(as.numeric(input$renderCycles)), col = sort(as.numeric(input$renderCycles)), pch = 19)
+        if (input$plotStyle == "o") {
+          plot(tmp_data$x, tmp_data$y, type = "p", col = tmp_data$color, main=paste(titleLabel, "for ",  input$dirLocation, sheetName), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+          legend("bottomright", legend = sort(as.numeric(input$renderCycles)), col = unique(tmp_data$color), pch = 19)
+        } else if (input$plotStyle == "l") {
+          plot(tmp_data[tmp_data$cycle == as.numeric(input$renderCycles[1])]$x, tmp_data[tmp_data$cycle == as.numeric(input$renderCycles[1])]$y, type = "l", col = tmp_data[tmp_data$cycle == as.numeric(input$renderCycles[1])]$color, 
+               main=paste(titleLabel, "for ",  input$dirLocation, sheetName), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+          
+          for (i in 2:length(input$renderCycles)) {
+            newLine <- subset(tmp_data, tmp_data$color == i)
+            lines(newLine$x, newLine$y, col = newLine$color, main=paste(titleLabel, "for ",  input$dirLocation, sheetName), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+          }
+          
+          legend("bottomright", legend = sort(as.numeric(input$renderCycles)), col = unique(tmp_data$color), lty = 1)
+        }
       },
       error=function(cond) {
         text(0.5, 0.5, labels = "You don messed up A-aron!\n (no data to plot)")
