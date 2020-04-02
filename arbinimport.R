@@ -114,7 +114,7 @@ if (interactive()) {
              ),
              
              fluidRow(
-               radioButtons("plotStyle", "Plot Style:", choiceNames = c("Point", "Line"), choiceValues = c("o", "l"),  inline = TRUE)
+               radioButtons("plotStyle", "Plot Style:", choiceNames = c("Point", "Line", "Both"), choiceValues = c("p", "l", "o"),  inline = TRUE)
              ),
              
              fluidRow(
@@ -483,16 +483,19 @@ if (interactive()) {
              "Voltage Profiles" = {
                if (is.element("Mass", data)) {
                  tmp_data <<- data.frame(x=total[total$Cell == cellIndex,]$Q.d, y=total[total$Cell == cellIndex,]$`Voltage(V)`, cycle=total[total$Cell == cellIndex,]$`Cycle_Index`)
-                 xlabel <<- "Discharge Capacity (mAh/g)"
+                 tmp_data <<- rbind(tmp_data, data.frame(x=total[total$Cell == cellIndex,]$Q.c, y=total[total$Cell == cellIndex,]$`Voltage(V)`, cycle=total[total$Cell == cellIndex,]$`Cycle_Index`))
+                 xlabel <<- "Capacity (mAh/g)"
                } else {
                  tmp_data <<- data.frame(x=total[total$Cell == cellIndex,]$`Discharge_Capacity(Ah)`, y=total[total$Cell == cellIndex,]$`Voltage(V)`, cycle=total[total$Cell == cellIndex,]$`Cycle_Index`)
-                 xlabel <<- "Discharge Capacity (Ah)"
+                 tmp_data <<- rbind(tmp_data, data.frame(x=total[total$Cell == cellIndex,]$`Charge_Capacity(Ah)`, y=total[total$Cell == cellIndex,]$`Voltage(V)`, cycle=total[total$Cell == cellIndex,]$`Cycle_Index`))
+                 xlabel <<- "Capacity (Ah)"
                }
                
                titleLabel <<- "Voltage Profile "
                ylabel <<- "Voltage (V)"
              },
              "Voltage vs. Time" = {
+               tmp_data <<- data.frame()
                data_pull <<- data.frame(x=(total[total$Cell == cellIndex,]$`Test_Time(s)` / 60), y=total[total$Cell == cellIndex,]$`Voltage(V)`, cycle=total[total$Cell == cellIndex,]$`Cycle_Index`)
                
                normalTime <<- aggregate(data_pull$x, by=list(data_pull$cycle), normalizeTime)
@@ -518,19 +521,19 @@ if (interactive()) {
         graphColors <<- colorRamp(c("red", "blue"))
         tmp_data$color <<- sapply(tmp_data$cycle, function(x) {match(x, input$renderCycles)})
         
-        if (input$plotStyle == "o") {
-          plot(tmp_data$x, tmp_data$y, type = "p", col = tmp_data$color, main=paste(titleLabel, "for ",  input$dirLocation, sheetName), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
-          legend("bottomright", legend = sort(as.numeric(input$renderCycles)), col = unique(tmp_data$color), pch = 19)
+        if (input$plotStyle == "o" | input$plotStyle == "p") {
+          plot(tmp_data$x, tmp_data$y, type = input$plotStyle, col = tmp_data$color, main=paste(titleLabel, "for ",  input$dirLocation, sheetName), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+          legend("bottomright", legend = sort(as.numeric(input$renderCycles)), col = unique(tmp_data$color), pch = 19, title = "Cycle")
         } else if (input$plotStyle == "l") {
-          plot(tmp_data[tmp_data$cycle == as.numeric(input$renderCycles[1])]$x, tmp_data[tmp_data$cycle == as.numeric(input$renderCycles[1])]$y, type = "l", col = tmp_data[tmp_data$cycle == as.numeric(input$renderCycles[1])]$color, 
-               main=paste(titleLabel, "for ",  input$dirLocation, sheetName), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+          newLine <- subset(tmp_data, tmp_data$color == 1)
+          plot(newLine$x, newLine$y, type = "l", col = newLine$color, main=paste(titleLabel, "for ",  input$dirLocation, sheetName), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
           
           for (i in 2:length(input$renderCycles)) {
             newLine <- subset(tmp_data, tmp_data$color == i)
             lines(newLine$x, newLine$y, col = newLine$color, main=paste(titleLabel, "for ",  input$dirLocation, sheetName), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
           }
           
-          legend("bottomright", legend = sort(as.numeric(input$renderCycles)), col = unique(tmp_data$color), lty = 1)
+          legend("bottomright", legend = sort(as.numeric(input$renderCycles)), col = unique(tmp_data$color), lty = 1, title = "Cycle")
         }
       },
       error=function(cond) {
@@ -552,8 +555,20 @@ if (interactive()) {
     
     observeEvent(input$saveGraph, {
       png(paste(input$fileName, ".png"))
-      plot(tmp_data$x, tmp_data$y, type = input$plotStyle, col = tmp_data$cycle, main=paste(titleLabel, "for ",  input$dirLocation, input$cells), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
-      legend("bottomright", legend = sort(as.numeric(input$renderCycles)), col = sort(as.numeric(input$renderCycles)), pch = 19)
+      if (input$plotStyle == "o") {
+        plot(tmp_data$x, tmp_data$y, type = "p", col = tmp_data$color, main=paste(titleLabel, "for ",  input$dirLocation, input$cells), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+        legend("bottomright", legend = sort(as.numeric(input$renderCycles)), col = unique(tmp_data$color), pch = 19, title = "Cycle")
+      } else if (input$plotStyle == "l") {
+        newLine <- subset(tmp_data, tmp_data$color == 1)
+        plot(newLine$x, newLine$y, type = "l", col = newLine$color, main=paste(titleLabel, "for ",  input$dirLocation, input$cells), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+        
+        for (i in 2:length(input$renderCycles)) {
+          newLine <- subset(tmp_data, tmp_data$color == i)
+          lines(newLine$x, newLine$y, col = newLine$color, main=paste(titleLabel, "for ",  input$dirLocation, input$cells), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+        }
+        
+        legend("bottomright", legend = sort(as.numeric(input$renderCycles)), col = unique(tmp_data$color), lty = 1, title = "Cycle")
+      }
       dev.off()
       
       shinyalert("Success!", paste("Plot saved in working directory:\n", getwd()), "success")
