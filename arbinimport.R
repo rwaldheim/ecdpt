@@ -20,7 +20,18 @@ if (interactive()) {
   lowV <- reactiveVal(0)
   highV <- reactiveVal(0)
   dirLocation <- reactiveVal("")
-  
+  numCycles <- data.frame()
+  dQdVData <- data.frame()
+  total <- data.frame()
+  cycle_facts <- data.frame()
+  tmp_data <- data.frame()
+  data_pull <- data.frame()
+  tmp_cycles <- vector()
+  titleLabel <- ""
+  xlabel <- ""
+  ylabel <- ""
+  graphColor <- function() {}
+
   ui <- fluidPage(
     useShinyjs(),
     useShinyalert(),
@@ -64,12 +75,16 @@ if (interactive()) {
       ),
       
       fluidRow(
+        actionButton("graphBuilder", "Launch Graph Builder", width = '100%', class = "btn-primary")
+      ),
+      
+      fluidRow(
         checkboxGroupInput("gGraphs", "Choose Graphs to Generate:", choices = c("dQdV Graphs", "Voltage Profiles", "Voltage vs. Time", "Discharge Capacity", "Discharge Areal Capacity",
                                                                       "Total Discharge Capacity", "Average Voltage", "Delta Voltage"), inline = TRUE)
       ),
       
       fluidRow(
-        radioButtons("peakFit", "Do Peak Fitting on  dQdV Graphs? (BETA)", choices = c("Yes" = "fit", "No" = "noGenGraphs"), inline = TRUE)
+        radioButtons("peakFit", "Do Peak Fitting on  dQdV Graphs? (BETA)", choices = c("Yes" = "fit", "No" = "noGenGraphs"), selected = "No", inline = TRUE)
       ),
     ),
     
@@ -78,15 +93,60 @@ if (interactive()) {
     )
   )
   
-  server <- function(input, output) {
+  server <- function(input, output, session) {
     options(shiny.maxRequestSize=30*1024^2)
     
     excelModal <- modalDialog("Copy masses from Excel now.", footer = actionButton("excelMasses", "Import"))
+    
+    graphbuilder <- modalDialog({
+      fluidPage(
+        useShinyjs(),
+        useShinyalert(),
+        
+        tags$head(tags$style(".modal-dialog{width:80%}")),
+        tags$head(tags$style(".modal-body{ min-height:1000px}")),
+        
+        sidebarLayout(
+        
+          sidebarPanel(
+             fluidRow(
+               radioButtons("typeGraph", "Graph Type:", choices = c("dQdV Graphs", "Voltage Profiles", "Voltage vs. Time"), inline = FALSE)
+             ),
+             
+             fluidRow(
+               radioButtons("plotStyle", "Plot Style:", choiceNames = c("Point", "Line", "Both"), choiceValues = c("p", "l", "o"),  inline = TRUE)
+             ),
+             
+             fluidRow(
+               radioButtons("cells", "Cell to Analyze:", choices = 1, inline = FALSE)
+             ),
+             
+             fluidRow(
+               selectInput("renderCycles", "Cycles of Interest:", choices = 1, multiple = TRUE)
+             ),
+             
+             fluidRow(
+               textInput("fileName", "Name of graph file:"),
+               actionButton("saveGraph", "Save Graph", width = '100%', class = 'btn-primary'),
+               style = "border: 4px double red;"
+             ),
+          ),
+          
+          mainPanel(
+                 plotOutput("outputPlot", height = "800px")
+          )
+        )
+      )
+    }, size = "l", title = "Post-Processing Graph Builder")
     
     observeEvent(input$load, {
       load(paste("history/", input$rerun[[1]], sep = ""))
       
       data <<- filter(data, grepl('Channel', sheet))
+      numCycles <<- numCycles
+      dQdVData <<- dQdVData
+      total <<- total
+      cycle_facts <<- cycle_facts
       
       output$channels <- renderDataTable(data, editable = TRUE, options=list(columnDefs = list(list(visible=FALSE, targets=c(4)))), 
                                          colnames = c("File", "Sheet", "Mass (g)", "Filepath", "Limiting Electrode Area (cm^2)", "Active Material Loading (wt%)", 
@@ -206,8 +266,6 @@ if (interactive()) {
           }
           tmp_excel$CE[is.infinite(tmp_excel$CE)|is.nan(tmp_excel$CE)|tmp_excel$CE > 200] <- 0;
           
-          cycle_facts <- data.frame()
-          dQdVData <- data.frame()
           cycles <- split(tmp_excel, tmp_excel$Cycle_Index)
           prev_c <- 0
           ch_dch <- FALSE
@@ -223,16 +281,16 @@ if (interactive()) {
                 if (step$'Current(A)'[[1]] > 0) {
                   chV <- (1 / (tail(step$`Charge_Capacity(Ah)`,1) - step$`Charge_Capacity(Ah)`[[1]])) * trapz(step$`Charge_Capacity(Ah)`, step$`Voltage(V)`)
                   dQCdV <- diff(step$`Charge_Capacity(Ah)`)/diff(step$`Voltage(V)`)
-                  dQdVData <- rbind(dQdVData, data.frame(cycle=rep(i, length(dQCdV)+1), c_d=rep(0, length(dQCdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQCdV), F_L=rep(0,length(dQCdV)+1)))
+                  dQdVData <<- rbind(dQdVData, data.frame(cycle=rep(i, length(dQCdV)+1), cell = rep(row, length(dQCdV)+1), c_d=rep(0, length(dQCdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQCdV), F_L=rep(0,length(dQCdV)+1)))
                 } else {
                   dchV <- (1 / (tail(step$`Discharge_Capacity(Ah)`,1) - step$`Discharge_Capacity(Ah)`[[1]])) * trapz(step$`Discharge_Capacity(Ah)`, step$`Voltage(V)`)
                   dQDdV <- diff(step$`Discharge_Capacity(Ah)`)/diff(step$`Voltage(V)`)
                   
                   if (abs(prev_c - step$`Current(A)`[[1]]) > 0.0005) {
-                    dQdVData <- rbind(dQdVData, data.frame(cycle=rep(i, length(dQDdV)+1),  c_d=rep(1, length(dQDdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQDdV), F_L=rep(1,length(dQDdV)+1)))
+                    dQdVData <<- rbind(dQdVData, data.frame(cycle=rep(i, length(dQDdV)+1), cell = rep(row, length(dQDdV)+1), c_d=rep(1, length(dQDdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQDdV), F_L=rep(1,length(dQDdV)+1)))
                     prev_c = step$`Current(A)`[[1]]
                   } else {
-                    dQdVData <- rbind(dQdVData, data.frame(cycle=rep(i, length(dQDdV)+1),  c_d=rep(1, length(dQDdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQDdV), F_L=rep(0, length(dQDdV)+1)))
+                    dQdVData <<- rbind(dQdVData, data.frame(cycle=rep(i, length(dQDdV)+1), cell = rep(row, length(dQDdV)+1), c_d=rep(1, length(dQDdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQDdV), F_L=rep(0, length(dQDdV)+1)))
                   }
                 }
               }
@@ -282,12 +340,12 @@ if (interactive()) {
             
             if (is.element("Voltage vs. Time", input$gGraphs)) {
               png(paste(input$dirLocation, "/", data$sheet[row], "/", "Voltage v Time/", data$name[row], data$sheet[row], "Cycle ", toString(i)," Voltage Profile Plot.png", sep = ""))
-              plot((tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Test_Time(s)` - tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Test_Time(s)`[[1]]) / 60, (tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)` - tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)`[[1]]) / 60, type="l", main=paste("Voltage vs. Time for ",  input$dirLocation, data$sheet[row]), xlab="Time (min)", ylab="Voltage (V)")
+              plot((tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Test_Time(s)` - tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Test_Time(s)`[[1]]) / 60, tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)`, type="l", main=paste("Voltage vs. Time for ",  input$dirLocation, data$sheet[row]), xlab="Time (min)", ylab="Voltage (V)")
               dev.off()
             }
             
             avgV <- (dchV + chV) / 2
-            cycle_facts <- rbind(cycle_facts, data.frame(cycle=i, chV=chV, dchV=dchV, avgV=avgV, dV=chV-dchV))
+            cycle_facts <<- rbind(cycle_facts, data.frame(cycle=i, cell=row, chV=chV, dchV=dchV, avgV=avgV, dV=chV-dchV))
             i <- i + 1
             ch_dch <- FALSE
           }
@@ -340,12 +398,15 @@ if (interactive()) {
           write.csv(dQdVData, file = paste(input$dirLocation, "/", data$sheet[row], "/", data$sheet[row], " dQdV Data.csv", sep = ""))
           write.csv(cycle_facts, file = paste(input$dirLocation, "/", data$sheet[row], "/", data$sheet[row], " Charge-Discharge Voltages.csv", sep = ""))
           
-          final <<- rbind(final, cbind(tmp_excel, data.frame("Cell" = rep(row, nrow(tmp_excel)))))
+          final <- rbind(final, cbind(tmp_excel, data.frame("Cell" = rep(row, nrow(tmp_excel)))))
+          numCycles <<- rbind(numCycles, data.frame(sheet=data$sheet[row], cycles=nrow(cycle_facts[cycle_facts$cell == row,])))
           
           incProgress(row/(nrow(data)+ 1))
         }
         
         stats <- final %>% group_by(Cell, Cycle_Index) %>% summarise_each(last)
+        
+        total <<- final
         
         if (is.element("Mass", data)) {
           totalDCap <- aggregate(stats$Q.d, list(stats$`Cycle_Index`), mean)
@@ -371,13 +432,21 @@ if (interactive()) {
         
         if (!dir.exists("history/")) {
           dir.create("history/")
-          save(data, file = paste("history/", input$dirLocation, ".RData"))
-        } else {
-          save(data, file = paste("history/", input$dirLocation, ".RData"))
-        }
+        } 
+        save(data, dQdVData, total, cycle_facts, numCycles, file = paste("history/", input$dirLocation, ".RData"))
         
-        
-        shinyalert("Analysis Complete!", paste("All your data are now in ", input$dirLocation), "success")
+        shinyalert("Analysis Complete!", paste("All your data are now in ", input$dirLocation), 
+                   type = "success",
+                   showCancelButton = TRUE,
+                   cancelButtonText = "Exit",
+                   showConfirmButton = TRUE,
+                   confirmButtonText = "Graph Builder",
+                   callbackR = function(x) {
+                     if (x) {
+                       updateRadioButtons(session, "cells", choices = data$sheet)
+                       showModal(graphbuilder)
+                     }
+                   })
         
         remove(list=ls())
         
@@ -394,6 +463,116 @@ if (interactive()) {
       })
     }
     
+    output$outputPlot <- renderPlot({
+      sheetName <- input$cells
+      
+      normalizeTime <- function(x) {
+        return(x - x[[1]])
+      }
+      
+      cellIndex <- match(input$cells, numCycles$sheet)
+      
+      switch(input$typeGraph,
+             "dQdV Graphs" = {
+               tmp_data <<- data.frame(x=dQdVData[dQdVData$cell == cellIndex,]$voltage, y=dQdVData[dQdVData$cell == cellIndex,]$dQdV, cycle=dQdVData[dQdVData$cell == cellIndex,]$cycle)
+               
+               titleLabel <<- "dQdV Plot "
+               xlabel <<- "Voltage (V)"
+               ylabel <<- "dQdV (mAh/V)"
+             },
+             "Voltage Profiles" = {
+               if (is.element("Mass", data)) {
+                 tmp_data <<- data.frame(x=total[total$Cell == cellIndex,]$Q.d, y=total[total$Cell == cellIndex,]$`Voltage(V)`, cycle=total[total$Cell == cellIndex,]$`Cycle_Index`)
+                 tmp_data <<- rbind(tmp_data, data.frame(x=total[total$Cell == cellIndex,]$Q.c, y=total[total$Cell == cellIndex,]$`Voltage(V)`, cycle=total[total$Cell == cellIndex,]$`Cycle_Index`))
+                 xlabel <<- "Capacity (mAh/g)"
+               } else {
+                 tmp_data <<- data.frame(x=total[total$Cell == cellIndex,]$`Discharge_Capacity(Ah)`, y=total[total$Cell == cellIndex,]$`Voltage(V)`, cycle=total[total$Cell == cellIndex,]$`Cycle_Index`)
+                 tmp_data <<- rbind(tmp_data, data.frame(x=total[total$Cell == cellIndex,]$`Charge_Capacity(Ah)`, y=total[total$Cell == cellIndex,]$`Voltage(V)`, cycle=total[total$Cell == cellIndex,]$`Cycle_Index`))
+                 xlabel <<- "Capacity (Ah)"
+               }
+               
+               titleLabel <<- "Voltage Profile "
+               ylabel <<- "Voltage (V)"
+             },
+             "Voltage vs. Time" = {
+               tmp_data <<- data.frame()
+               data_pull <<- data.frame(x=(total[total$Cell == cellIndex,]$`Test_Time(s)` / 60), y=total[total$Cell == cellIndex,]$`Voltage(V)`, cycle=total[total$Cell == cellIndex,]$`Cycle_Index`)
+               
+               normalTime <<- aggregate(data_pull$x, by=list(data_pull$cycle), normalizeTime)
+               for (cycle in 1:nrow(normalTime)) {
+                 tmp_data <<- rbind(tmp_data, data.frame(x=normalTime$x[[cycle]],y=data_pull[data_pull$cycle == cycle,]$y, cycle=rep(cycle, length(normalTime$x[[cycle]]))))
+               }
+               
+               tmp_data <<- tmp_data[tmp_data$y >= 0.01,]
+               
+               titleLabel <<- "Voltge vs. Time Plot "
+               xlabel <<- "Time (min)"
+               ylabel <<- "Voltage (V)"
+             }, 
+      )
+      
+      tmp_data <<- tmp_data[is.finite(tmp_data$x),]
+      tmp_data <<- tmp_data[is.finite(tmp_data$y),]
+      tmp_data <<- tmp_data[is.finite(tmp_data$cycle),]
+      
+      tryCatch({
+        tmp_data <<- tmp_data[tmp_data$cycle == sort(as.numeric(input$renderCycles)),]
+        
+        graphColors <<- colorRamp(c("red", "blue"))
+        tmp_data$color <<- sapply(tmp_data$cycle, function(x) {match(x, input$renderCycles)})
+        
+        if (input$plotStyle == "o" | input$plotStyle == "p") {
+          plot(tmp_data$x, tmp_data$y, type = input$plotStyle, col = tmp_data$color, main=paste(titleLabel, "for ",  input$dirLocation, sheetName), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+          legend("bottomright", legend = sort(as.numeric(input$renderCycles)), col = unique(tmp_data$color), pch = 19, title = "Cycle")
+        } else if (input$plotStyle == "l") {
+          newLine <- subset(tmp_data, tmp_data$color == 1)
+          plot(newLine$x, newLine$y, type = "l", col = newLine$color, main=paste(titleLabel, "for ",  input$dirLocation, sheetName), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+          
+          for (i in 2:length(input$renderCycles)) {
+            newLine <- subset(tmp_data, tmp_data$color == i)
+            lines(newLine$x, newLine$y, col = newLine$color, main=paste(titleLabel, "for ",  input$dirLocation, sheetName), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+          }
+          
+          legend("bottomright", legend = sort(as.numeric(input$renderCycles)), col = unique(tmp_data$color), lty = 1, title = "Cycle")
+        }
+      },
+      error=function(cond) {
+        text(0.5, 0.5, labels = "You don messed up A-aron!\n (no data to plot)")
+        print(cond)
+        return(NA)
+      })
+    })
+    
+    observeEvent(input$cells, {
+      tmp_cycles <<- input$renderCycles
+      updateSelectInput(session, "renderCycles", choices = 1:numCycles[numCycles$sheet == input$cells,]$cycles, selected = tmp_cycles)
+    })
+    
+    observeEvent(input$graphBuilder, {
+      updateRadioButtons(session, "cells", choices = data$sheet)
+      showModal(graphbuilder)
+    })
+    
+    observeEvent(input$saveGraph, {
+      png(paste(input$fileName, ".png"))
+      if (input$plotStyle == "o") {
+        plot(tmp_data$x, tmp_data$y, type = "p", col = tmp_data$color, main=paste(titleLabel, "for ",  input$dirLocation, input$cells), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+        legend("bottomright", legend = sort(as.numeric(input$renderCycles)), col = unique(tmp_data$color), pch = 19, title = "Cycle")
+      } else if (input$plotStyle == "l") {
+        newLine <- subset(tmp_data, tmp_data$color == 1)
+        plot(newLine$x, newLine$y, type = "l", col = newLine$color, main=paste(titleLabel, "for ",  input$dirLocation, input$cells), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+        
+        for (i in 2:length(input$renderCycles)) {
+          newLine <- subset(tmp_data, tmp_data$color == i)
+          lines(newLine$x, newLine$y, col = newLine$color, main=paste(titleLabel, "for ",  input$dirLocation, input$cells), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+        }
+        
+        legend("bottomright", legend = sort(as.numeric(input$renderCycles)), col = unique(tmp_data$color), lty = 1, title = "Cycle")
+      }
+      dev.off()
+      
+      shinyalert("Success!", paste("Plot saved in working directory:\n", getwd()), "success")
+    })
   }
   
   shinyApp(ui, server)
