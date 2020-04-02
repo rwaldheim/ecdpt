@@ -27,6 +27,9 @@ if (interactive()) {
   tmp_data <- data.frame()
   data_pull <- data.frame()
   tmp_cycles <- vector()
+  titleLabel <- ""
+  xlabel <- ""
+  ylabel <- ""
   
   ui <- fluidPage(
     useShinyjs(),
@@ -118,7 +121,9 @@ if (interactive()) {
              ),
              
              fluidRow(
-               actionButton("saveGraph", "Save Graph", width = '100%', class = 'btn-primary')
+               textInput("fileName", "Name of graph file:"),
+               actionButton("saveGraph", "Save Graph", width = '100%', class = 'btn-primary'),
+               style = "border: 4px double red;"
              ),
           ),
           
@@ -466,21 +471,21 @@ if (interactive()) {
              "dQdV Graphs" = {
                tmp_data <<- data.frame(x=dQdVData[dQdVData$cell == cellIndex,]$voltage, y=dQdVData[dQdVData$cell == cellIndex,]$dQdV, cycle=dQdVData[dQdVData$cell == cellIndex,]$cycle)
                
-               titleLabel <- "dQdV Plot "
-               xlabel <- "Voltage (V)"
-               ylabel <- "dQdV (mAh/V)"
+               titleLabel <<- "dQdV Plot "
+               xlabel <<- "Voltage (V)"
+               ylabel <<- "dQdV (mAh/V)"
              },
              "Voltage Profiles" = {
                if (is.element("Mass", data)) {
                  tmp_data <<- data.frame(x=total[total$Cell == cellIndex,]$Q.d, y=total[total$Cell == cellIndex,]$`Voltage(V)`, cycle=total[total$Cell == cellIndex,]$`Cycle_Index`)
-                 xlabel <- "Discharge Capacity (mAh/g)"
+                 xlabel <<- "Discharge Capacity (mAh/g)"
                } else {
                  tmp_data <<- data.frame(x=total[total$Cell == cellIndex,]$`Discharge_Capacity(Ah)`, y=total[total$Cell == cellIndex,]$`Voltage(V)`, cycle=total[total$Cell == cellIndex,]$`Cycle_Index`)
-                 xlabel <- "Discharge Capacity (Ah)"
+                 xlabel <<- "Discharge Capacity (Ah)"
                }
                
-               titleLabel <- "Voltage Profile "
-               ylabel <- "Voltage (V)"
+               titleLabel <<- "Voltage Profile "
+               ylabel <<- "Voltage (V)"
              },
              "Voltage vs. Time" = {
                data_pull <<- data.frame(x=(total[total$Cell == cellIndex,]$`Test_Time(s)` / 60), y=total[total$Cell == cellIndex,]$`Voltage(V)`, cycle=total[total$Cell == cellIndex,]$`Cycle_Index`)
@@ -492,13 +497,11 @@ if (interactive()) {
                
                tmp_data <<- tmp_data[tmp_data$y >= 0.01,]
                
-               titleLabel <- "Voltge vs. Time Plot "
-               xlabel <- "Time (min)"
-               ylabel <- "Voltage (V)"
+               titleLabel <<- "Voltge vs. Time Plot "
+               xlabel <<- "Time (min)"
+               ylabel <<- "Voltage (V)"
              }, 
       )
-      
-      colors <- colorRampPalette(c("red", "blue"))
       
       tmp_data <<- tmp_data[is.finite(tmp_data$x),]
       tmp_data <<- tmp_data[is.finite(tmp_data$y),]
@@ -524,6 +527,15 @@ if (interactive()) {
     observeEvent(input$graphBuilder, {
       updateRadioButtons(session, "cells", choices = data$sheet)
       showModal(graphbuilder)
+    })
+    
+    observeEvent(input$saveGraph, {
+      png(paste(input$fileName, ".png"))
+      plot(tmp_data$x, tmp_data$y, type = "b", col = tmp_data$cycle, main=paste(titleLabel, "for ",  input$dirLocation, input$cells), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+      legend("bottomright", legend = sort(as.numeric(input$renderCycles)), col = sort(as.numeric(input$renderCycles)), pch = 19)
+      dev.off()
+      
+      shinyalert("Success!", paste("Plot saved in working directory:\n", getwd()), "success")
     })
   }
   
