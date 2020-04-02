@@ -118,11 +118,7 @@ if (interactive()) {
              ),
              
              fluidRow(
-               actionButton("rGraph", "Render Graph", width = '100%', class = 'btn-primary')
-             ),
-             
-             fluidRow(
-               actionButton("saveGraph", "Save Graph", width = '100%', class = 'btn-secondary')
+               actionButton("saveGraph", "Save Graph", width = '100%', class = 'btn-primary')
              ),
           ),
           
@@ -477,7 +473,7 @@ if (interactive()) {
                  tmp_data <<- data.frame(x=total[total$Cell == cellIndex,]$Q.d, y=total[total$Cell == cellIndex,]$`Voltage(V)`, cycle=total[total$Cell == cellIndex,]$`Cycle_Index`)
                  xlabel <- "Discharge Capacity (mAh/g)"
                } else {
-                 tmp_data <- data.frame(x=total[total$Cell == cellIndex,]$`Discharge_Capacity(Ah)`, y=total[total$Cell == cellIndex,]$`Voltage(V)`, cycle=total[total$Cell == cellIndex,]$`Cycle_Index`)
+                 tmp_data <<- data.frame(x=total[total$Cell == cellIndex,]$`Discharge_Capacity(Ah)`, y=total[total$Cell == cellIndex,]$`Voltage(V)`, cycle=total[total$Cell == cellIndex,]$`Cycle_Index`)
                  xlabel <- "Discharge Capacity (Ah)"
                }
                
@@ -491,6 +487,8 @@ if (interactive()) {
                  tmp_data <<- rbind(tmp_data, data.frame(x=normalTime$x[[cycle]],y=data_pull[data_pull$cycle == cycle,]$y, cycle=rep(cycle, length(normalTime$x[[cycle]]))))
                }
                
+               tmp_data <<- tmp_data[tmp_data$y >= 0.01,]
+               
                xlabel <- "Time (min)"
                ylabel <- "Voltage (V)"
              }, 
@@ -503,11 +501,13 @@ if (interactive()) {
       tmp_data <<- tmp_data[is.finite(tmp_data$cycle),]
       
       tryCatch({
-        plot(tmp_data[tmp_data$cycle == as.numeric(input$renderCycles),]$x, tmp_data[tmp_data$cycle == as.numeric(input$renderCycles),]$y, col = colors(length(input$renderCycles))[tmp_data$cycle], 
-             main=paste("Plot for ",  input$dirLocation, sheetName), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
-        legend("bottomright", legend = as.numeric(input$renderCycles), col = colors(length(input$renderCycles)), pch = 19)
+        tmp_data <<- tmp_data[tmp_data$cycle == sort(as.numeric(input$renderCycles)),]
+        
+        plot(tmp_data$x, tmp_data$y, type = "b", col = tmp_data$cycle, main=paste("Plot for ",  input$dirLocation, sheetName), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+        legend("bottomright", legend = sort(as.numeric(input$renderCycles)), col = sort(as.numeric(input$renderCycles)), pch = 19)
       },
       error=function(cond) {
+        text(0.5, 0.5, labels = "You don messed up A-aron!\n (no data to plot)")
         return(NA)
       })
     })
