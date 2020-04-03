@@ -250,12 +250,11 @@ if (interactive()) {
           if (is.element("Voltage vs. Time", input$gGraphs)) dir.create(paste(input$dirLocation, data$sheet[row], "Voltage v Time", sep = "/"))
           if (input$peakFit == "fit") dir.create(paste(input$dirLocation, data$sheet[row], "dQdV Peak Fitting", sep = "/"))
           
-          if (is.element("Mass", data)) {
+          if ("Mass" %in% names(data)) {
             ylabel <- "Discharge Capacity (Ah)"
             
             tmp_excel$Q.d <- as.numeric(tmp_excel$`Discharge_Capacity(Ah)` * (1000 / data$Mass[[1]][row]))
             tmp_excel$Q.c <- as.numeric(tmp_excel$`Charge_Capacity(Ah)`* (1000 / data$Mass[[1]][row]))
-            tmp_excel$Cell <- row
             
             tmp_excel$CC <- tmp_excel$Q.d - tmp_excel$Q.c
             tmp_excel$CE <- (tmp_excel$Q.d / tmp_excel$Q.c) * 100
@@ -264,6 +263,7 @@ if (interactive()) {
             
             tmp_excel$CE <- (tmp_excel$`Discharge_Capacity(Ah)` / tmp_excel$`Charge_Capacity(Ah)`) * 100
           }
+          tmp_excel$Cell <- row
           tmp_excel$CE[is.infinite(tmp_excel$CE)|is.nan(tmp_excel$CE)|tmp_excel$CE > 200] <- 0;
           
           cycles <- split(tmp_excel, tmp_excel$Cycle_Index)
@@ -307,7 +307,7 @@ if (interactive()) {
                 
               if (is.element("Voltage Profiles", input$gGraphs)) {
                 png(paste(input$dirLocation, "/", data$sheet[row], "/", "Voltage Profiles/", data$name[row], data$sheet[row], "Cycle ", toString(i)," Voltage Profile Plot.png", sep = ""))
-                if (is.element("Mass", data)) {
+                if ("Mass" %in% names(data)) {
                   plot(tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Q.d`, tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)`, type="l", main=paste("Voltage Profile for ",  input$dirLocation, data$sheet[row]), xlab= ylabel, ylab="Voltage (V)")
                 } else {
                   plot(tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Discharge_Capacity(Ah)`, tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)`, type="l", main=paste("Voltage Profile for ",  input$dirLocation, data$sheet[row]), xlab="Discharge Capacity (Ah)", ylab="Voltage (V)")
@@ -350,7 +350,7 @@ if (interactive()) {
             ch_dch <- FALSE
           }
           
-          if (is.element("Mass", data)) {
+          if ("Mass" %in% names(data)) {
             meanDCap <- aggregate(tmp_excel$`Q.d`, by=list(tmp_excel$`Cycle_Index`), last)
             meanCE <- aggregate(tmp_excel$CE, by=list(tmp_excel$`Cycle_Index`), last)
           } else {
@@ -398,7 +398,7 @@ if (interactive()) {
           write.csv(dQdVData, file = paste(input$dirLocation, "/", data$sheet[row], "/", data$sheet[row], " dQdV Data.csv", sep = ""))
           write.csv(cycle_facts, file = paste(input$dirLocation, "/", data$sheet[row], "/", data$sheet[row], " Charge-Discharge Voltages.csv", sep = ""))
           
-          final <- rbind(final, cbind(tmp_excel, data.frame("Cell" = rep(row, nrow(tmp_excel)))))
+          final <- rbind(final, tmp_excel)
           numCycles <<- rbind(numCycles, data.frame(sheet=data$sheet[row], cycles=nrow(cycle_facts[cycle_facts$cell == row,])))
           
           incProgress(row/(nrow(data)+ 1))
@@ -408,7 +408,7 @@ if (interactive()) {
         
         total <<- final
         
-        if (is.element("Mass", data)) {
+        if ("Mass" %in% names(data)) {
           totalDCap <- aggregate(stats$Q.d, list(stats$`Cycle_Index`), mean)
           totalDCapSE <- aggregate(stats$Q.d, list(stats$`Cycle_Index`), se)
         } else {
@@ -481,7 +481,7 @@ if (interactive()) {
                ylabel <<- "dQdV (mAh/V)"
              },
              "Voltage Profiles" = {
-               if (is.element("Mass", data)) {
+               if ("Mass" %in% names(data)) {
                  tmp_data <<- data.frame(x=total[total$Cell == cellIndex,]$Q.d, y=total[total$Cell == cellIndex,]$`Voltage(V)`, cycle=total[total$Cell == cellIndex,]$`Cycle_Index`)
                  tmp_data <<- rbind(tmp_data, data.frame(x=total[total$Cell == cellIndex,]$Q.c, y=total[total$Cell == cellIndex,]$`Voltage(V)`, cycle=total[total$Cell == cellIndex,]$`Cycle_Index`))
                  xlabel <<- "Capacity (mAh/g)"
@@ -574,8 +574,5 @@ if (interactive()) {
       shinyalert("Success!", paste("Plot saved in working directory:\n", getwd()), "success")
     })
   }
-  
-  shinyApp(ui, server)
 }
-
 shinyApp(ui, server)
