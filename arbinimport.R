@@ -251,7 +251,7 @@ if (interactive()) {
           if (input$peakFit == "fit") dir.create(paste(input$dirLocation, data$sheet[row], "dQdV Peak Fitting", sep = "/"))
           
           if ("Mass" %in% names(data)) {
-            ylabel <- "Discharge Capacity (Ah)"
+            ylabel <- "Discharge Capacity (mAh/g)"
             
             tmp_excel$Q.d <- as.numeric(tmp_excel$`Discharge_Capacity(Ah)` * (1000 / data$Mass[[1]][row]))
             tmp_excel$Q.c <- as.numeric(tmp_excel$`Charge_Capacity(Ah)`* (1000 / data$Mass[[1]][row]))
@@ -259,8 +259,9 @@ if (interactive()) {
             tmp_excel$CC <- tmp_excel$Q.d - tmp_excel$Q.c
             tmp_excel$CE <- (tmp_excel$Q.d / tmp_excel$Q.c) * 100
           } else {
-            ylabel <- "Discharge Capacity (mAh/g)"
+            ylabel <- "Discharge Capacity (Ah)"
             
+            tmp_excel$CC <- tmp_excel$`Discharge_Capacity(Ah)` - tmp_excel$`Charge_Capacity`
             tmp_excel$CE <- (tmp_excel$`Discharge_Capacity(Ah)` / tmp_excel$`Charge_Capacity(Ah)`) * 100
           }
           tmp_excel$Cell <- row
@@ -310,7 +311,7 @@ if (interactive()) {
                 if ("Mass" %in% names(data)) {
                   plot(tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Q.d`, tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)`, type="l", main=paste("Voltage Profile for ",  input$dirLocation, data$sheet[row]), xlab= ylabel, ylab="Voltage (V)")
                 } else {
-                  plot(tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Discharge_Capacity(Ah)`, tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)`, type="l", main=paste("Voltage Profile for ",  input$dirLocation, data$sheet[row]), xlab="Discharge Capacity (Ah)", ylab="Voltage (V)")
+                  plot(tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Discharge_Capacity(Ah)`, tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)`, type="l", main=paste("Voltage Profile for ",  input$dirLocation, data$sheet[row]), xlab=ylabel, ylab="Voltage (V)")
                 }
                 dev.off()
               }
@@ -421,8 +422,12 @@ if (interactive()) {
         if (is.element("Total Discharge Capacity", input$gGraphs)) {
           png(paste(getwd(),"/", input$dirLocation, "/", data$name[row], "Total Discharge Capacity Plot.png", sep = ""))
           eol <- totalDCap[1,2] * 0.8
-          twoord.plot(totalDCap[,1], totalDCap[,2], totalDCap[,1], totalCE[,2], type = "p", main=paste("Discharge Capacity for ",  input$dirLocation), xlab="Cycle", ylab= ylabel, rylab = "Coulombic efficiency (%)")
+          plot(totalDCap[,1], totalDCap[,2], type = "p", main=paste("Discharge Capacity for ",  input$dirLocation), xlab=NA, ylab=ylabel, mai=c(1,1,1,1))
           arrows(totalDCap[,1], totalDCap[,2] - totalDCapSE[,2], totalDCap[,1], totalDCap[,2] + totalDCapSE[,2], length=0.05, angle=90, code=3)
+          par(new = T)
+          plot(totalDCap[,1], totalCE[,2], type = "p", axes=F, col = "red", ylab=NA, xlab="Cycle")
+          axis(side = 4)
+          mtext(side = 4, line = 2, "Coulombic Efficiency (%)")
           abline(h=eol, lty = "dotted")
           dev.off()
         }
@@ -448,7 +453,10 @@ if (interactive()) {
                      }
                    })
         
-        remove(list=ls())
+        numCycles <<- data.frame()
+        dQdVData <<- data.frame()
+        total <<- data.frame()
+        cycle_facts <<- data.frame()
         
         incProgress((nrow(data)+ 1)/(nrow(data)+ 1))
         
