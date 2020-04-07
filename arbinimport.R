@@ -1,6 +1,4 @@
 require(readxl)
-require(tcltk)
-require(svDialogs)
 require(dplyr)
 require(shiny)
 require(DT)
@@ -8,9 +6,7 @@ require(shinyjs)
 require(shinyalert)
 require(pracma)
 require(purrr)
-require(IDPmisc)
 require(zoo)
-require(gifski)
 require(plotrix)
 
 if (interactive()) {
@@ -75,7 +71,7 @@ if (interactive()) {
       ),
       
       fluidRow(
-        actionButton("graphBuilder", "Launch Graph Builder", width = '100%', class = "btn-primary")
+        disabled(actionButton("graphBuilder", "Launch Graph Builder", width = '100%', class = "btn-primary"))
       ),
       
       fluidRow(
@@ -151,6 +147,8 @@ if (interactive()) {
       output$channels <- renderDataTable(data, editable = TRUE, options=list(columnDefs = list(list(visible=FALSE, targets=c(4)))), 
                                          colnames = c("File", "Sheet", "Mass (g)", "Filepath", "Limiting Electrode Area (cm^2)", "Active Material Loading (wt%)", 
                                                       "Active Mateial Capacity (mAh/g)", "Lower Voltage (V)", "Upper Voltage (V)"))
+      
+      enable("graphBuilder")
     })
     
     output$channels <- renderDataTable({
@@ -379,11 +377,6 @@ if (interactive()) {
             abline(h=eol, lty = "dotted")
             dev.off()
           }
-            
-          if (is.element("dQdV Graphs", input$gGraphs)) {
-            png_files <- list.files(paste(input$dirLocation, data$sheet[row], "dQdV Plots", sep="/"), pattern = "*.png", full.names = TRUE)
-            gifski(png_files, gif_file = paste(input$dirLocation, data$sheet[row], "dQdV Plots", "dQdV All Cycles.gif", sep = "/"), delay = 0.1)
-          }
 
          if (is.element("Average Voltage", input$gGraphs)) {
             png(paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row]," Average Voltage Plot.png", sep = ""))
@@ -468,6 +461,7 @@ if (interactive()) {
         enable("excelImport")
         enable("gGraphs")
         enable("peakFit")
+        enable("graphBuilder")
       })
     }
     
@@ -557,8 +551,12 @@ if (interactive()) {
     })
     
     observeEvent(input$graphBuilder, {
-      updateRadioButtons(session, "cells", choices = data$sheet)
-      showModal(graphbuilder)
+      if(dim(numCycles)[1] == 0 | dim(dQdVData)[1] == 0 | dim(cycle_facts)[1] == 0 | dim(total) == 0) {
+        shinyalert("No Data!", "Please run the analysis first or load a previous environment.", "error")
+      } else {
+        updateRadioButtons(session, "cells", choices = data$sheet)
+        showModal(graphbuilder)
+      }
     })
     
     observeEvent(input$saveGraph, {
