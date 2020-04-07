@@ -34,53 +34,50 @@ if (interactive()) {
     
     fluidRow(headerPanel("Arbin Import")),
     
-    column(4, 
+    column(4,
       fluidRow(
         fileInput("rerun", "Optional: Import Previous R Environment", multiple = FALSE, accept = ".RData"),
         actionButton("load", "Load"),
-        style = "border: 4px double red;"
+        style = "border: 1px dashed black; margin: 5%; padding: 5%"
       ),
       
       fluidRow(
-        fileInput("files", "Select All files of A single Set", multiple = TRUE)
-      ),
-      
-      fluidRow(
+        fileInput("files", "Select All files of A single Set", multiple = TRUE),
         numericInput("lowV", "Lower Voltage (V)", 2.8, min = 0, max = 5),
         numericInput("highV", "Upper Voltage (V)", 4.25, min = 0, max = 5),
-      ),
-      
-      fluidRow(
         numericInput("area", "Limiting Electrode Area (cm^2)", 2.74, min = 0),
         numericInput( "perActive","Active Loading of Limiting Electrode (wt%)", 96, min = 0, max = 100),
         numericInput( "capActive","Capacity of Limiting Active Material (mAh/g)", 155, min = 0, max = 100),
+        style = "border: 1px solid black; padding: 5%; margin:5%"
+      ),
+    ),
+    
+    column(4, align = "left", 
+           fluidRow(
+             checkboxGroupInput("gGraphs", "Choose Graphs to Generate:", choices = c("dQdV Graphs", "Voltage Profiles", "Voltage vs. Time", "Discharge Capacity", "Discharge Areal Capacity",
+                                                                                     "Total Discharge Capacity", "Average Voltage", "Delta Voltage"), inline = FALSE),
+             radioButtons("peakFit", "Do Peak Fitting on  dQdV Graphs? (BETA)", choices = c("No" = "noGenGraphs", "Yes" = "fit"), inline = TRUE),
+             style = "margin: 5%; border: 1px solid black; padding: 5%"
+           ),
+    ),
+    
+    column(4, align = "center",
+      fluidRow(
+        strong("Optional: Running Analysis Without Masses Will Have Raw Capacities Used (Ah)"),
+        actionButton("excelImport", "Import Masses from Excel", width = '80%', class = "btn-secondary", style = "padding:5%; height:50px; margin:5%; font-size:100%"),
+        style = "border: 1px dashed black; padding: 5%; margin:5%"
       ),
       
       fluidRow(
         textInput("dirLocation", "Enter Directory Name"),
-      ),
-    ),
-    
-    column(8, align = "center",
-      fluidRow(
-        actionButton("submit", "Enter", width = '100%', class = 'btn-success')
+        actionButton("submit", "Begin Analysis", class = 'btn-success', style = "padding:4px; width:80%; height:100px; margin:5%, font-size:100%"),
+        style = "border: 4px double black; padding: 5%; margin:5%"
       ),
       
       fluidRow(
-        actionButton("excelImport", "Import Masses from Excel", width = '100%', class = "btn-secondary")
-      ),
-      
-      fluidRow(
-        disabled(actionButton("graphBuilder", "Launch Graph Builder", width = '100%', class = "btn-primary"))
-      ),
-      
-      fluidRow(
-        checkboxGroupInput("gGraphs", "Choose Graphs to Generate:", choices = c("dQdV Graphs", "Voltage Profiles", "Voltage vs. Time", "Discharge Capacity", "Discharge Areal Capacity",
-                                                                      "Total Discharge Capacity", "Average Voltage", "Delta Voltage"), inline = TRUE)
-      ),
-      
-      fluidRow(
-        radioButtons("peakFit", "Do Peak Fitting on  dQdV Graphs? (BETA)", choices = c("No" = "noGenGraphs", "Yes" = "fit"), inline = TRUE)
+        strong("Customize Graphs Once Data is Available"),
+        disabled(actionButton("graphBuilder", "Launch Graph Builder", width = '80%', class = "btn-primary", style = "padding: 5%; height:50px; margin:5%; font-size:100%")),
+        style = "border: 1px solid black; padding: 5%; margin:5%"
       ),
     ),
     
@@ -225,6 +222,9 @@ if (interactive()) {
       disable("excelImport")
       disable("gGraphs")
       disable("peakFit")
+      disable("area")
+      disable("perActive")
+      disable("capActive")
 
       dir.create(input$dirLocation)
       
@@ -461,6 +461,9 @@ if (interactive()) {
         enable("excelImport")
         enable("gGraphs")
         enable("peakFit")
+        enable("area")
+        enable("perActive")
+        enable("capActive")
         enable("graphBuilder")
       })
     }
