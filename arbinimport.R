@@ -63,20 +63,22 @@ if (interactive()) {
     
     column(4, align = "center",
       fluidRow(
-        strong("Optional: Running Analysis Without Masses Will Have Raw Capacities Used (Ah)"),
-        actionButton("excelImport", "Import Masses from Excel", width = '80%', class = "btn-secondary", style = "padding:5%; height:50px; margin:5%; font-size:100%"),
+        strong("Optional: Import Masses from Excel"), tags$br(),
+        "Running Analysis without Masses Will Render Raw Capacities (Ah)",
+        actionButton("excelImport", "Import", width = '80%', class = "btn-secondary", style = "height:50px; margin:5%; font-size:100%"),
         style = "border: 1px dashed black; padding: 5%; margin:5%"
       ),
       
       fluidRow(
         textInput("dirLocation", "Enter Directory Name"),
-        actionButton("submit", "Begin Analysis", class = 'btn-success', style = "padding:4px; width:80%; height:100px; margin:5%, font-size:100%"),
+        actionButton("submit", "Begin Analysis", class = 'btn-success', style = "width:80%; height:100px; margin:5%, font-size:100%"),
         style = "border: 4px double black; padding: 5%; margin:5%"
       ),
       
       fluidRow(
-        strong("Customize Graphs Once Data is Available"),
-        disabled(actionButton("graphBuilder", "Launch Graph Builder", width = '80%', class = "btn-primary", style = "padding: 5%; height:50px; margin:5%; font-size:100%")),
+        strong("Custom Graph Builder"), tags$br(),
+        "Customize Graphs Once Data is Available",
+        disabled(actionButton("graphBuilder", "Launch", width = '80%', class = "btn-primary", style = "height:50px; margin:5%; font-size:100%")),
         style = "border: 1px solid black; padding: 5%; margin:5%"
       ),
     ),
