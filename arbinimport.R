@@ -8,6 +8,7 @@ require(pracma)
 require(purrr)
 require(zoo)
 require(plotrix)
+require(tools)
 
 if (interactive()) {
   
@@ -41,7 +42,7 @@ if (interactive()) {
       
       fluidRow(
         strong("Optional Parameters"), tags$br(),
-        "Options appear based on desired graphs selected.", tags$br(), tags$br(),
+        "Parameters responsible for certain graphs.", tags$br(), tags$br(),
         numericInput("area", "Limiting Electrode Area (cm^2)", 2.74, min = 0),
         numericInput( "perActive","Active Loading of Limiting Electrode (wt%)", 96, min = 0, max = 100),
         numericInput( "capActive","Capacity of Limiting Active Material (mAh/g)", 155, min = 0, max = 100),
@@ -101,7 +102,7 @@ if (interactive()) {
         useShinyalert(),
         
         tags$head(tags$style(".modal-dialog{width:80%}")),
-        tags$head(tags$style(".modal-body{ min-height:500px}")),
+        tags$head(tags$style(".modal-body{ min-height:1000px}")),
         
         fluidRow(align = "center",
           HTML( '<p align="left">1. Open an excel file containing the masses of each cell.<br>
@@ -110,11 +111,27 @@ if (interactive()) {
                               <p align="left">Example:</p>'),
           imageOutput("importGIF"),
         ),
-      )}, title = "Import Masses from Excel Dialog", footer = actionButton("excelMasses", "Import"))
+      )}, title = "Import Masses from Excel Dialog", height = "100%", easyClose = TRUE, footer = actionButton("excelMasses", "Import"))
     
     output$importGIF <- renderImage({
       list(src = "excelImport.gif", width = "70%")
     }, deleteFile = FALSE)
+    
+    observeEvent(input$files, {
+      validFile <- FALSE
+      
+      for (file in input$files) {
+        if (file_ext(file) == "xlsx" | file_ext(file) == "xls") {
+          validFile <- TRUE
+        }
+      }
+      
+      if (validFile) {
+        renderTable()
+      } else {
+        shinyalert("That isn't right...", "Please upload an Excel file.", "error")
+      }
+    })
     
     graphbuilder <- modalDialog({
       fluidPage(
@@ -160,41 +177,53 @@ if (interactive()) {
     observeEvent(input$load, {
       load(paste("history/", input$rerun[[1]], sep = ""))
       
-      data <<- filter(data, grepl('Channel', sheet))
-      numCycles <<- numCycles
-      dQdVData <<- dQdVData
-      total <<- total
-      cycle_facts <<- cycle_facts
+      validFile <- FALSE
       
-      output$channels <- renderDataTable(data, editable = TRUE, options=list(columnDefs = list(list(visible=FALSE, targets=c(4)))), 
-                                         colnames = c("File", "Sheet", "Mass (g)", "Filepath", "Limiting Electrode Area (cm^2)", "Active Material Loading (wt%)", 
-                                                      "Active Mateial Capacity (mAh/g)"))
+      if (file_ext(file) == "RData") {
+        validFile <- TRUE
+      }
       
-      enable("graphBuilder")
+      if (validFile) {
+        data <<- filter(data, grepl('Channel', sheet))
+        numCycles <<- numCycles
+        dQdVData <<- dQdVData
+        total <<- total
+        cycle_facts <<- cycle_facts
+        
+        output$channels <- renderDataTable(data, editable = TRUE, options=list(columnDefs = list(list(visible=FALSE, targets=c(4)))), 
+                                           colnames = c("File", "Sheet", "Mass (g)", "Filepath", "Limiting Electrode Area (cm^2)", "Active Material Loading (wt%)", 
+                                                        "Active Mateial Capacity (mAh/g)"))
+        
+        enable("graphBuilder")
+      } else {
+        shinyalert("That isn't right...", "Please upload an Excel file.", "error")
+      }
     })
     
-    output$channels <- renderDataTable({
-      files <- input$files
-      
-      if (is.null(files)) {
-        return(NULL)
-      }
-      
-      file_sheet <- data.frame()
-      for (i in 1:nrow(files)) {
-        sheets <- excel_sheets(files[i, 4])
-        file_sheet <- rbind(file_sheet, data.frame(name = rep(files[["name"]][i], length(sheets)), "sheet" = sheets, "Mass" = rep(0, length(sheets)),
-                                                   datapath = rep(files[["datapath"]][i], length(sheets)), area = rep(input$area, length(sheets)),
-                                                   perActive = rep(input$perActive, length(sheets)), capActive = rep(input$capActive, length(sheets))))
-      }
-      
-      data <<- filter(file_sheet, grepl('Channel', sheet))
-      
-      data
-
-    }, editable = TRUE, options=list(columnDefs = list(list(visible=FALSE, targets=c(4)))), 
-    colnames = c("File", "Sheet", "Mass (g)", "Filepath", "Limiting Electrode Area (cm^2)", "Active Material Loading (wt%)", 
-                 "Active Mateial Capacity (mAh/g)"))
+    renderTable <- function() {
+      output$channels <- renderDataTable({
+        files <- input$files
+        
+        if (is.null(files)) {
+          return(NULL)
+        }
+        
+        file_sheet <- data.frame()
+        for (i in 1:nrow(files)) {
+          sheets <- excel_sheets(files[i, 4])
+          file_sheet <- rbind(file_sheet, data.frame(name = rep(files[["name"]][i], length(sheets)), "sheet" = sheets, "Mass" = rep(0, length(sheets)),
+                                                     datapath = rep(files[["datapath"]][i], length(sheets)), area = rep(input$area, length(sheets)),
+                                                     perActive = rep(input$perActive, length(sheets)), capActive = rep(input$capActive, length(sheets))))
+        }
+        
+        data <<- filter(file_sheet, grepl('Channel', sheet))
+        
+        data
+  
+      }, editable = FALSE, options=list(columnDefs = list(list(visible=FALSE, targets=c(4)))), 
+      colnames = c("File", "Sheet", "Mass (g)", "Filepath", "Limiting Electrode Area (cm^2)", "Active Material Loading (wt%)", 
+                   "Active Mateial Capacity (mAh/g)"))
+    }
     
     observeEvent(input$excelImport, {
       showModal(excelModal)
