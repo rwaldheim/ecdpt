@@ -13,8 +13,6 @@ if (interactive()) {
   
   data <- reactiveValues(data = data.frame())
   final <- data.frame()
-  lowV <- reactiveVal(0)
-  highV <- reactiveVal(0)
   dirLocation <- reactiveVal("")
   numCycles <- data.frame()
   dQdVData <- data.frame()
@@ -27,12 +25,13 @@ if (interactive()) {
   xlabel <- ""
   ylabel <- ""
   graphColor <- function() {}
+  addParams <- FALSE
 
   ui <- fluidPage(
     useShinyjs(),
     useShinyalert(),
     
-    fluidRow(headerPanel("Arbin Import")),
+    fluidRow(headerPanel("Battery Analyzer Utility")),
     
     column(4,
       fluidRow(
@@ -42,12 +41,18 @@ if (interactive()) {
       ),
       
       fluidRow(
-        fileInput("files", "Select All files of A single Set", multiple = TRUE),
-        numericInput("lowV", "Lower Voltage (V)", 2.8, min = 0, max = 5),
-        numericInput("highV", "Upper Voltage (V)", 4.25, min = 0, max = 5),
+        strong("Optional Parameters"), tags$br(),
+        "Options appear based on desired graphs selected.", tags$br(), tags$br(),
         numericInput("area", "Limiting Electrode Area (cm^2)", 2.74, min = 0),
         numericInput( "perActive","Active Loading of Limiting Electrode (wt%)", 96, min = 0, max = 100),
         numericInput( "capActive","Capacity of Limiting Active Material (mAh/g)", 155, min = 0, max = 100),
+        style = "border: 1px dashed black; padding: 5%; margin:5%"
+      ),
+      
+      fluidRow(
+        strong("Files to be Analyzed"), tags$br(),
+        "Import all Arbin files of interest.", tags$br(), tags$br(),
+        fileInput("files", NULL, multiple = TRUE),
         style = "border: 1px solid black; padding: 5%; margin:5%"
       ),
     ),
@@ -91,7 +96,25 @@ if (interactive()) {
   server <- function(input, output, session) {
     options(shiny.maxRequestSize=30*1024^2)
     
-    excelModal <- modalDialog("Copy masses from Excel now.", footer = actionButton("excelMasses", "Import"))
+    excelModal <- modalDialog({
+      fluidPage(style = "font-size:15pt;",
+        useShinyjs(),
+        useShinyalert(),
+        
+        tags$head(tags$style(".modal-dialog{width:80%}")),
+        tags$head(tags$style(".modal-body{ min-height:500px}")),
+        
+        fluidRow(align = "center",
+          HTML( 'First, open the Battery Data Excel file located at ES OneDrive/Arbin Data<br>
+                 Second, copy the files from "Limiting Active Material Mass" in the order of cells<br>
+                <b>Once you hit "Import", the program will grab the masses directly from your clipboard</b><br>'),
+          imageOutput("importGIF"),
+        ),
+      )}, title = "Import Masses from Excel Dialog", footer = actionButton("excelMasses", "Import"))
+    
+    output$importGIF <- renderImage({
+      list(src = "excelImport.gif", width = "70%")
+    }, deleteFile = FALSE)
     
     graphbuilder <- modalDialog({
       fluidPage(
@@ -145,7 +168,7 @@ if (interactive()) {
       
       output$channels <- renderDataTable(data, editable = TRUE, options=list(columnDefs = list(list(visible=FALSE, targets=c(4)))), 
                                          colnames = c("File", "Sheet", "Mass (g)", "Filepath", "Limiting Electrode Area (cm^2)", "Active Material Loading (wt%)", 
-                                                      "Active Mateial Capacity (mAh/g)", "Lower Voltage (V)", "Upper Voltage (V)"))
+                                                      "Active Mateial Capacity (mAh/g)"))
       
       enable("graphBuilder")
     })
@@ -162,8 +185,7 @@ if (interactive()) {
         sheets <- excel_sheets(files[i, 4])
         file_sheet <- rbind(file_sheet, data.frame(name = rep(files[["name"]][i], length(sheets)), "sheet" = sheets, "Mass" = rep(0, length(sheets)),
                                                    datapath = rep(files[["datapath"]][i], length(sheets)), area = rep(input$area, length(sheets)),
-                                                   perActive = rep(input$perActive, length(sheets)), capActive = rep(input$capActive, length(sheets)),
-                                                   lowV = rep(input$lowV, length(sheets)), highV = rep(input$highV, length(sheets))))
+                                                   perActive = rep(input$perActive, length(sheets)), capActive = rep(input$capActive, length(sheets))))
       }
       
       data <<- filter(file_sheet, grepl('Channel', sheet))
@@ -179,32 +201,46 @@ if (interactive()) {
     })
     
     observeEvent(input$excelMasses, {
-      masses <- read.table("clipboard",sep="\t")
-      names(masses)[names(masses) == "V1"] <- "Mass"
-      data$Mass <<- masses
-      
-      proxy = dataTableProxy("channels")
-      replaceData(proxy, data)
-      
-      renderDataTable(data)
-      
-      removeModal()
+      if (length(names(data)) <= 1) {
+        shinyalert("Uh oh!", "You need to import cells first!", "error")
+        removeModal()
+      } else {
+        tryCatch({
+          masses <- read.table("clipboard",sep="\t")
+          names(masses)[names(masses) == "V1"] <- "Mass"
+          data$Mass <<- masses
+        }, error = function(cond) {
+          print(cond)
+          shinyalert("Something isn't right...", "The number of masses imported did not match the amount of cells present or your clipboard didn't contain numeric values. Please try again.", "error")
+          removeModal()
+        }, finally = {
+          proxy = dataTableProxy("channels")
+          replaceData(proxy, data)
+          
+          renderDataTable(data)
+          
+          removeModal()
+        })
+      }
     })
     
     observeEvent(input$submit, {
-      
-      if (!grepl("OneDrive", getwd())) {
-        shinyReturn <- ""
-        shinyalert("Uh Oh!", "You do not appear to be in a shared directory!", type = "error",
-             showConfirmButton = TRUE, confirmButtonText = "Ignore", showCancelButton = TRUE,
-             cancelButtonText = "Abort",
-             callbackR = function(x) {
-               if (x) {
-                 runscript()
-               }
-             })
+      if (length(names(data)) <= 1) {
+        shinyalert("Uh oh!", "You need to import cells first!", "error")
       } else {
-        runscript()
+        if (!grepl("OneDrive", getwd())) {
+          shinyReturn <- ""
+          shinyalert("Uh Oh!", "You do not appear to be in a shared directory!", type = "error",
+               showConfirmButton = TRUE, confirmButtonText = "Ignore", showCancelButton = TRUE,
+               cancelButtonText = "Abort",
+               callbackR = function(x) {
+                 if (x) {
+                   runscript()
+                 }
+               })
+        } else {
+          runscript()
+        }
       }
     })
     
@@ -469,6 +505,19 @@ if (interactive()) {
         enable("graphBuilder")
       })
     }
+    
+    observeEvent(input$gGraphs, {
+      disable("area")
+      disable("perActive")
+      disable("capActive")
+      
+      choices <- c("dQdV Graphs", "Voltage Profiles", "Voltage vs. Time", "Discharge Capacity", "Discharge Areal Capacity",
+                   "Total Discharge Capacity", "Average Voltage", "Delta Voltage")
+      
+      if (is.element("Discharge Areal Capacity", input$gGraphs)) {
+        enable("area")
+      }
+    })
     
     output$outputPlot <- renderPlot({
       sheetName <- input$cells
