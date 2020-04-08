@@ -105,9 +105,10 @@ if (interactive()) {
         tags$head(tags$style(".modal-body{ min-height:500px}")),
         
         fluidRow(align = "center",
-          HTML( 'First, open the Battery Data Excel file located at ES OneDrive/Arbin Data<br>
-                 Second, copy the files from "Limiting Active Material Mass" in the order of cells<br>
-                <b>Once you hit "Import", the program will grab the masses directly from your clipboard</b><br>'),
+          HTML( '<p align="left">1. Open an excel file containing the masses of each cell.<br>
+                                 2. Copy the values in the order of cells. (Must be vertical and continuous)</p>
+                              <p><b>Once you hit "Import", the program will grab the masses directly from your clipboard</b></p>
+                              <p align="left">Example:</p>'),
           imageOutput("importGIF"),
         ),
       )}, title = "Import Masses from Excel Dialog", footer = actionButton("excelMasses", "Import"))
@@ -194,7 +195,7 @@ if (interactive()) {
 
     }, editable = TRUE, options=list(columnDefs = list(list(visible=FALSE, targets=c(4)))), 
     colnames = c("File", "Sheet", "Mass (g)", "Filepath", "Limiting Electrode Area (cm^2)", "Active Material Loading (wt%)", 
-                 "Active Mateial Capacity (mAh/g)", "Lower Voltage (V)", "Upper Voltage (V)"))
+                 "Active Mateial Capacity (mAh/g)"))
     
     observeEvent(input$excelImport, {
       showModal(excelModal)
