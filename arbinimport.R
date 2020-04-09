@@ -51,6 +51,7 @@ if (interactive()) {
   addParams <- FALSE
   catMetric <<- vector()
   legTitle <<- ""
+  sheetName <<- ""
 
   # ######
   # 
@@ -555,7 +556,12 @@ if (interactive()) {
           }
           
           # Record charge and dischatge voltage, then calculate the delta and average voltage
-          cycle_facts <<- rbind(cycle_facts, data.frame(cycle=i, cell=row, chV=chV, dchV=dchV, avgV=(dchV + chV) / 2, dV=chV-dchV))
+          if (sum(data$Mass) != 0) {
+            cycle_facts <<- rbind(cycle_facts, data.frame(cycle=i, cell=row, chV=chV, dchV=dchV, avgV=(dchV + chV) / 2, dV=chV-dchV, DCap = tail(cycle$Q.d, 1), CCap = tail(cycle$Q.c, 1), CE = tail(cycle$CE, 1)))
+          } else {
+            cycle_facts <<- rbind(cycle_facts, data.frame(cycle=i, cell=row, chV=chV, dchV=dchV, avgV=(dchV + chV) / 2, dV=chV-dchV, DCap = tail(cycle$`Discharge_Capacity(Ah)`, 1), CCap = tail(cycle$`Charge_Capacity(Ah)`, 1), CE = tail(cycle$CE, 1)))
+          }
+          
           i <- i + 1
           ch_dch <- FALSE
         }
@@ -728,7 +734,6 @@ if (interactive()) {
     # 
     # ######
     output$outputPlot <- renderPlot({
-      sheetName <- input$cells
       
       tmp_data <<- data.frame()
       
@@ -743,6 +748,7 @@ if (interactive()) {
       # 
       # ######
       if (input$perType == "Cycle Analysis") {
+        sheetName <<- input$cells
         
         # Get the indicies in which the desired cells are in the data frame containing the number of cycles
         cellIndex <- match(input$cells, numCycles$sheet)
@@ -779,7 +785,9 @@ if (interactive()) {
                  for (cell in cellindex) {
                   data_pull <<- rbind(data_pull, data.frame(x=(total[total$Cell == cellIndex,]$`Test_Time(s)` / 60), y=total[total$Cell == cellIndex,]$`Voltage(V)`, cat=total[total$Cell == cellIndex,]$`Cycle_Index`))
                  }
+                 
                  normalTime <<- aggregate(data_pull$x, by=list(data_pull$cat), normalizeTime)
+                 
                  for (cycle in 1:nrow(normalTime)) {
                    tmp_data <<- rbind(tmp_data, data.frame(x=normalTime$x[[cycle]],y=data_pull[data_pull$cycle == cycle,]$y, cat=rep(cycle, length(normalTime$x[[cycle]]))))
                  }
@@ -798,6 +806,7 @@ if (interactive()) {
           catMetric <<- input$renderCycles
           legTitle <<- "Cycle"
         } else if (input$perType == "Cell Analysis") {
+          sheetName <<- ""
           
           # Get the indicies in which the desired cells are in the data frame containing the number of cycles
           cellIndex <- match(input$cellsMulti, numCycles$sheet)
@@ -820,7 +829,6 @@ if (interactive()) {
                    titleLabel <<- "Discharge Voltage Plot "
                    xlabel <<- "Cycle"
                    ylabel <<- "Voltage (V)"
-                   
                  },
                  "Average Voltage" = {
                    for (cell in cellIndex) {
@@ -830,10 +838,8 @@ if (interactive()) {
                    titleLabel <<- "Average Voltage Plot "
                    xlabel <<- "Cycle"
                    ylabel <<- "Voltage (V)"
-                   
                  },
                  "Delta Voltage" = {
-                   
                    for (cell in cellIndex) {
                      tmp_data <<- rbind(tmp_data, data.frame(x=cycle_facts[cycle_facts$cell == cell,]$cycle, y=cycle_facts[cycle_facts$cell == cell,]$dV, cat=cycle_facts[cycle_facts$cell == cell,]$cell))
                    }
@@ -841,13 +847,32 @@ if (interactive()) {
                    titleLabel <<- "Delta Voltage Plot "
                    xlabel <<- "Cycle"
                    ylabel <<- "Voltage (V)"
-                   
                  },
                  "Discharge Capacity" = {
+                   for (cell in cellIndex) {
+                     tmp_data <<- rbind(tmp_data, data.frame(x=cycle_facts[cycle_facts$cell == cell,]$cycle, y=cycle_facts[cycle_facts$cell == cell,]$DCap, cat=cycle_facts[cycle_facts$cell == cell,]$cell))
+                   }
                    
+                   titleLabel <<- "Discharge Capacity Plot "
+                   xlabel <<- "Cycle"
+                   if (sum(data$Mass) != 0) {
+                     ylabel <<- "Capacity (mAh/g)"
+                   } else {
+                     ylabel <<- "Capacity (Ah)"
+                   }
                  },
-                 "Discharge Areal Capacity" = {
+                 "Charge Capacity" = {
+                   for (cell in cellIndex) {
+                     tmp_data <<- rbind(tmp_data, data.frame(x=cycle_facts[cycle_facts$cell == cell,]$cycle, y=cycle_facts[cycle_facts$cell == cell,]$CCap, cat=cycle_facts[cycle_facts$cell == cell,]$cell))
+                   }
                    
+                   titleLabel <<- "Charge Capacity Plot "
+                   xlabel <<- "Cycle"
+                   if (sum(data$Mass) != 0) {
+                     ylabel <<- "Capacity (mAh/g)"
+                   } else {
+                     ylabel <<- "Capacity (Ah)"
+                   }
                  }
             )
           
@@ -896,7 +921,7 @@ if (interactive()) {
       
       if (input$perType == "Cell Analysis") {
         updateRadioButtons(session, "typeGraph", choices = c("Charge Voltage", "Discharge Voltage", "Average Voltage",
-                                                    "Delta Voltage", "Dishcharge Capacity", "Discharge Areal Capacity"))
+                                                    "Delta Voltage", "Discharge Capacity", "Charge Capacity"))
         
         hide("cells")
         hide("renderCycles")
@@ -924,20 +949,22 @@ if (interactive()) {
     # Method for saving graph generated by graphBuilder
     observeEvent(input$saveGraph, {
       png(paste(input$fileName, ".png"))
-      if (input$plotStyle == "o") {
-        plot(tmp_data$x, tmp_data$y, type = "p", col = tmp_data$color, main=paste(titleLabel, "for ",  input$dirLocation, input$cells), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
-        legend("bottomright", legend = sort(as.numeric(input$renderCycles)), col = unique(tmp_data$color), pch = 19, title = "Cycle")
+      
+      if (input$plotStyle == "o" | input$plotStyle == "p") {
+        plot(tmp_data$x, tmp_data$y, type = input$plotStyle, col = tmp_data$color, main=paste(titleLabel, "for ",  input$dirLocation, sheetName), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+        legend("bottomright", legend = sort(as.numeric(catMetric)), col = unique(tmp_data$color), pch = 19, title = legTitle)
       } else if (input$plotStyle == "l") {
         newLine <- subset(tmp_data, tmp_data$color == 1)
-        plot(newLine$x, newLine$y, type = "l", col = newLine$color, main=paste(titleLabel, "for ",  input$dirLocation, input$cells), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+        plot(newLine$x, newLine$y, type = "l", col = newLine$color, main=paste(titleLabel, "for ",  input$dirLocation, sheetName), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
         
-        for (i in 2:length(input$renderCycles)) {
+        for (i in 2:length(catMetric)) {
           newLine <- subset(tmp_data, tmp_data$color == i)
-          lines(newLine$x, newLine$y, col = newLine$color, main=paste(titleLabel, "for ",  input$dirLocation, input$cells), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+          lines(newLine$x, newLine$y, col = newLine$color, main=paste(titleLabel, "for ",  input$dirLocation, sheetName), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
         }
         
-        legend("bottomright", legend = sort(as.numeric(input$renderCycles)), col = unique(tmp_data$color), lty = 1, title = "Cycle")
+        legend("bottomright", legend = sort(as.numeric(catMetric)), col = unique(tmp_data$color), lty = 1, title = legTitle)
       }
+      
       dev.off()
       
       shinyalert("Success!", paste("Plot saved in working directory:\n", getwd()), "success")
