@@ -49,6 +49,8 @@ if (interactive()) {
   xlabel <- ""
   ylabel <- ""
   addParams <- FALSE
+  catMetric <<- vector()
+  legTitle <<- ""
 
   # ######
   # 
@@ -210,10 +212,17 @@ if (interactive()) {
               headerPanel("Graph Options"),
             ),
             
+            fluidRow(style = "padding:5%; border: 1px solid black;",
+              strong("Basis for Plot Types"), tags$br(),
+              'To compare within a cell, choose "Cycle Analysis". To compare cells, choose "Cell Analysis"', tags$br(), tags$br(),
+              radioButtons("perType", NULL, choices = c("Cycle Analysis", "Cell Analysis"), inline = TRUE)
+            ),
+            
             fluidRow(style = "padding:5%;",
               radioButtons("typeGraph", "Graph Type:", choices = c("dQdV Graphs", "Voltage Profiles", "Voltage vs. Time"), inline = FALSE),
               radioButtons("plotStyle", "Plot Style:", choiceNames = c("Point", "Line", "Both"), choiceValues = c("p", "l", "o"),  inline = TRUE),
               radioButtons("cells", "Cell to Analyze:", choices = 1, inline = FALSE),
+              hidden(checkboxGroupInput("cellsMulti", "Cells to Analyze:", choices = 1, inline = FALSE)),
               selectInput("renderCycles", "Cycles of Interest:", choices = 1, multiple = TRUE),
             ),
              
@@ -721,90 +730,160 @@ if (interactive()) {
     output$outputPlot <- renderPlot({
       sheetName <- input$cells
       
+      tmp_data <<- data.frame()
+      
       # Define function to normalize Voltage vs. Time plots
       normalizeTime <- function(x) {
         return(x - x[[1]])
       }
       
-      # Get the indicies in which the desired cells are in the data frame containing the number of cycles
-      cellIndex <- match(input$cells, numCycles$sheet)
-      
       # ######
       # 
-      # Switch statement defining the bulk of the processing, depending on the desired graph
+      # Switch statements defining the bulk of the processing, depending on the desired graph
       # 
       # ######
-      switch(input$typeGraph,
-             "dQdV Graphs" = {
-               tmp_data <<- data.frame(x=dQdVData[dQdVData$cell == cellIndex,]$voltage, y=dQdVData[dQdVData$cell == cellIndex,]$dQdV, cycle=dQdVData[dQdVData$cell == cellIndex,]$cycle)
-               
-               titleLabel <<- "dQdV Plot "
-               xlabel <<- "Voltage (V)"
-               ylabel <<- "dQdV (mAh/V)"
-             },
-             "Voltage Profiles" = {
-               if (sum(data$Mass) != 0) {
-                 tmp_data <<- data.frame(x=total[total$Cell == cellIndex,]$Q.d, y=total[total$Cell == cellIndex,]$`Voltage(V)`, cycle=total[total$Cell == cellIndex,]$`Cycle_Index`)
-                 tmp_data <<- rbind(tmp_data, data.frame(x=total[total$Cell == cellIndex,]$Q.c, y=total[total$Cell == cellIndex,]$`Voltage(V)`, cycle=total[total$Cell == cellIndex,]$`Cycle_Index`))
-                 xlabel <<- "Capacity (mAh/g)"
-               } else {
-                 tmp_data <<- data.frame(x=total[total$Cell == cellIndex,]$`Discharge_Capacity(Ah)`, y=total[total$Cell == cellIndex,]$`Voltage(V)`, cycle=total[total$Cell == cellIndex,]$`Cycle_Index`)
-                 tmp_data <<- rbind(tmp_data, data.frame(x=total[total$Cell == cellIndex,]$`Charge_Capacity(Ah)`, y=total[total$Cell == cellIndex,]$`Voltage(V)`, cycle=total[total$Cell == cellIndex,]$`Cycle_Index`))
-                 xlabel <<- "Capacity (Ah)"
-               }
-               
-               titleLabel <<- "Voltage Profile "
-               ylabel <<- "Voltage (V)"
-             },
-             "Voltage vs. Time" = {
-               tmp_data <<- data.frame()
-               data_pull <<- data.frame(x=(total[total$Cell == cellIndex,]$`Test_Time(s)` / 60), y=total[total$Cell == cellIndex,]$`Voltage(V)`, cycle=total[total$Cell == cellIndex,]$`Cycle_Index`)
-               
-               normalTime <<- aggregate(data_pull$x, by=list(data_pull$cycle), normalizeTime)
-               for (cycle in 1:nrow(normalTime)) {
-                 tmp_data <<- rbind(tmp_data, data.frame(x=normalTime$x[[cycle]],y=data_pull[data_pull$cycle == cycle,]$y, cycle=rep(cycle, length(normalTime$x[[cycle]]))))
-               }
-               
-               tmp_data <<- tmp_data[tmp_data$y >= 0.01,]
-               
-               titleLabel <<- "Voltge vs. Time Plot "
-               xlabel <<- "Time (min)"
-               ylabel <<- "Voltage (V)"
-             }, 
-      )
-      
-      # Filter out Infs and NaNs present in the data
-      tmp_data <<- tmp_data[is.finite(tmp_data$x),]
-      tmp_data <<- tmp_data[is.finite(tmp_data$y),]
-      tmp_data <<- tmp_data[is.finite(tmp_data$cycle),]
-      
-      tryCatch({
+      if (input$perType == "Cycle Analysis") {
         
-        # Filter out the cycles of interest
-        tmp_data <<- tmp_data[tmp_data$cycle == sort(as.numeric(input$renderCycles)),]
-        tmp_data$color <<- sapply(tmp_data$cycle, function(x) {match(x, input$renderCycles)})
+        # Get the indicies in which the desired cells are in the data frame containing the number of cycles
+        cellIndex <- match(input$cells, numCycles$sheet)
         
-        if (input$plotStyle == "o" | input$plotStyle == "p") {
-          plot(tmp_data$x, tmp_data$y, type = input$plotStyle, col = tmp_data$color, main=paste(titleLabel, "for ",  input$dirLocation, sheetName), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
-          legend("bottomright", legend = sort(as.numeric(input$renderCycles)), col = unique(tmp_data$color), pch = 19, title = "Cycle")
-        } else if (input$plotStyle == "l") {
-          newLine <- subset(tmp_data, tmp_data$color == 1)
-          plot(newLine$x, newLine$y, type = "l", col = newLine$color, main=paste(titleLabel, "for ",  input$dirLocation, sheetName), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+        switch(input$typeGraph,
+               "dQdV Graphs" = {
+                 for (cell in cellIndex) {
+                  tmp_data <<- rbind(tmp_data, data.frame(x=dQdVData[dQdVData$cell == cell,]$voltage, y=dQdVData[dQdVData$cell == cell,]$dQdV, cat=dQdVData[dQdVData$cell == cell,]$cycle))
+                 }
+                 
+                 titleLabel <<- "dQdV Plot "
+                 xlabel <<- "Voltage (V)"
+                 ylabel <<- "dQdV (mAh/V)"
+               },
+               "Voltage Profiles" = {
+                 if (sum(data$Mass) != 0) {
+                   for (cell in cellIndex) {
+                     tmp_data <<- rbind(tmp_data, data.frame(x=total[total$Cell == cell,]$Q.d, y=total[total$Cell == cell,]$`Voltage(V)`, cat=total[total$Cell == cell,]$`Cycle_Index`))
+                     tmp_data <<- rbind(tmp_data, data.frame(x=total[total$Cell == cell,]$Q.c, y=total[total$Cell == cell,]$`Voltage(V)`, cat=total[total$Cell == cell,]$`Cycle_Index`))
+                   }
+                   xlabel <<- "Capacity (mAh/g)"
+                 } else {
+                   for (cell in cellIndex) {
+                     tmp_data <<- rbind(tmp_data, data.frame(x=total[total$Cell == cell,]$`Discharge_Capacity(Ah)`, y=total[total$Cell == cell,]$`Voltage(V)`, cat=total[total$Cell == cell,]$`Cycle_Index`))
+                     tmp_data <<- rbind(tmp_data, data.frame(x=total[total$Cell == cell,]$`Charge_Capacity(Ah)`, y=total[total$Cell == cell,]$`Voltage(V)`, cat=total[total$Cell == cell,]$`Cycle_Index`))
+                   }
+                   xlabel <<- "Capacity (Ah)"
+                 }
+                 
+                 titleLabel <<- "Voltage Profile "
+                 ylabel <<- "Voltage (V)"
+               },
+               "Voltage vs. Time" = {
+                 for (cell in cellindex) {
+                  data_pull <<- rbind(data_pull, data.frame(x=(total[total$Cell == cellIndex,]$`Test_Time(s)` / 60), y=total[total$Cell == cellIndex,]$`Voltage(V)`, cat=total[total$Cell == cellIndex,]$`Cycle_Index`))
+                 }
+                 normalTime <<- aggregate(data_pull$x, by=list(data_pull$cat), normalizeTime)
+                 for (cycle in 1:nrow(normalTime)) {
+                   tmp_data <<- rbind(tmp_data, data.frame(x=normalTime$x[[cycle]],y=data_pull[data_pull$cycle == cycle,]$y, cat=rep(cycle, length(normalTime$x[[cycle]]))))
+                 }
+                 
+                 tmp_data <<- tmp_data[tmp_data$y >= 0.01,]
+                 
+                 titleLabel <<- "Voltge vs. Time Plot "
+                 xlabel <<- "Time (min)"
+                 ylabel <<- "Voltage (V)"
+               }, 
+          )
+        
+          tmp_data <<- tmp_data[tmp_data$cat == sort(as.numeric(catMetric)),]
+          tmp_data$color <<- sapply(tmp_data$cat, function(x) {match(x, catMetric)})
           
-          for (i in 2:length(input$renderCycles)) {
-            newLine <- subset(tmp_data, tmp_data$color == i)
-            lines(newLine$x, newLine$y, col = newLine$color, main=paste(titleLabel, "for ",  input$dirLocation, sheetName), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
-          }
+          catMetric <<- input$renderCycles
+          legTitle <<- "Cycle"
+        } else if (input$perType == "Cell Analysis") {
           
-          legend("bottomright", legend = sort(as.numeric(input$renderCycles)), col = unique(tmp_data$color), lty = 1, title = "Cycle")
+          # Get the indicies in which the desired cells are in the data frame containing the number of cycles
+          cellIndex <- match(input$cellsMulti, numCycles$sheet)
+          
+          switch(input$typeGraph, 
+                 "Charge Voltage" = {
+                   for (cell in cellIndex) {
+                    tmp_data <<- rbind(tmp_data, data.frame(x=cycle_facts[cycle_facts$cell == cell,]$cycle, y=cycle_facts[cycle_facts$cell == cell,]$chV, cat=cycle_facts[cycle_facts$cell == cell,]$cell))
+                   }
+                   
+                   titleLabel <<- "Charge Voltage Plot "
+                   xlabel <<- "Cycle"
+                   ylabel <<- "Voltage (V)"
+                 },
+                 "Discharge Voltage" = {
+                   for (cell in cellIndex) {
+                     tmp_data <<- rbind(tmp_data, data.frame(x=cycle_facts[cycle_facts$cell == cell,]$cycle, y=cycle_facts[cycle_facts$cell == cell,]$dchV, cat=cycle_facts[cycle_facts$cell == cell,]$cell))
+                   }
+                   
+                   titleLabel <<- "Discharge Voltage Plot "
+                   xlabel <<- "Cycle"
+                   ylabel <<- "Voltage (V)"
+                   
+                 },
+                 "Average Voltage" = {
+                   for (cell in cellIndex) {
+                     tmp_data <<- rbind(tmp_data, data.frame(x=cycle_facts[cycle_facts$cell == cell,]$cycle, y=cycle_facts[cycle_facts$cell == cell,]$avgV, cat=cycle_facts[cycle_facts$cell == cell,]$cell))
+                   }
+                   
+                   titleLabel <<- "Average Voltage Plot "
+                   xlabel <<- "Cycle"
+                   ylabel <<- "Voltage (V)"
+                   
+                 },
+                 "Delta Voltage" = {
+                   
+                   for (cell in cellIndex) {
+                     tmp_data <<- rbind(tmp_data, data.frame(x=cycle_facts[cycle_facts$cell == cell,]$cycle, y=cycle_facts[cycle_facts$cell == cell,]$dV, cat=cycle_facts[cycle_facts$cell == cell,]$cell))
+                   }
+                   
+                   titleLabel <<- "Delta Voltage Plot "
+                   xlabel <<- "Cycle"
+                   ylabel <<- "Voltage (V)"
+                   
+                 },
+                 "Discharge Capacity" = {
+                   
+                 },
+                 "Discharge Areal Capacity" = {
+                   
+                 }
+            )
+          
+          tmp_data$color <<- tmp_data$cat
+          
+          catMetric <<- cellIndex
+          legTitle <<- "Cell"
         }
-      },
-      error=function(cond) {
-        # Error message if no data is present (error in rendering plot)
-        text(0.5, 0.5, labels = "You don messed up A-aron!\n (no data to plot)")
-        print(cond)
-        return(NA)
-      })
+      
+        # Filter out Infs and NaNs present in the data
+        tmp_data <<- tmp_data[is.finite(tmp_data$x),]
+        tmp_data <<- tmp_data[is.finite(tmp_data$y),]
+        tmp_data <<- tmp_data[is.finite(tmp_data$cat),]
+        
+        tryCatch({
+          if (input$plotStyle == "o" | input$plotStyle == "p") {
+            plot(tmp_data$x, tmp_data$y, type = input$plotStyle, col = tmp_data$color, main=paste(titleLabel, "for ",  input$dirLocation, sheetName), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+            legend("bottomright", legend = sort(as.numeric(catMetric)), col = unique(tmp_data$color), pch = 19, title = legTitle)
+          } else if (input$plotStyle == "l") {
+            newLine <- subset(tmp_data, tmp_data$color == 1)
+            plot(newLine$x, newLine$y, type = "l", col = newLine$color, main=paste(titleLabel, "for ",  input$dirLocation, sheetName), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+            
+            for (i in 2:length(catMetric)) {
+              newLine <- subset(tmp_data, tmp_data$color == i)
+              lines(newLine$x, newLine$y, col = newLine$color, main=paste(titleLabel, "for ",  input$dirLocation, sheetName), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+            }
+            
+            legend("bottomright", legend = sort(as.numeric(catMetric)), col = unique(tmp_data$color), lty = 1, title = legTitle)
+          }
+        },
+        error=function(cond) {
+          # Error message if no data is present (error in rendering plot)
+          text(0.5, 0.5, labels = "You don messed up A-aron!\n (no data to plot)")
+          print(cond)
+          return(NA)
+        })
     })
     
     # Method for handling changes in cell selection
@@ -813,12 +892,31 @@ if (interactive()) {
       updateSelectInput(session, "renderCycles", choices = 1:numCycles[numCycles$sheet == input$cells,]$cycles, selected = tmp_cycles)
     })
     
+    observeEvent(input$perType, {
+      
+      if (input$perType == "Cell Analysis") {
+        updateRadioButtons(session, "typeGraph", choices = c("Charge Voltage", "Discharge Voltage", "Average Voltage",
+                                                    "Delta Voltage", "Dishcharge Capacity", "Discharge Areal Capacity"))
+        
+        hide("cells")
+        hide("renderCycles")
+        show("cellsMulti")
+      } else if (input$perType == "Cycle Analysis") {
+        updateRadioButtons(session, "typeGraph", choices = c("dQdV Graphs", "Voltage Profiles", "Voltage vs. Time"))
+        
+        show("cells")
+        show("renderCycles")
+        hide("cellsMulti")
+      }
+    })
+    
     # Error handling for graphBuilder and then showing modal
     observeEvent(input$graphBuilder, {
       if(dim(numCycles)[1] == 0 | dim(dQdVData)[1] == 0 | dim(cycle_facts)[1] == 0 | dim(total) == 0) {
         shinyalert("No Data!", "Please run the analysis first or load a previous environment.", "error")
       } else {
         updateRadioButtons(session, "cells", choices = data$sheet)
+        updateCheckboxGroupInput(session, "cellsMulti", choices = data$sheet)
         showModal(graphbuilder)
       }
     })
