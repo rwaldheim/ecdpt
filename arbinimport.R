@@ -155,7 +155,7 @@ if (interactive()) {
   server <- function(input, output, session) {
     
     # This sets the maximum file size Shiny will import, the default of 5Mb is not large enough to handle Arbin files
-    options(shiny.maxRequestSize=30*1024^2)
+    options(shiny.maxRequestSize=50*1024^2)
     
     # Defines the modal in which the cell masses can be exported from Excel
     excelModal <- modalDialog({
