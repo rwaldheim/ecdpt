@@ -555,12 +555,16 @@ if (interactive()) {
             dev.off()
           }
           
-          # Record charge and dischatge voltage, then calculate the delta and average voltage
           if (sum(data$Mass) != 0) {
-            cycle_facts <<- rbind(cycle_facts, data.frame(cycle=i, cell=row, chV=chV, dchV=dchV, avgV=(dchV + chV) / 2, dV=chV-dchV, DCap = tail(cycle$Q.d, 1), CCap = tail(cycle$Q.c, 1), CE = tail(cycle$CE, 1)))
+            DCap <- tail(cycle$Q.d, 1)
+            CCap <- tail(cycle$Q.c, 1)
           } else {
-            cycle_facts <<- rbind(cycle_facts, data.frame(cycle=i, cell=row, chV=chV, dchV=dchV, avgV=(dchV + chV) / 2, dV=chV-dchV, DCap = tail(cycle$`Discharge_Capacity(Ah)`, 1), CCap = tail(cycle$`Charge_Capacity(Ah)`, 1), CE = tail(cycle$CE, 1)))
+            DCap <- tail(cycle$`Discharge_Capacity(Ah)`, 1)
+            CCap <- tail(cycle$`Charge_Capacity(Ah)`, 1)
           }
+          
+          # Record charge and dischatge voltage, then calculate the delta and average voltage
+          cycle_facts <<- rbind(cycle_facts, data.frame(cycle=i, cell=row, chV=chV, dchV=dchV, avgV=(dchV + chV) / 2, dV=chV-dchV, DCap = DCap, CCap = CCap, CE = (DCap / CCap) * 100))
           
           i <- i + 1
           ch_dch <- FALSE
@@ -618,8 +622,6 @@ if (interactive()) {
         
         # Save all data within the cell's directory
         write.csv(tmp_excel, file = paste(input$dirLocation, "/", data$sheet[row], "/", data$sheet[row], ".csv", sep = ""))
-        write.csv(dQdVData, file = paste(input$dirLocation, "/", data$sheet[row], "/", data$sheet[row], " dQdV Data.csv", sep = ""))
-        write.csv(cycle_facts, file = paste(input$dirLocation, "/", data$sheet[row], "/", data$sheet[row], " Cycle Facts.csv", sep = ""))
         
         # Append summation data to the larger datasets to be worked with later
         final <- rbind(final, tmp_excel)
@@ -639,30 +641,23 @@ if (interactive()) {
       progress$set(detail = "Wrapping up...")
       
       # Get the last status of each cycle for each cell (namely capacity)
-      stats <- final %>% group_by(Cell, Cycle_Index) %>% summarise_each(last)
+      stats <- cycle_facts %>% group_by(cycle) %>% summarise_each(mean)
+      SEs <- cycle_facts[c("cycle", "DCap")] %>% group_by(cycle) %>% summarise_each(se)
+      stats <- stats[, !names(stats) %in% c("cell")]
+      stats <- cbind(stats, SE = SEs$DCap)
       
       # Send all the data to a global variable to be used elsewhere
       total <<- final
       
-      # Calculate the mean and standard error of for the discharge capacity for all cells, dependent on presence of mass
-      if (sum(data$Mass) != 0) {
-        totalDCap <- aggregate(stats$Q.d, list(stats$`Cycle_Index`), mean)
-        totalDCapSE <- aggregate(stats$Q.d, list(stats$`Cycle_Index`), se)
-      } else {
-        totalDCap <- aggregate(stats$`Discharge_Capacity(Ah)`, list(stats$`Cycle_Index`), mean)
-        totalDCapSE <- aggregate(stats$`Discharge_Capacity(Ah)`, list(stats$`Cycle_Index`), se)
-      }
-      totalCE <- aggregate(stats$CE, list(stats$`Cycle_Index`), mean)
-      totalCESE <- aggregate(stats$CE, list(stats$`Cycle_Index`), se)
       
       # Total dishcharge capacity plotting
       if (is.element("Total Discharge Capacity", input$gGraphs)) {
         png(paste(getwd(),"/", input$dirLocation, "/", data$name[row], "Total Discharge Capacity Plot.png", sep = ""))
-        eol <- totalDCap[1,2] * 0.8
-        plot(totalDCap[,1], totalDCap[,2], type = "p", main=paste("Discharge Capacity for ",  input$dirLocation), xlab=NA, ylab=ylabel, mai=c(1,1,1,1))
-        arrows(totalDCap[,1], totalDCap[,2] - totalDCapSE[,2], totalDCap[,1], totalDCap[,2] + totalDCapSE[,2], length=0.05, angle=90, code=3)
+        eol <- stats$`DCap`[[1]] * 0.8
+        plot(stats$cycle, stats$DCap, type = "p", main=paste("Discharge Capacity for ",  input$dirLocation), xlab=NA, ylab=ylabel, mai=c(1,1,1,1))
+        arrows(stats$cycle, stats$DCap - stats$SE, stats$cycle, stats$DCap + stats$SE, length=0.05, angle=90, code=3)
         par(new = T)
-        plot(totalDCap[,1], totalCE[,2], type = "p", axes=F, col = "red", ylab=NA, xlab="Cycle")
+        plot(stats$cycle, stats$CE, type = "p", axes=F, col = "red", ylab=NA, xlab="Cycle", ylim = c(0, 105))
         axis(side = 4)
         mtext(side = 4, line = 2, "Coulombic Efficiency (%)")
         abline(h=eol, lty = "dotted")
@@ -670,8 +665,10 @@ if (interactive()) {
       }
       
       # Save total data and stats
-      write.csv(stats, file = paste(getwd(),"/", input$dirLocation, "/", data$name[row], " Summary.csv", sep = ""))
-      write.csv(final, file = paste(getwd(),"/", input$dirLocation, "/", data$name[row], " Total.csv", sep = ""))
+      write.csv(stats, file = paste(getwd(), "/", input$dirLocation, "/", input$dirLocation, " Summary.csv", sep = ""))
+      write.csv(final, file = paste(getwd(), "/", input$dirLocation, "/", input$dirLocation, " Total.csv", sep = ""))
+      write.csv(dQdVData, file = paste(getwd(), "/", input$dirLocation, "/", input$dirLocation, " dQdV Data.csv", sep = ""))
+      write.csv(cycle_facts, file = paste(getwd(), "/", input$dirLocation, "/", input$dirLocation, " Cycle Facts.csv", sep = ""))
       
       # If a histor directory does not exist, create it. Save all the data revelant to plotting to a RData file.
       if (!dir.exists("history/")) {
