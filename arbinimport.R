@@ -107,7 +107,7 @@ if (interactive()) {
            fluidRow(
              # Presents options for graphs to be generated
              checkboxGroupInput("gGraphs", "Choose Graphs to Generate:", choices = c("dQdV Graphs", "Voltage Profiles", "Voltage vs. Time", "Discharge Capacity", "Discharge Areal Capacity",
-                                                                                     "Total Discharge Capacity", "Average Voltage", "Delta Voltage"), inline = FALSE),
+                                                                                     "Total Discharge Capacity", "Average Voltage", "Delta Voltage", "Capacity Loss"), inline = FALSE),
              # Asks if the user would like peak fitting done on on the dQdV plots
              radioButtons("peakFit", "Do Peak Fitting on  dQdV Graphs? (BETA)", choices = c("No" = "noGenGraphs", "Yes" = "fit"), inline = TRUE),
              style = "margin: 5%; border: 1px solid black; padding: 5%"
@@ -564,7 +564,7 @@ if (interactive()) {
           }
           
           # Record charge and dischatge voltage, then calculate the delta and average voltage
-          cycle_facts <<- rbind(cycle_facts, data.frame(cycle=i, cell=row, chV=chV, dchV=dchV, avgV=(dchV + chV) / 2, dV=chV-dchV, DCap = DCap, CCap = CCap, CE = (DCap / CCap) * 100))
+          cycle_facts <<- rbind(cycle_facts, data.frame(cycle=i, cell=row, chV=chV, dchV=dchV, avgV=(dchV + chV) / 2, dV=chV-dchV, DCap = DCap, CCap = CCap, CE = (DCap / CCap) * 100, lostCap = CCap - DCap))
           
           i <- i + 1
           ch_dch <- FALSE
@@ -576,29 +576,30 @@ if (interactive()) {
         # 
         # ######
         
-        # Calculate the mean discharge capacity, which the presence of mass values determining the data used
-        if (sum(data$Mass) != 0) {
-          meanDCap <- aggregate(tmp_excel$`Q.d`, by=list(tmp_excel$`Cycle_Index`), last)
-          meanCE <- aggregate(tmp_excel$CE, by=list(tmp_excel$`Cycle_Index`), last)
-        } else {
-          meanDCap <- aggregate(tmp_excel$`Discharge_Capacity(Ah)`, by=list(tmp_excel$`Cycle_Index`), last)
-          meanCE <- aggregate(tmp_excel$CE, by=list(tmp_excel$`Cycle_Index`), last)
-        }
+        cell_data <- cycle_facts[cycle_facts$cell == row,]
         
         # Discharge capacity plotting, with coulombic efficiency being plotted alongside
         if (is.element("Discharge Capacity", input$gGraphs)) {
           png(paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row]," Discharge Capacity Plot.png", sep = ""))
-          eol <- meanDCap[1,2] * 0.8
-          twoord.plot(meanDCap[,1], meanDCap[,2], meanCE[,1], meanCE[,2], type="p", main=paste("Discharge Capacity for ",  input$dirLocation, data$sheet[row]), xlab="Cycle",ylab = ylabel)
+          eol <- cell_data$`DCap`[[1]] * 0.8
+          plot(cell_data$cycle, cell_data$DCap, type = "p", main=paste("Discharge Capacity for ",  input$dirLocation), xlab=NA, ylab=ylabel, mai=c(1,1,1,1))
+          par(new = T)
+          plot(cell_data$cycle, cell_data$CE, type = "p", axes=F, col = "red", ylab=NA, xlab="Cycle", ylim = c(0, 105))
+          axis(side = 4)
+          mtext(side = 4, line = 2, "Coulombic Efficiency (%)")
           abline(h=eol, lty = "dotted")
           dev.off()
         }
         
-        # Discharge areal capacity plotting, with coulombic efficiency being plotted alongside
+        # Discharge capacity plotting, with coulombic efficiency being plotted alongside
         if (is.element("Discharge Areal Capacity", input$gGraphs)) {
           png(paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row]," Discharge Areal Capacity Plot.png", sep = ""))
-          eol <- ((meanDCap[1,2] * 1000) / data$area[row]) * 0.8
-          plot(meanDCap[,1], ((meanDCap[,2] * 1000) / data$area[row]), main=paste("Discharge Capacity for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Discharge Capacity (mAh/cm^2)")
+          eol <- ((cell_data$DCap[[1]] * 1000) / data$area[row]) * 0.8
+          plot(cell_data$cycle, ((cell_data$DCap * 1000) / data$area[row]), type = "p", main=paste("Discharge Areal Capacity for ",  input$dirLocation), xlab=NA, ylab=ylabel, mai=c(1,1,1,1))
+          par(new = T)
+          plot(cell_data$cycle, cell_data$CE, type = "p", axes=F, col = "red", ylab=NA, xlab="Cycle", ylim = c(0, 105))
+          axis(side = 4)
+          mtext(side = 4, line = 2, "Coulombic Efficiency (%)")
           abline(h=eol, lty = "dotted")
           dev.off()
         }
@@ -606,9 +607,9 @@ if (interactive()) {
         # Average voltage plotting
         if (is.element("Average Voltage", input$gGraphs)) {
           png(paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row]," Average Voltage Plot.png", sep = ""))
-          plot(cycle_facts$cycle, cycle_facts$chV, col="blue", main=paste("Average Voltage Plot for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)", ylim=c(min(cycle_facts[,2:4]), max(cycle_facts[,2:4])))
-          points(cycle_facts$cycle, cycle_facts$dchV, col="red", main=paste("Average Voltage Plot for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)")
-          points(cycle_facts$cycle, cycle_facts$avgV, col="black", main=paste("Average Voltage Plot for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)")
+          plot(cell_data$cycle, cell_data$chV, col="blue", main=paste("Average Voltage Plot for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)", ylim=c(min(cell_data[,2:4]), max(cell_data[,2:4])))
+          points(cell_data$cycle, cell_data$dchV, col="red", main=paste("Average Voltage Plot for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)")
+          points(cell_data$cycle, cell_data$avgV, col="black", main=paste("Average Voltage Plot for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)")
           legend("top", c("Charge Voltage", "Discharge Voltage", "Average Voltage"), col=c("blue", "red", "black"), pch=19)
           dev.off()
         }
@@ -616,7 +617,15 @@ if (interactive()) {
         # Delta voltage plotting
         if (is.element("Delta Voltage", input$gGraphs)) {
           png(paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row]," Delta Voltage Plot.png", sep = ""))
-          plot(cycle_facts$cycle, cycle_facts$dV, main=paste("Delta Voltage Plot for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)", ylim =c(0, 0.5))
+          plot(cell_data$cycle, cell_data$dV, main=paste("Delta Voltage Plot for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)", ylim =c(0, 0.5))
+          dev.off()
+        }
+        
+        # Capacity Loss plotting
+        if (is.element("Capacity Loss", input$gGraphs)) {
+          png(paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row]," Capacity Loss Plot.png", sep = ""))
+          plot(cell_data$cycle, cell_data$lostCap, main=paste("Capacity Loss Plot for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab= ylabel, ylim = c(mean(cell_data$lostCap) + (2* sd(cell_data$lostCap)), mean(cell_data$lostCap) - (1.5* sd(cell_data$lostCap))))
+          abline(h=median(cell_data$lostCap), lty="dotted")
           dev.off()
         }
         
@@ -625,7 +634,7 @@ if (interactive()) {
         
         # Append summation data to the larger datasets to be worked with later
         final <- rbind(final, tmp_excel)
-        numCycles <<- rbind(numCycles, data.frame(sheet=data$sheet[row], cycles=nrow(cycle_facts[cycle_facts$cell == row,])))
+        numCycles <<- rbind(numCycles, data.frame(sheet=data$sheet[row], cycles=nrow(cell_data)))
         
         # Update progress bar
         progress$set(value = row, detail = paste("Finished ", row, " of ", nrow(data), " cells."))
