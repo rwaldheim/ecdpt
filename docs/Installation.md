@@ -1,3 +1,7 @@
+layout: page
+title: "Installation"
+permalink: /installation/
+
 [UNDER CONSTRUCTION]
 
 We're excited to see you want to start analyzing with us!
