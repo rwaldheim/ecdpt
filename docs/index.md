@@ -66,14 +66,17 @@ Within each cell's directory, there will be three data files generated: **[cell 
   </tr>
   <tr>
     <td>[cell name].csv</td>
-    <td><ul><li>the raw data from the input file plus some additional columns:</li><ul><li><code>Q.d</code> : Discharge Capacity (mAh/g)*</li><li><code>Q.c</code> : Charge Capacity (mAh/g)*</li><li><code>CC</code> : Continuous Capacity (if masses are specifed, units are mAh/g, and Ah if not)</li><li><code>CE</code> : Coulombic Efficiency (%)</li><ul><ul>
+    <td><ul><li>the raw data from the input file plus some additional columns:</li><ul><li><code>Q.d</code> : Discharge Capacity (mAh/g)*</li><li><code>Q.c</code> : Charge Capacity (mAh/g)*</li><li><code>CC</code> : Continuous Capacity (if masses are specifed, units are mAh/g, and Ah if not)</li><li><code>CE</code> : Coulombic Efficiency (%)</li><ul><ul></td>
+  </tr>
   <tr>
     <td>[cell name] dQdV Data.csv</td>
-    <td><ul><li>an index<br></li><li><code>cycle</code> : the cycle number</li><li><code>cell</code> : the cell number (expressed as the order in which they were processed)</li><li><code>c_d</code> : indicated whether the given values correlate to a charge or discharge cycle</li><li><code>voltage</code> : the voltage (V)</li><li><code>dQdV</code> : the differential capacity (Ah/V)</li><li><code>F_L</code> : indictes whether the given values correlate to the first of a new rate</li><ul>
+    <td><ul><li>an index<br></li><li><code>cycle</code> : the cycle number</li><li><code>cell</code> : the cell number (expressed as the order in which they were processed)</li><li><code>c_d</code> : indicated whether the given values correlate to a charge or discharge cycle</li><li><code>voltage</code> : the voltage (V)</li><li><code>dQdV</code> : the differential capacity (Ah/V)</li><li><code>F_L</code> : indictes whether the given values correlate to the first of a new rate</li><ul></td>
+  </tr>
   <tr>
     <td>[cell name] Cycle Facts.csv</td>
-    <td><ul><li>an index</li><li><code>cycle</code> : the cycle number</li><li><code>cell</code> : the cell number (expressed as the order in which they were processed)</li><li><code>chV</code> : the charge voltage (V)</li><li><code>dchV</code> : the discharge voltage (V)</li><li><code>avgV</code> : the average voltage (V)</li><li><code>dV</code> : the delta voltage (V)</li><li><code>DCap</code> : the dsicharge capacity (either mAh/g or Ah)</li><li><code>CCap</code> : the charge capacity (either mAh/g or Ah)</li><li><code>CE</code> : the coulombic efficiency (%)</li><ul>
-      </table>
+    <td><ul><li>an index</li><li><code>cycle</code> : the cycle number</li><li><code>cell</code> : the cell number (expressed as the order in which they were processed)</li><li><code>chV</code> : the charge voltage (V)</li><li><code>dchV</code> : the discharge voltage (V)</li><li><code>avgV</code> : the average voltage (V)</li><li><code>dV</code> : the delta voltage (V)</li><li><code>DCap</code> : the dsicharge capacity (either mAh/g or Ah)</li><li><code>CCap</code> : the charge capacity (either mAh/g or Ah)</li><li><code>CE</code> : the coulombic efficiency (%)</li><ul></td>
+  </tr>
+</table>
       
 Values with (*) are only present if the cell masses are specified
 
