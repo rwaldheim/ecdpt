@@ -1,8 +1,8 @@
 ---
+theme: jekyll-theme-dinky
 layout: page
 title: "Installation"
 permalink: /installation/
-theme: jekyll-theme-dinky
 ---
 
 [UNDER CONSTRUCTION]
