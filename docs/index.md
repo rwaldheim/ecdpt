@@ -2,9 +2,9 @@
 
 This program, written in [R](https://www.r-project.org/) using the [Shiny](https://shiny.rstudio.com/) package, aims to greatly simplify the battery analysis process and accelerating diagnostic data return on energy storage cells cycling on an Arbin battery cycler. It works by taking the raw export files from the [Arbin MITS Pro](https://www.arbin.com/software/) software and automating many standard analysis techniques while also allowing for rapid generation of common visual aids. 
 
-If you are new to the program and would like to get started, see our [[Installation]] page!
+If you are new to the program and would like to get started, see our [Installation](installation.md) page!
 
-If you already have all the required software installed and configured, see our [[Begin Analyzing]]!
+If you already have all the required software installed and configured, see our [Begin Analyzing](bwegin-analyzing.md)!
 
 ## High-Level Operation
 
@@ -83,6 +83,7 @@ Within each cell's directory, there will be three data files generated: **[cell 
     <td><ul><li>an index</li><li><code>cycle</code> : the cycle number</li><li><code>cell</code> : the cell number (expressed as the order in which they were processed)</li><li><code>chV</code> : the charge voltage (V)</li><li><code>dchV</code> : the discharge voltage (V)</li><li><code>avgV</code> : the average voltage (V)</li><li><code>dV</code> : the delta voltage (V)</li><li><code>DCap</code> : the dsicharge capacity (either mAh/g or Ah)</li><li><code>CCap</code> : the charge capacity (either mAh/g or Ah)</li><li><code>CE</code> : the coulombic efficiency (%)</li><ul></td>
   </tr>
 </table>
+      
 Values with (*) are only present if the cell masses are specified
 
 If you would like to know how each of these values are calculated, see our [[Calculations]] page.
