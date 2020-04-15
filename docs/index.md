@@ -115,13 +115,23 @@ If you would like to know how each of these values are calculated, see our [Calc
 
 In addition to all the data files, there are multiple graphs than can be generated alongside for quick and easy diagnostics. 
 
+<style type="text/css">
+  .tg  {border-collapse:collapse;border-spacing:0;}
+  .tg td{font-family:Arial, sans-serif;font-size:14px;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:black;}
+  .tg th{font-family:Arial, sans-serif;font-size:14px;font-weight:normal;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:black;}
+  .tg .tg-gfnm{background-color:#efefef;border-color:#000000;text-align:center;vertical-align:middle}
+  .tg .tg-i0p4{font-weight:bold;background-color:#ecf4ff;border-color:#000000;text-align:center;vertical-align:middle}
+  .tg .tg-3fas{background-color:#efefef;border-color:#000000;text-align:left;vertical-align:middle}
+  .tg .tg-o3hj{background-color:#ecf4ff;border-color:#000000;text-align:center;vertical-align:middle}
+  .tg .tg-xwyw{border-color:#000000;text-align:center;vertical-align:middle}
+  .tg .tg-0a7q{border-color:#000000;text-align:left;vertical-align:middle}
+</style>
 <table class="tg">
   <tr>
     <th class="tg-i0p4">Graph</th>
     <th class="tg-i0p4">X Axis</th>
     <th class="tg-i0p4">Y Axis</th>
     <th class="tg-o3hj"><span style="font-weight:bold">Plot Frequency</span><br></th>
-    <th class="tg-i0p4">Descrition</th>
   </tr>
   <tr>
     <td class="tg-xwyw">dQdV Graph</td>
