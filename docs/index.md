@@ -73,7 +73,7 @@ Within each cell's directory, there will be three data files generated: **[cell 
         <li><code>Q.c</code> : Charge Capacity (mAh/g)*</li>
         <li><code>CC</code> : Continuous Capacity (if masses are specifed, units are mAh/g, and Ah if not)</li>
         <li><code>CE</code> : Coulombic Efficiency (%)</li>
-      <ul>
+      </ul>
     </td>
   </tr>
   <tr>
@@ -87,7 +87,7 @@ Within each cell's directory, there will be three data files generated: **[cell 
         <li><code>voltage</code> : the voltage (V)</li>
         <li><code>dQdV</code> : the differential capacity (Ah/V)</li>
         <li><code>F_L</code> : indictes whether the given values correlate to the first of a new rate</li>
-      <ul>
+      </ul>
     </td>
   </tr>
   <tr>
