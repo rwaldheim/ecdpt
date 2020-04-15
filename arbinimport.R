@@ -762,21 +762,17 @@ if (interactive()) {
                ylabel <<- "dQdV (mAh/V)"
              },
              "Voltage Profiles" = {
-               if (sum(data$Mass) != 0) {
-                 tmp_data <<- data.frame(x=total[total$Cell %in% cellIndex,]$Q.d, y=total[total$Cell %in% cellIndex,]$`Voltage(V)`, cycle=total[total$Cell %in% cellIndex,]$`Cycle_Index`, cell=total[total$Cell %in% cellIndex,]$cell)
-                 tmp_data <<- rbind(tmp_data, data.frame(x=total[total$Cell %in% cellIndex,]$Q.c, y=total[total$Cell %in% cellIndex,]$`Voltage(V)`, cycle=total[total$Cell %in% cellIndex,]$`Cycle_Index`, cell=total[total$Cell %in% cellIndex,]$cell))
-                 xlabel <<- "Capacity (mAh/g)"
-               } else {
-                 tmp_data <<- data.frame(x=total[total$Cell %in% cellIndex,]$`Discharge_Capacity(Ah)`, y=total[total$Cell %in% cellIndex,]$`Voltage(V)`, cycle=total[total$Cell %in% cellIndex,]$`Cycle_Index`, cell=total[total$Cell %in% cellIndex,]$cell)
-                 tmp_data <<- rbind(tmp_data, data.frame(x=total[total$Cell %in% cellIndex,]$`Charge_Capacity(Ah)`, y=total[total$Cell %in% cellIndex,]$`Voltage(V)`, cycle=total[total$Cell %in% cellIndex,]$`Cycle_Index`, cell=total[total$Cell %in% cellIndex,]$cell))
-                 xlabel <<- "Capacity (Ah)"
-               }
+               tmp_data <<- data.frame(x=total[total$Cell %in% cellIndex,]$CC, y=total[total$Cell %in% cellIndex,]$`Voltage(V)`, cycle=total[total$Cell %in% cellIndex,]$`Cycle_Index`, cell=total[total$Cell %in% cellIndex,]$Cell)
                
                titleLabel <<- "Voltage Profile"
+               if (sum(data$Mass) != 0) {
+                 xlabel <- "Continuous Capacity (mAh/g)"
+               } else {
+                 xlabel <- "Continuous Capacity (Ah)"
+               }
                ylabel <<- "Voltage (V)"
              },
              "Voltage vs. Time" = {
-               tmp_data <<- data.frame()
                data_pull <<- data.frame(x=(total[total$Cell %in% cellIndex,]$`Test_Time(s)` / 60), y=total[total$Cell %in% cellIndex,]$`Voltage(V)`, cycle=total[total$Cell %in% cellIndex,]$`Cycle_Index`, cell=total[total$Cell %in% cellIndex,]$cell)
                
                normalTime <<- aggregate(data_pull$x, by=list(data_pull$cycle), normalizeTime)
@@ -799,8 +795,7 @@ if (interactive()) {
       tmp_data <<- tmp_data[tmp_data$cycle == sort(as.numeric(input$renderCycles)),]
       tmp_data$color <<- sapply(tmp_data$cycle, function(x) {match(x, input$renderCycles)})
       tmp_data$symbol <<- sapply(tmp_data$cell, function(x) {match(x, cellIndex)})
-      hi <- 0
-      
+
       tryCatch({
         if (input$plotStyle == "o" | input$plotStyle == "p") {
           plot(tmp_data$x, tmp_data$y, type = input$plotStyle, col = tmp_data$color, pch = tmp_data$symbol, main=titleLabel, xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
@@ -847,18 +842,20 @@ if (interactive()) {
       png(paste(input$fileName, ".png"))
       
       if (input$plotStyle == "o" | input$plotStyle == "p") {
-        plot(tmp_data$x, tmp_data$y, type = input$plotStyle, col = tmp_data$color, pch = cellIndex, main=paste(titleLabel, "for ",  input$dirLocation, sheetName), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
-        legend("bottomright", legend = sort(as.numeric(catMetric)), col = unique(tmp_data$color), pch = 19, title = legTitle)
+        plot(tmp_data$x, tmp_data$y, type = input$plotStyle, col = tmp_data$color, pch = tmp_data$symbol, main=titleLabel, xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+        legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells), col = c(unique(tmp_data$color), rep("black", length(input$cells))), pch = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title = "Cycle", ncol=2)
       } else if (input$plotStyle == "l") {
-        newLine <- subset(tmp_data, tmp_data$color == 1)
-        plot(newLine$x, newLine$y, type = "l", col = newLine$color, main=paste(titleLabel, "for ",  input$dirLocation, sheetName), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+        newLine <- subset(tmp_data, tmp_data$color == 1 & tmp_data$symbol == 1)
+        plot(newLine$x, newLine$y, type = "l", col = newLine$color, lty = newLine$symbol, main=titleLabel, xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
         
-        for (i in 2:length(catMetric)) {
-          newLine <- subset(tmp_data, tmp_data$color == i)
-          lines(newLine$x, newLine$y, col = newLine$color, main=paste(titleLabel, "for ",  input$dirLocation, sheetName), xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+        for (i in 1:length(input$renderCycles)) {
+          for (n in 1:length(cellIndex)) {
+            newLine <- subset(tmp_data, tmp_data$color == i & tmp_data$symbol == n)
+            lines(newLine$x, newLine$y, col = newLine$color, lty = newLine$symbol)
+          }
         }
         
-        legend("bottomright", legend = sort(as.numeric(catMetric)), col = unique(tmp_data$color), lty = 1, title = legTitle)
+        legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells), col = c(unique(tmp_data$color), rep("black", length(input$cells))), lty = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title = "Cycle", ncol=2)
       }
       
       dev.off()
