@@ -59,17 +59,6 @@ In its default state, the program will generate numerous data files placed throu
 
 Within each cell's directory, there will be three data files generated: **[cell name].csv**, **[cell name] dQdV Data.csv**, and **[cell name] Cycle Facts.csv**. The contents of each file are as follows:
 
-<style type="text/css">
-.tg  {border-collapse:collapse;border-spacing:0;}
-.tg td{font-family:Arial, sans-serif;font-size:14px;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:black;}
-.tg th{font-family:Arial, sans-serif;font-size:14px;font-weight:normal;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:black;}
-.tg .tg-gfnm{background-color:#efefef;border-color:#000000;text-align:center;vertical-align:middle}
-.tg .tg-i0p4{font-weight:bold;background-color:#ecf4ff;border-color:#000000;text-align:center;vertical-align:middle}
-.tg .tg-3fas{background-color:#efefef;border-color:#000000;text-align:left;vertical-align:middle}
-.tg .tg-o3hj{background-color:#ecf4ff;border-color:#000000;text-align:center;vertical-align:middle}
-.tg .tg-xwyw{border-color:#000000;text-align:center;vertical-align:middle}
-.tg .tg-0a7q{border-color:#000000;text-align:left;vertical-align:middle}
-</style>
 <table>
   <tr>
     <th>File</th>
@@ -77,15 +66,35 @@ Within each cell's directory, there will be three data files generated: **[cell 
   </tr>
   <tr>
     <td>[cell name].csv</td>
-    <td><ul><li>the raw data from the input file plus some additional columns:</li><ul><li><code>Q.d</code> : Discharge Capacity (mAh/g)*</li><li><code>Q.c</code> : Charge Capacity (mAh/g)*</li><li><code>CC</code> : Continuous Capacity (if masses are specifed, units are mAh/g, and Ah if not)</li><li><code>CE</code> : Coulombic Efficiency (%)</li><ul><ul></td>
+    <td>
+      <ul>
+        <li>the raw data from the input file plus some additional columns:</li>
+        <li><code>Q.d</code> : Discharge Capacity (mAh/g)*</li>
+        <li><code>Q.c</code> : Charge Capacity (mAh/g)*</li>
+        <li><code>CC</code> : Continuous Capacity (if masses are specifed, units are mAh/g, and Ah if not)</li>
+        <li><code>CE</code> : Coulombic Efficiency (%)</li>
+      <ul>
+    </td>
   </tr>
   <tr>
     <td>[cell name] dQdV Data.csv</td>
-    <td><ul><li>an index<br></li><li><code>cycle</code> : the cycle number</li><li><code>cell</code> : the cell number (expressed as the order in which they were processed)</li><li><code>c_d</code> : indicated whether the given values correlate to a charge or discharge cycle</li><li><code>voltage</code> : the voltage (V)</li><li><code>dQdV</code> : the differential capacity (Ah/V)</li><li><code>F_L</code> : indictes whether the given values correlate to the first of a new rate</li><ul></td>
+    <td>
+      <ul>
+        <li>an index<br></li>
+        <li><code>cycle</code> : the cycle number</li>
+        <li><code>cell</code> : the cell number (expressed as the order in which they were processed)</li>
+        <li><code>c_d</code> : indicated whether the given values correlate to a charge or discharge cycle</li>
+        <li><code>voltage</code> : the voltage (V)</li>
+        <li><code>dQdV</code> : the differential capacity (Ah/V)</li>
+        <li><code>F_L</code> : indictes whether the given values correlate to the first of a new rate</li>
+      <ul>
+    </td>
   </tr>
   <tr>
     <td>[cell name] Cycle Facts.csv</td>
-    <td><ul><li>an index</li><li><code>cycle</code> : the cycle number</li><li><code>cell</code> : the cell number (expressed as the order in which they were processed)</li><li><code>chV</code> : the charge voltage (V)</li><li><code>dchV</code> : the discharge voltage (V)</li><li><code>avgV</code> : the average voltage (V)</li><li><code>dV</code> : the delta voltage (V)</li><li><code>DCap</code> : the dsicharge capacity (either mAh/g or Ah)</li><li><code>CCap</code> : the charge capacity (either mAh/g or Ah)</li><li><code>CE</code> : the coulombic efficiency (%)</li><ul></td>
+    <td>
+      <ul><li>an index</li><li><code>cycle</code> : the cycle number</li><li><code>cell</code> : the cell number (expressed as the order in which they were processed)</li><li><code>chV</code> : the charge voltage (V)</li><li><code>dchV</code> : the discharge voltage (V)</li><li><code>avgV</code> : the average voltage (V)</li><li><code>dV</code> : the delta voltage (V)</li><li><code>DCap</code> : the dsicharge capacity (either mAh/g or Ah)</li><li><code>CCap</code> : the charge capacity (either mAh/g or Ah)</li><li><code>CE</code> : the coulombic efficiency (%)</li><ul>
+      </td>
   </tr>
 </table>
       
