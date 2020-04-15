@@ -66,32 +66,128 @@ Within each cell's directory, there will be three data files generated: **[cell 
   </tr>
   <tr>
     <td>[cell name].csv</td>
-    <td><ul><li>the raw data from the input file plus some additional columns:</li><ul><li><code>Q.d</code> : Discharge Capacity (mAh/g)*</li><li><code>Q.c</code> : Charge Capacity (mAh/g)*</li><li><code>CC</code> : Continuous Capacity (if masses are specifed, units are mAh/g, and Ah if not)</li><li><code>CE</code> : Coulombic Efficiency (%)</li><ul><ul>
+    <td>
+      <ul>
+        <li>the raw data from the input file plus some additional columns:</li>
+        <li><code>Q.d</code> : Discharge Capacity (mAh/g)*</li>
+        <li><code>Q.c</code> : Charge Capacity (mAh/g)*</li>
+        <li><code>CC</code> : Continuous Capacity (if masses are specifed, units are mAh/g, and Ah if not)</li>
+        <li><code>CE</code> : Coulombic Efficiency (%)</li>
+      </ul>
+    </td>
+  </tr>
   <tr>
     <td>[cell name] dQdV Data.csv</td>
-    <td><ul><li>an index<br></li><li><code>cycle</code> : the cycle number</li><li><code>cell</code> : the cell number (expressed as the order in which they were processed)</li><li><code>c_d</code> : indicated whether the given values correlate to a charge or discharge cycle</li><li><code>voltage</code> : the voltage (V)</li><li><code>dQdV</code> : the differential capacity (Ah/V)</li><li><code>F_L</code> : indictes whether the given values correlate to the first of a new rate</li><ul>
+    <td>
+      <ul>
+        <li>an index<br></li>
+        <li><code>cycle</code> : the cycle number</li>
+        <li><code>cell</code> : the cell number (expressed as the order in which they were processed)</li>
+        <li><code>c_d</code> : indicated whether the given values correlate to a charge or discharge cycle</li>
+        <li><code>voltage</code> : the voltage (V)</li>
+        <li><code>dQdV</code> : the differential capacity (Ah/V)</li>
+        <li><code>F_L</code> : indictes whether the given values correlate to the first of a new rate</li>
+      </ul>
+    </td>
+  </tr>
   <tr>
     <td>[cell name] Cycle Facts.csv</td>
-    <td><ul><li>an index</li><li><code>cycle</code> : the cycle number</li><li><code>cell</code> : the cell number (expressed as the order in which they were processed)</li><li><code>chV</code> : the charge voltage (V)</li><li><code>dchV</code> : the discharge voltage (V)</li><li><code>avgV</code> : the average voltage (V)</li><li><code>dV</code> : the delta voltage (V)</li><li><code>DCap</code> : the dsicharge capacity (either mAh/g or Ah)</li><li><code>CCap</code> : the charge capacity (either mAh/g or Ah)</li><li><code>CE</code> : the coulombic efficiency (%)</li><ul></td>
+    <td>
+      <ul>
+        <li>an index</li>
+        <li><code>cycle</code> : the cycle number</li>
+        <li><code>cell</code> : the cell number (expressed as the order in which they were processed)</li>
+        <li><code>chV</code> : the charge voltage (V)</li>
+        <li><code>dchV</code> : the discharge voltage (V)</li>
+        <li><code>avgV</code> : the average voltage (V)</li>
+        <li><code>dV</code> : the delta voltage (V)</li>
+        <li><code>DCap</code> : the dsicharge capacity (either mAh/g or Ah)</li>
+        <li><code>CCap</code> : the charge capacity (either mAh/g or Ah)</li>
+        <li><code>CE</code> : the coulombic efficiency (%)</li>
+      </ul>
+    </td>
   </tr>
 </table>
       
 Values with (*) are only present if the cell masses are specified
 
-If you would like to know how each of these values are calculated, see our [[Calculations]] page.
+If you would like to know how each of these values are calculated, see our [Calculations](Calculations.md) page.
 
-In addition to all the data files, there are multiple graphs than can be generated alongside for quick and easy diagnostics. The following graphs will be generated on a *per cycle* basis, placed in their own respective subdirectories due to the large number of filed generated:
+In addition to all the data files, there are multiple graphs than can be generated alongside for quick and easy diagnostics. 
 
-- dQdV Graphs
-- Voltage Profiles
-- Voltage vs. Time
-
-The following are plotted on a *per cell* basis, and will live in the root directory of said cell:
-
-- Discharge Capacity (plus Coulombic Efficiency)
-- Discharge Areal Capacity (plus Coulombic Efficiency)*
-- Average Voltage
-- Delta Voltage
+<style type="text/css">
+  .tg  {border-collapse:collapse;border-spacing:0;}
+  .tg td{font-family:Arial, sans-serif;font-size:14px;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:black;}
+  .tg th{font-family:Arial, sans-serif;font-size:14px;font-weight:normal;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:black;}
+  .tg .tg-gfnm{background-color:#efefef;border-color:#000000;text-align:center;vertical-align:middle}
+  .tg .tg-i0p4{font-weight:bold;background-color:#ecf4ff;border-color:#000000;text-align:center;vertical-align:middle}
+  .tg .tg-3fas{background-color:#efefef;border-color:#000000;text-align:left;vertical-align:middle}
+  .tg .tg-o3hj{background-color:#ecf4ff;border-color:#000000;text-align:center;vertical-align:middle}
+  .tg .tg-xwyw{border-color:#000000;text-align:center;vertical-align:middle}
+  .tg .tg-0a7q{border-color:#000000;text-align:left;vertical-align:middle}
+</style>
+<table class="tg">
+  <tr>
+    <th class="tg-i0p4">Graph</th>
+    <th class="tg-i0p4">X Axis</th>
+    <th class="tg-i0p4">Y Axis</th>
+    <th class="tg-o3hj"><span style="font-weight:bold">Plot Frequency</span><br></th>
+  </tr>
+  <tr>
+    <td class="tg-xwyw">dQdV Graph</td>
+    <td class="tg-xwyw">Voltage (V)</td>
+    <td class="tg-xwyw">dQdV (Ah/V)</td>
+    <td class="tg-xwyw">per cycle</td>
+  </tr>
+  <tr>
+    <td class="tg-gfnm">Voltage Profile</td>
+    <td class="tg-gfnm">Continuous Capacity (mAh/g or Ah)</td>
+    <td class="tg-gfnm">Voltage (V)</td>
+    <td class="tg-gfnm">per cycle</td>
+  </tr>
+  <tr>
+    <td class="tg-xwyw">Voltage vs. Time</td>
+    <td class="tg-xwyw">Time (min)</td>
+    <td class="tg-xwyw">Voltage (V)</td>
+    <td class="tg-xwyw">per cycle</td>
+  </tr>
+  <tr>
+    <td class="tg-gfnm">Discharge Capacity</td>
+    <td class="tg-gfnm">Cycle</td>
+    <td class="tg-gfnm">Discharge Capacity (mAh/g or Ah)</td>
+    <td class="tg-gfnm">per cell</td>
+  </tr>
+  <tr>
+    <td class="tg-xwyw">Discharge Areal Capacity</td>
+    <td class="tg-xwyw">Cycle</td>
+    <td class="tg-xwyw">Discharge Capacity (Ah/cm^2)</td>
+    <td class="tg-xwyw">per cell</td>
+  </tr>
+  <tr>
+    <td class="tg-gfnm">Total Discharge Capacity</td>
+    <td class="tg-gfnm">Cycle</td>
+    <td class="tg-gfnm">Discharge Capacity (mAh/g or Ah)</td>
+    <td class="tg-gfnm">per analysis</td>
+  </tr>
+  <tr>
+    <td class="tg-xwyw">Average Voltage</td>
+    <td class="tg-xwyw">Cycle</td>
+    <td class="tg-xwyw">Voltage (V)</td>
+    <td class="tg-xwyw">per cell</td>
+  </tr>
+  <tr>
+    <td class="tg-gfnm">Delta Voltage</td>
+    <td class="tg-gfnm">Cycle</td>
+    <td class="tg-gfnm">Voltage (V)</td>
+    <td class="tg-gfnm">per cell</td>
+  </tr>
+  <tr>
+    <td class="tg-xwyw">Capacity Loss</td>
+    <td class="tg-xwyw">Cycle</td>
+    <td class="tg-xwyw">Capacity (mAh/g or Ah)</td>
+    <td class="tg-xwyw">per cell</td>
+  </tr>
+</table>
 
 The Discharge Areal Capacity (*) can only be plotted if the area of the limiting electrode is specified.
 

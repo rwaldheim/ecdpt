@@ -1,4 +1,5 @@
 ---
+theme: jekyll-theme-dinky
 layout: page
 title: "Installation"
 permalink: /installation/
