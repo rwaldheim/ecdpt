@@ -59,6 +59,17 @@ In its default state, the program will generate numerous data files placed throu
 
 Within each cell's directory, there will be three data files generated: **[cell name].csv**, **[cell name] dQdV Data.csv**, and **[cell name] Cycle Facts.csv**. The contents of each file are as follows:
 
+<style type="text/css">
+.tg  {border-collapse:collapse;border-spacing:0;}
+.tg td{font-family:Arial, sans-serif;font-size:14px;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:black;}
+.tg th{font-family:Arial, sans-serif;font-size:14px;font-weight:normal;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:black;}
+.tg .tg-gfnm{background-color:#efefef;border-color:#000000;text-align:center;vertical-align:middle}
+.tg .tg-i0p4{font-weight:bold;background-color:#ecf4ff;border-color:#000000;text-align:center;vertical-align:middle}
+.tg .tg-3fas{background-color:#efefef;border-color:#000000;text-align:left;vertical-align:middle}
+.tg .tg-o3hj{background-color:#ecf4ff;border-color:#000000;text-align:center;vertical-align:middle}
+.tg .tg-xwyw{border-color:#000000;text-align:center;vertical-align:middle}
+.tg .tg-0a7q{border-color:#000000;text-align:left;vertical-align:middle}
+</style>
 <table>
   <tr>
     <th>File</th>
