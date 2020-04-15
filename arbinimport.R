@@ -106,8 +106,10 @@ if (interactive()) {
     column(4, align = "left", 
            fluidRow(
              # Presents options for graphs to be generated
-             checkboxGroupInput("gGraphs", "Choose Graphs to Generate:", choices = c("dQdV Graphs", "Voltage Profiles", "Voltage vs. Time", "Discharge Capacity", "Discharge Areal Capacity",
-                                                                                     "Total Discharge Capacity", "Average Voltage", "Delta Voltage", "Capacity Loss"), inline = FALSE),
+             "Choose graphs to be generated: ",
+             actionButton("whatGraph", "What's this?", class = "btn-link"),
+             checkboxGroupInput("gGraphs", NULL, choices = c("dQdV Graphs", "Voltage Profiles", "Voltage vs. Time", "Discharge Capacity", "Discharge Areal Capacity",
+                                                              "Total Discharge Capacity", "Average Voltage", "Delta Voltage", "Capacity Loss"), inline = FALSE),
              # Asks if the user would like peak fitting done on on the dQdV plots
              radioButtons("peakFit", "Do Peak Fitting on  dQdV Graphs? (BETA)", choices = c("No" = "noGenGraphs", "Yes" = "fit"), inline = TRUE),
              style = "margin: 5%; border: 1px solid black; padding: 5%"
@@ -158,21 +160,116 @@ if (interactive()) {
     options(shiny.maxRequestSize=50*1024^2)
     
     # Defines the modal in which the cell masses can be exported from Excel
+    graphModal <- modalDialog({
+      fluidPage(style = "font-size:15pt;",
+        tags$head(tags$style(".modal-dialog{width:80%}")),
+
+        fluidRow(align = "center",
+          HTML('
+            <style type="text/css">
+            .tg  {border-collapse:collapse;border-spacing:0;}
+            .tg td{font-family:Arial, sans-serif;font-size:14px;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:black;}
+            .tg th{font-family:Arial, sans-serif;font-size:14px;font-weight:normal;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:black;}
+            .tg .tg-gfnm{background-color:#efefef;border-color:#000000;text-align:center;vertical-align:middle}
+            .tg .tg-3fas{background-color:#efefef;border-color:#000000;text-align:left;vertical-align:middle}
+            .tg .tg-qhnr{background-color:#ecf4ff;border-color:#000000;text-align:center;vertical-align:top}
+            .tg .tg-h2zs{font-weight:bold;background-color:#ecf4ff;border-color:#000000;text-align:center;vertical-align:top}
+            .tg .tg-xwyw{border-color:#000000;text-align:center;vertical-align:middle}
+            .tg .tg-0a7q{border-color:#000000;text-align:left;vertical-align:middle}
+            </style>
+            <table class="tg">
+              <tr>
+                <th class="tg-h2zs">Graph</th>
+                <th class="tg-h2zs">X Axis</th>
+                <th class="tg-h2zs">Y Axis</th>
+                <th class="tg-qhnr"><span style="font-weight:bold">Plot Frequency</span><br></th>
+                <th class="tg-h2zs">Description</th>
+              </tr>
+              <tr>
+                <td class="tg-xwyw">dQdV Graph</td>
+                <td class="tg-xwyw">Voltage (V)</td>
+                <td class="tg-xwyw">dQdV (Ah/V)</td>
+                <td class="tg-xwyw">per cycle</td>
+                <td class="tg-0a7q">The differential capacity plot for each cycle<br></td>
+              </tr>
+              <tr>
+                <td class="tg-gfnm">Voltage Profile</td>
+                <td class="tg-gfnm">Continuous Capacity (mAh/g or Ah)</td>
+                <td class="tg-gfnm">Voltage (V)</td>
+                <td class="tg-gfnm">per cycle</td>
+                <td class="tg-3fas">Voltage vs. capacity plot for each cycle. Units depend if the masses are specified.<br></td>
+              </tr>
+              <tr>
+                <td class="tg-xwyw">Voltage vs. Time</td>
+                <td class="tg-xwyw">Time (min)</td>
+                <td class="tg-xwyw">Voltage (V)</td>
+                <td class="tg-xwyw">per cycle</td>
+                <td class="tg-0a7q">The voltage as a function of time, including all steps</td>
+              </tr>
+              <tr>
+                <td class="tg-gfnm">Discharge Capacity</td>
+                <td class="tg-gfnm">Cycle</td>
+                <td class="tg-gfnm">Discharge Capacity (mAh/g or Ah)</td>
+                <td class="tg-gfnm">per cell</td>
+                <td class="tg-3fas">Discharge capacity for each <span style="font-weight:bold">individual cell </span>per cycle. Coulombic efficiency is <br>also plotted on a secondary axis. Units depend if the masses are specified.</td>
+              </tr>
+              <tr>
+                <td class="tg-xwyw">Discharge Areal Capacity</td>
+                <td class="tg-xwyw">Cycle</td>
+                <td class="tg-xwyw">Discharge Capacity (Ah/cm^2)</td>
+                <td class="tg-xwyw">per cell</td>
+                <td class="tg-0a7q">Discharge areal capacity for each <span style="font-weight:bold">individual cell </span>per cycle. Coulombic <br>efficiency is also plotted on a secondary axis.</td>
+              </tr>
+              <tr>
+                <td class="tg-gfnm">Total Discharge Capacity</td>
+                <td class="tg-gfnm">Cycle</td>
+                <td class="tg-gfnm">Discharge Capacity (mAh/g or Ah)</td>
+                <td class="tg-gfnm">per analysis</td>
+                <td class="tg-3fas">Discharge capacity summarized for <span style="font-weight:bold">all cells</span> in the analysis. Coulombic efficiency <br>is also plotted on a secondary axis. Mean is plotted as a point with error bars <br>presenting the standard error between the cells. Units depend if the masses are <br>specified.</td>
+              </tr>
+              <tr>
+                <td class="tg-xwyw">Average Voltage</td>
+                <td class="tg-xwyw">Cycle</td>
+                <td class="tg-xwyw">Voltage (V)</td>
+                <td class="tg-xwyw">per cell</td>
+                <td class="tg-0a7q">The average voltage vs capacity for each cycle. The charge voltage (Vcharge) <br>and discharge voltage (Vdischarge) were calculated using the average value<br>theorem. The average voltage is then (Vcharge + Vdischarge)/2. Charge and <br>discharge voltages are plotted alongside the average.</td>
+              </tr>
+              <tr>
+                <td class="tg-gfnm">Delta Voltage</td>
+                <td class="tg-gfnm">Cycle</td>
+                <td class="tg-gfnm">Voltage (V)</td>
+                <td class="tg-gfnm">per cell</td>
+                <td class="tg-3fas">The delta voltage vs capacity for each cycle. The charge voltage (Vcharge) <br>and discharge voltage (Vdischarge) were calculated using the average value<br>theorem. The delta voltage is then Vcharge - Vdischarge). Charge and <br>discharge voltages are plotted alongside the average.<br></td>
+              </tr>
+              <tr>
+                <td class="tg-xwyw">Capacity Loss</td>
+                <td class="tg-xwyw">Cycle</td>
+                <td class="tg-xwyw">Capacity (mAh/g or Ah)</td>
+                <td class="tg-xwyw">per cell</td>
+                <td class="tg-0a7q">The discharge capacity minus the charge capacity for each cycle. Units depend <br>if the masses are specified.</td>
+              </tr>
+            </table>
+          ')
+        ),
+      )}, title = "Graph Types", easyClose = TRUE)
+    
     excelModal <- modalDialog({
       fluidPage(style = "font-size:15pt;",
-        useShinyjs(),
-        useShinyalert(),
-        
-        tags$head(tags$style(".modal-dialog{width:80%}")),
-        tags$head(tags$style(".modal-body{ min-height:1000px}")),
-        
-        fluidRow(align = "center",
-          HTML( '<p align="left">1. Open an excel file containing the masses of each cell.<br>
-                                 2. Copy the values in the order of cells. (Must be vertical and continuous)</p>
+                useShinyjs(),
+                useShinyalert(),
+                
+                tags$head(tags$style(".modal-dialog{width:80%}")),
+                tags$head(tags$style(".modal-body{ min-height:1000px}")),
+                
+                fluidRow(align = "center",
+                         HTML( '<ol align="left">
+                                 <li>Open an excel file containing the masses of each cell.</li>
+                                 <li>Copy the values in the order of cells. (Must be vertical and continuous)</li>
+                                </ol>
                               <p><b>Once you hit "Import", the program will grab the masses directly from your clipboard</b></p>
                               <p align="left">Example:</p>'),
-          imageOutput("importGIF"),
-        ),
+                         imageOutput("importGIF"),
+                ),
       )}, title = "Import Masses from Excel Dialog", height = "100%", easyClose = TRUE, footer = actionButton("excelMasses", "Import"))
     
     # Renders the GIF image for the excelModal
@@ -291,6 +388,10 @@ if (interactive()) {
     # Show the excelImport modal when the button is clicked
     observeEvent(input$excelImport, {
       showModal(excelModal)
+    })
+    
+    observeEvent(input$whatGraph, {
+      showModal(graphModal)
     })
     
     # Data validation the masses imported from Excel, if valid they are placed into the datatable
@@ -589,7 +690,7 @@ if (interactive()) {
         if (is.element("Discharge Areal Capacity", input$gGraphs)) {
           png(paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row]," Discharge Areal Capacity Plot.png", sep = ""))
           eol <- ((cell_data$DCap[[1]] * 1000) / data$area[row]) * 0.8
-          plot(cell_data$cycle, ((cell_data$DCap * 1000) / data$area[row]), type = "p", main=paste("Discharge Areal Capacity for ",  input$dirLocation), xlab=NA, ylab=ylabel, mai=c(1,1,1,1))
+          plot(cell_data$cycle, ((cell_data$DCap * 1000) / data$area[row]), type = "p", main=paste("Discharge Areal Capacity for ",  input$dirLocation), xlab=NA, ylab="Discharge Capacity (mAh/cm^2)", mai=c(1,1,1,1))
           par(new = T)
           plot(cell_data$cycle, cell_data$CE, type = "p", axes=F, col = "red", ylab=NA, xlab="Cycle", ylim = c(0, 105))
           axis(side = 4)
