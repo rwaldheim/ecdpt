@@ -645,9 +645,10 @@ if (interactive()) {
       
       # Get the last status of each cycle for each cell (namely capacity)
       stats <- cycle_facts %>% group_by(cycle) %>% summarise_each(mean)
-      SEs <- cycle_facts[c("cycle", "DCap")] %>% group_by(cycle) %>% summarise_each(se)
+      capSEs <- cycle_facts[c("cycle", "DCap")] %>% group_by(cycle) %>% summarise_each(se)
+      ceSEs <- cycle_facts[c("cycle", "CE")] %>% group_by(cycle) %>% summarise_each(se)
       stats <- stats[, !names(stats) %in% c("cell")]
-      stats <- cbind(stats, SE = SEs$DCap)
+      stats <- cbind(stats, capSE = capSEs$DCap, ceSE = ceSEs$CE)
       
       # Send all the data to a global variable to be used elsewhere
       total <<- final
@@ -658,10 +659,11 @@ if (interactive()) {
         png(paste(getwd(),"/", input$dirLocation, "/", data$name[row], "Total Discharge Capacity Plot.png", sep = ""))
         eol <- stats$`DCap`[[1]] * 0.8
         plot(stats$cycle, stats$DCap, type = "p", main=paste("Discharge Capacity for ",  input$dirLocation), xlab=NA, ylab=ylabel, mai=c(1,1,1,1))
-        arrows(stats$cycle, stats$DCap - stats$SE, stats$cycle, stats$DCap + stats$SE, length=0.05, angle=90, code=3)
+        arrows(stats$cycle, stats$DCap - stats$capSE, stats$cycle, stats$DCap + stats$capSE, length=0.05, angle=90, code=3)
         par(new = T)
         plot(stats$cycle, stats$CE, type = "p", axes=F, col = "red", ylab=NA, xlab="Cycle", ylim = c(0, 105))
-        axis(side = 4)
+        arrows(stats$cycle, stats$CE - stats$ceSE, stats$cycle, stats$CE + stats$ceSE, length=0.05, angle=90, code=3, col = "red")
+        axis(side = 4, col = "red")
         mtext(side = 4, line = 2, "Coulombic Efficiency (%)")
         abline(h=eol, lty = "dotted")
         dev.off()
