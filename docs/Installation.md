@@ -1,6 +1,5 @@
 ---
-theme: jekyll-theme-dinky
-layout: page
+layout: default
 title: "Installation"
 permalink: /installation/
 ---

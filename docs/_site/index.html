@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+
+<!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Welcome to the Arbin Battery Analysis Tool! | arbinimport</title>
+<meta name="generator" content="Jekyll v3.8.5" />
+<meta property="og:title" content="Welcome to the Arbin Battery Analysis Tool!" />
+<meta property="og:locale" content="en_US" />
+<link rel="canonical" href="http://localhost:4000/" />
+<meta property="og:url" content="http://localhost:4000/" />
+<meta property="og:site_name" content="arbinimport" />
+<script type="application/ld+json">
+{"@type":"WebSite","url":"http://localhost:4000/","name":"arbinimport","headline":"Welcome to the Arbin Battery Analysis Tool!","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#157878">
+    <link rel="stylesheet" href="/assets/css/style.css?v=532da449bd42f15300fc2de632ee511a08f9f6cf">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">arbinimport</h1>
+      <h2 class="project-tagline"></h2>
+      
+        <a href="https://github.com/2ryan09/arbinimport" class="btn">View on GitHub</a>
+      
+      
+        <a href="https://github.com/2ryan09/arbinimport/zipball/gh-pages" class="btn">Download .zip</a>
+        <a href="https://github.com/2ryan09/arbinimport/tarball/gh-pages" class="btn">Download .tar.gz</a>
+      
+    </section>
+
+    <section class="main-content">
+      <h1 id="welcome-to-the-arbin-battery-analysis-tool">Welcome to the Arbin Battery Analysis Tool!</h1>
+
+<p>This program, written in <a href="https://www.r-project.org/">R</a> using the <a href="https://shiny.rstudio.com/">Shiny</a> package, aims to greatly simplify the battery analysis process and accelerating diagnostic data return on energy storage cells cycling on an Arbin battery cycler. It works by taking the raw export files from the <a href="https://www.arbin.com/software/">Arbin MITS Pro</a> software and automating many standard analysis techniques while also allowing for rapid generation of common visual aids.</p>
+
+<p>If you are new to the program and would like to get started, see our <a href="/installation/">Installation</a> page!</p>
+
+<p>If you already have all the required software installed and configured, see our <a href="begin-analyzing.md">Begin Analyzing</a>!</p>
+
+<h2 id="high-level-operation">High-Level Operation</h2>
+
+<p>Let’s start with the basics: what are the inputs?</p>
+
+<h3 id="inputs">Inputs</h3>
+
+<p>At a minimum, all the application needs is the ‘'’data file’’’ as exported from the Arbin Excel macro. The data file from Arbin is characterized as a large Excel file that contains the following information:</p>
+
+<table>
+  <tr>
+    <th colspan="3">ArbinExportFile.xlsx</th>
+  </tr>
+  <tr>
+    <td><code>Date_Time</code></td>
+    <td><code>Test_Time(s)</code>*</td>
+    <td><code>Step_Time(s)</code></td>
+  </tr>
+  <tr>
+    <td><code>Step_Index</code>*</td>
+    <td><code>Cycle_Index</code>*</td>
+    <td><code>Voltage(V)</code>*</td>
+  </tr>
+  <tr>
+    <td><code>Current(A)</code>*</td>
+    <td><code>Discharge_Capacity(Ah)</code>*</td>
+    <td><code>Charge_Capacity(Ah)</code>*</td>
+  </tr>
+  <tr>
+    <td><code>Charge_Time(s)</code></td>
+    <td><code>DisCharge_Time(s)</code></td>
+    <td><code>Charge_Energy(Wh)</code></td>
+  </tr>
+  <tr>
+    <td><code>Discharge_Energy</code></td>
+    <td><code>Internal Resistance(Ohm)</code></td>
+    <td><code>dV/dt(V/s)</code></td>
+  </tr>
+</table>
+
+<p>The exact format and which values are present are configurable within the Arbin software. In order for the program to execute corrrectly, the values marked with a (*) should be present.</p>
+
+<p>Some other inputs that are optional, depending on the desired outputs, are the <strong>area of the limiting electrode</strong>, <strong>weight percent of active material in the limiting electrode</strong>, and the <strong>capacity of the limiting active material</strong>.</p>
+
+<h3 id="outputs">Outputs</h3>
+
+<p>Now that we’ve established what the required inputs are, what does the program generate?</p>
+
+<p>Regardless of inputs selected, the program will generate a directory (folder) in which all data will be placed, then a subdirectory for each cell analyzed. If select graphs are chosen to be generated, these will create directries of their own within each respective cell’s folder.</p>
+
+<p>In its default state, the program will generate numerous data files placed throughout this file system. At the highest level (in the main folder), there will be two files generated: a <strong>[directory name] Summary.csv</strong> and <strong>[directory name] Total.csv</strong>. The <strong>Summary</strong> file will contain all the values in the input file, as well as some additional metrics, averaged on a <em>per cycle</em> basis for each cell individually. The <strong>Total</strong> file will contain all the raw data imported for each cell, concatenated into one large file. Two additional files that could be present, based on the user selection, are the <strong>Total Discharge Capacity</strong> and <strong>Total Discharge Areal Capacity</strong> graphs.</p>
+
+<p>Within each cell’s directory, there will be three data files generated: <strong>[cell name].csv</strong>, <strong>[cell name] dQdV Data.csv</strong>, and <strong>[cell name] Cycle Facts.csv</strong>. The contents of each file are as follows:</p>
+
+<table>
+  <tr>
+    <th>File</th>
+    <th>Attributes</th>
+  </tr>
+  <tr>
+    <td>[cell name].csv</td>
+    <td>
+      <ul>
+        <li>the raw data from the input file plus some additional columns:</li>
+        <li><code>Q.d</code> : Discharge Capacity (mAh/g)*</li>
+        <li><code>Q.c</code> : Charge Capacity (mAh/g)*</li>
+        <li><code>CC</code> : Continuous Capacity (if masses are specifed, units are mAh/g, and Ah if not)</li>
+        <li><code>CE</code> : Coulombic Efficiency (%)</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td>[cell name] dQdV Data.csv</td>
+    <td>
+      <ul>
+        <li>an index<br /></li>
+        <li><code>cycle</code> : the cycle number</li>
+        <li><code>cell</code> : the cell number (expressed as the order in which they were processed)</li>
+        <li><code>c_d</code> : indicated whether the given values correlate to a charge or discharge cycle</li>
+        <li><code>voltage</code> : the voltage (V)</li>
+        <li><code>dQdV</code> : the differential capacity (Ah/V)</li>
+        <li><code>F_L</code> : indictes whether the given values correlate to the first of a new rate</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td>[cell name] Cycle Facts.csv</td>
+    <td>
+      <ul>
+        <li>an index</li>
+        <li><code>cycle</code> : the cycle number</li>
+        <li><code>cell</code> : the cell number (expressed as the order in which they were processed)</li>
+        <li><code>chV</code> : the charge voltage (V)</li>
+        <li><code>dchV</code> : the discharge voltage (V)</li>
+        <li><code>avgV</code> : the average voltage (V)</li>
+        <li><code>dV</code> : the delta voltage (V)</li>
+        <li><code>DCap</code> : the dsicharge capacity (either mAh/g or Ah)</li>
+        <li><code>CCap</code> : the charge capacity (either mAh/g or Ah)</li>
+        <li><code>CE</code> : the coulombic efficiency (%)</li>
+      </ul>
+    </td>
+  </tr>
+</table>
+
+<p>Values with (*) are only present if the cell masses are specified</p>
+
+<p>If you would like to know how each of these values are calculated, see our <a href="/Calculations.html">Calculations</a> page.</p>
+
+<p>In addition to all the data files, there are multiple graphs than can be generated alongside for quick and easy diagnostics.</p>
+
+<style type="text/css">
+  .tg  {border-collapse:collapse;border-spacing:0;}
+  .tg td{font-family:Arial, sans-serif;font-size:14px;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:black;}
+  .tg th{font-family:Arial, sans-serif;font-size:14px;font-weight:normal;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:black;}
+  .tg .tg-gfnm{background-color:#efefef;border-color:#000000;text-align:center;vertical-align:middle}
+  .tg .tg-i0p4{font-weight:bold;background-color:#ecf4ff;border-color:#000000;text-align:center;vertical-align:middle}
+  .tg .tg-3fas{background-color:#efefef;border-color:#000000;text-align:left;vertical-align:middle}
+  .tg .tg-o3hj{background-color:#ecf4ff;border-color:#000000;text-align:center;vertical-align:middle}
+  .tg .tg-xwyw{border-color:#000000;text-align:center;vertical-align:middle}
+  .tg .tg-0a7q{border-color:#000000;text-align:left;vertical-align:middle}
+</style>
+
+<table class="tg">
+  <tr>
+    <th class="tg-i0p4">Graph</th>
+    <th class="tg-i0p4">X Axis</th>
+    <th class="tg-i0p4">Y Axis</th>
+    <th class="tg-o3hj"><span style="font-weight:bold">Plot Frequency</span><br /></th>
+  </tr>
+  <tr>
+    <td class="tg-xwyw">dQdV Graph</td>
+    <td class="tg-xwyw">Voltage (V)</td>
+    <td class="tg-xwyw">dQdV (Ah/V)</td>
+    <td class="tg-xwyw">per cycle</td>
+  </tr>
+  <tr>
+    <td class="tg-gfnm">Voltage Profile</td>
+    <td class="tg-gfnm">Continuous Capacity (mAh/g or Ah)</td>
+    <td class="tg-gfnm">Voltage (V)</td>
+    <td class="tg-gfnm">per cycle</td>
+  </tr>
+  <tr>
+    <td class="tg-xwyw">Voltage vs. Time</td>
+    <td class="tg-xwyw">Time (min)</td>
+    <td class="tg-xwyw">Voltage (V)</td>
+    <td class="tg-xwyw">per cycle</td>
+  </tr>
+  <tr>
+    <td class="tg-gfnm">Discharge Capacity</td>
+    <td class="tg-gfnm">Cycle</td>
+    <td class="tg-gfnm">Discharge Capacity (mAh/g or Ah)</td>
+    <td class="tg-gfnm">per cell</td>
+  </tr>
+  <tr>
+    <td class="tg-xwyw">Discharge Areal Capacity</td>
+    <td class="tg-xwyw">Cycle</td>
+    <td class="tg-xwyw">Discharge Capacity (Ah/cm^2)</td>
+    <td class="tg-xwyw">per cell</td>
+  </tr>
+  <tr>
+    <td class="tg-gfnm">Total Discharge Capacity</td>
+    <td class="tg-gfnm">Cycle</td>
+    <td class="tg-gfnm">Discharge Capacity (mAh/g or Ah)</td>
+    <td class="tg-gfnm">per analysis</td>
+  </tr>
+  <tr>
+    <td class="tg-xwyw">Average Voltage</td>
+    <td class="tg-xwyw">Cycle</td>
+    <td class="tg-xwyw">Voltage (V)</td>
+    <td class="tg-xwyw">per cell</td>
+  </tr>
+  <tr>
+    <td class="tg-gfnm">Delta Voltage</td>
+    <td class="tg-gfnm">Cycle</td>
+    <td class="tg-gfnm">Voltage (V)</td>
+    <td class="tg-gfnm">per cell</td>
+  </tr>
+  <tr>
+    <td class="tg-xwyw">Capacity Loss</td>
+    <td class="tg-xwyw">Cycle</td>
+    <td class="tg-xwyw">Capacity (mAh/g or Ah)</td>
+    <td class="tg-xwyw">per cell</td>
+  </tr>
+</table>
+
+<p>The Discharge Areal Capacity (*) can only be plotted if the area of the limiting electrode is specified.</p>
+
+<p>Lastly, the <strong>Total Discharge Capacity</strong> graph is a summation of all cells within the set and plots the mean capacity with respective error bars. Columbic efficiency is also averaged and plotted within the same graph. This graph will be placed in the root directory created by the program.</p>
+
+
+      <footer class="site-footer">
+        
+          <span class="site-footer-owner"><a href="https://github.com/2ryan09/arbinimport">arbinimport</a> is maintained by <a href="https://github.com/2ryan09">2ryan09</a>.</span>
+        
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a>.</span>
+      </footer>
+    </section>
+
+    
+      <script>
+        (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+        })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+        ga('create', 'UA-163778687-1', 'auto');
+        ga('send', 'pageview');
+      </script>
+    
+  </body>
+</html>
