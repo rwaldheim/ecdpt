@@ -1,10 +1,10 @@
 ---
 layout: default
-title: "Installation"
+title: "Getting Startied"
 permalink: /installation/
 ---
 
-[UNDER CONSTRUCTION]
+# Getting Started
 
 We're excited to see you want to start analyzing with us!
 
@@ -14,7 +14,7 @@ To summarize the the below procedure, you will require the following (if you do 
 - [R](https://www.r-project.org/)
 - [RStudio](https://rstudio.com/)
 
-Items marked with (*) are optional, but recommended
+Items marked with (\*) are optional, but recommended
 
 If you do not have any of the above, no worries! You can follow the step-by-step guides below. There are two installation methods: with and without git. The git method is recommended as it allows for easy updating of all future updates, but the other (.zip) method also works and both are outlined below. However, it is worth noting that if you would ever want to start contributing to this repository, the git method is then required.
 
