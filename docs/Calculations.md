@@ -1,3 +1,7 @@
+---
+layout: default
+---
+
 Below are the detailed explanations for each of the calculations made within the script:
 
 ## Outputs in Files
