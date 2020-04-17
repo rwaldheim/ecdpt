@@ -128,18 +128,17 @@ The option to apply a peak fitting algorithm to the dQdV graphs. This feature is
 
 ### Directory Name and Run Analysis
 
-A directory name is required so that the program knos where to put the data it generates. The name can 
+A directory name is required so that the program knows where to put the data it generates. The program will generate a folder within your current working directory (usually the `arbinimport/` folder that was made when you cloned the repository) with the same name. Hitting "Run Analysis" will cause all inputs to be disabled as the program begins shifting through all the data supplied. A progress bar will appear in the bottom right of the screen, letting you know of the status of the analysis. A typical analysis without graphs will take about 2 minutes for four cells, but the time will increase if graphs or peak fitting are selected.
+
+### Graph Builder
+
+This button launches the Graph Builder. It will be enabled once either an analysis is complete or a previous R environment is imported. See [below](#Graph-Builder) for more information. 
 
 ### Import Masses
 
 In order to compare the results of two cells, it is typical to normalize the capacities against an independent variable, such as mass or area. This option allows you to import numerous masses at once from an Excel source. The instructions are outlined once the button is pushed, but to summarize: the masses should be copied from an Excel sheet in a vertical, continuous fashion and the program will extract them directly from your clipboard.
 
-
-
-- whether or not you would like to apply peak fitting to the dQdV plots
-- import the mass of the limiting electrode (minus current collector)
-- naming the directory for all the data to be stored, then running the analysis
-- launching the Graph Builder (described [later](#graph-builder))
+### Data Table
 
 At the very bottom of the screen, you will see a datatable appear once you have imported the data files. It is provided as a validator that all the data has been successfully imported and associated with the proper cell. 
 
@@ -149,4 +148,14 @@ Once you have submitted all the data you wish to be processed, you are ready to 
 
 The Graph Builder can be enabled in one of two ways: through the completion of an analysis or the import of a previous R environment.
 
-The graph builder is where the rapid diagnostics come to light as it is no longer needed to open up the data in another application and worry about further configuration. WIthin the contents of the graph builder, you are able to bring your data to life without the need of an external plotter. 
+The graph builder is where the rapid diagnostics come to light as it is no longer needed to open up the data in another application and worry about further configuration. WIthin the contents of the graph builder, you are able to bring your data to life without the need of an external plotter. The underlying goal of this utility was to allow the quickest access to your data without worrying about formatting or data filtering, so all the variables are live implemented as soon as they are chosen. In its current implementation, you are able to select from the following variables in realtime:
+* Graph Type
+	* Many of these are the ones that could be generated during the analysis, but this allows for comparisons to be made within the same plot
+* Plot Style
+	* All plots generated during analysis are point plot, but the Graph Builder gives you the flexability to plot in points, lines, or both
+* Cells to Analyze
+	* These are the individual cells associated with the particular analysis
+* Cycles of Interest
+	* These are all the cycles associated with the particular cells. The cell with the largest number of cycles determines what is seen. If two cells are selected and one does not possess a cycle the other does, it is simply ignored in plotting.
+
+Once you have configured the graph to your desire, there are two modes of export: copy and paste the graph directly into your final format (best for presentations or word documents) or you can type a name for the file and click "Save Graph". This will save the graph under the given name within your working directory (displayed upon successful completion).
