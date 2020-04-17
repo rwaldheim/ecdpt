@@ -1,6 +1,6 @@
 # Welcome to the Arbin Battery Analysis Tool!
 
-This program, written in [R](https://www.r-project.org/) using the [Shiny](https://shiny.rstudio.com/) package, aims to greatly simplify the battery analysis process and accelerating diagnostic data return on energy storage cells cycling on an Arbin battery cycler. It works by taking the raw export files from the [Arbin MITS Pro](https://www.arbin.com/software/) software and automating many standard analysis techniques while also allowing for rapid generation of common visual aids. 
+This program, written in [R](https://www.r-project.org/) using the [Shiny](https://shiny.rstudio.com/) package, aims to greatly simplify the battery analysis process and accelerating diagnostic data return on energy storage cells cycling on an Arbin battery cycler. It works by taking the raw export files from the [Arbin MITS Pro](https://www.arbin.com/software/) software and automating many standard analysis techniques while also allowing for rapid generation of common visual aids. It was developed by and is currently used by the energy storage researchers at [Birla Carbon](https://www.birlacarbon.com). 
 
 If you are new to the program and would like to get started, see our [Installation](Installation.md) page!
 
@@ -12,7 +12,7 @@ Let's start with the basics: what are the inputs?
 
 ### Inputs
 
-At a minimum, all the application needs is the '''data file''' as exported from the Arbin Excel macro. The data file from Arbin is characterized as a large Excel file that contains the following information:
+At a minimum, all the application needs is the **data file** as exported from the Arbin Excel macro. The data file from Arbin is characterized as a large Excel file that contains the following information:
 
 <table class="center">
   <tr>
