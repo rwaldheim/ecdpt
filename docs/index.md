@@ -1,6 +1,6 @@
 # Welcome to the Arbin Battery Analysis Tool!
 
-This program, written in [R](https://www.r-project.org/) using the [Shiny](https://shiny.rstudio.com/) package, aims to greatly simplify the battery analysis process and accelerating diagnostic data return on energy storage cells cycling on an Arbin battery cycler. It works by taking the raw export files from the [Arbin MITS Pro](https://www.arbin.com/software/) software and automating many standard analysis techniques while also allowing for rapid generation of common visual aids. 
+This program, written in [R](https://www.r-project.org/) using the [Shiny](https://shiny.rstudio.com/) package, aims to greatly simplify the battery analysis process and accelerating diagnostic data return on energy storage cells cycling on an Arbin battery cycler. It works by taking the raw export files from the [Arbin MITS Pro](https://www.arbin.com/software/) software and automating many standard analysis techniques while also allowing for rapid generation of common visual aids. It was developed by and is currently used by the energy storage researchers at [Birla Carbon](https://www.birlacarbon.com). 
 
 If you are new to the program and would like to get started, see our [Installation](Installation.md) page!
 
@@ -12,9 +12,9 @@ Let's start with the basics: what are the inputs?
 
 ### Inputs
 
-At a minimum, all the application needs is the '''data file''' as exported from the Arbin Excel macro. The data file from Arbin is characterized as a large Excel file that contains the following information:
+At a minimum, all the application needs is the **data file** as exported from the Arbin Excel macro. The data file from Arbin is characterized as a large Excel file that contains the following information:
 
-<table>
+<table class="center">
   <tr>
     <th colspan="3">ArbinExportFile.xlsx</th>
   </tr>
@@ -45,7 +45,7 @@ At a minimum, all the application needs is the '''data file''' as exported from 
   </tr>
 </table>
 
-The exact format and which values are present are configurable within the Arbin software. In order for the program to execute corrrectly, the values marked with a (*) should be present.
+The exact format and which values are present are configurable within the Arbin software. In order for the program to execute corrrectly, the values marked with a (\*) should be present.
 
 Some other inputs that are optional, depending on the desired outputs, are the **area of the limiting electrode**, **weight percent of active material in the limiting electrode**, and the **capacity of the limiting active material**. 
 
@@ -66,7 +66,7 @@ Within each cell's directory, there will be three data files generated: **[cell 
   </tr>
   <tr>
     <td>[cell name].csv</td>
-    <td>
+    <td style="text-align: left;">
       <ul>
         <li>the raw data from the input file plus some additional columns:</li>
         <li><code>Q.d</code> : Discharge Capacity (mAh/g)*</li>
@@ -78,7 +78,7 @@ Within each cell's directory, there will be three data files generated: **[cell 
   </tr>
   <tr>
     <td>[cell name] dQdV Data.csv</td>
-    <td>
+    <td style="text-align: left;">
       <ul>
         <li>an index<br></li>
         <li><code>cycle</code> : the cycle number</li>
@@ -92,7 +92,7 @@ Within each cell's directory, there will be three data files generated: **[cell 
   </tr>
   <tr>
     <td>[cell name] Cycle Facts.csv</td>
-    <td>
+    <td style="text-align: left;">
       <ul>
         <li>an index</li>
         <li><code>cycle</code> : the cycle number</li>
@@ -109,86 +109,75 @@ Within each cell's directory, there will be three data files generated: **[cell 
   </tr>
 </table>
       
-Values with (*) are only present if the cell masses are specified
+Values with (\*) are only present if the cell masses are specified
 
 If you would like to know how each of these values are calculated, see our [Calculations](Calculations.md) page.
 
 In addition to all the data files, there are multiple graphs than can be generated alongside for quick and easy diagnostics. 
 
-<style type="text/css">
-  .tg  {border-collapse:collapse;border-spacing:0;}
-  .tg td{font-family:Arial, sans-serif;font-size:14px;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:black;}
-  .tg th{font-family:Arial, sans-serif;font-size:14px;font-weight:normal;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:black;}
-  .tg .tg-gfnm{background-color:#efefef;border-color:#000000;text-align:center;vertical-align:middle}
-  .tg .tg-i0p4{font-weight:bold;background-color:#ecf4ff;border-color:#000000;text-align:center;vertical-align:middle}
-  .tg .tg-3fas{background-color:#efefef;border-color:#000000;text-align:left;vertical-align:middle}
-  .tg .tg-o3hj{background-color:#ecf4ff;border-color:#000000;text-align:center;vertical-align:middle}
-  .tg .tg-xwyw{border-color:#000000;text-align:center;vertical-align:middle}
-  .tg .tg-0a7q{border-color:#000000;text-align:left;vertical-align:middle}
-</style>
-<table class="tg">
+<table>
   <tr>
-    <th class="tg-i0p4">Graph</th>
-    <th class="tg-i0p4">X Axis</th>
-    <th class="tg-i0p4">Y Axis</th>
-    <th class="tg-o3hj"><span style="font-weight:bold">Plot Frequency</span><br></th>
+    <th>Graph</th>
+    <th>X Axis</th>
+    <th>Y Axis</th>
+    <th><span style="font-weight:bold">Plot Frequency</span><br></th>
   </tr>
   <tr>
-    <td class="tg-xwyw">dQdV Graph</td>
-    <td class="tg-xwyw">Voltage (V)</td>
-    <td class="tg-xwyw">dQdV (Ah/V)</td>
-    <td class="tg-xwyw">per cycle</td>
+    <td>dQdV Graph</td>
+    <td>Voltage (V)</td>
+    <td>dQdV (Ah/V)</td>
+    <td>per cycle</td>
   </tr>
   <tr>
-    <td class="tg-gfnm">Voltage Profile</td>
-    <td class="tg-gfnm">Continuous Capacity (mAh/g or Ah)</td>
-    <td class="tg-gfnm">Voltage (V)</td>
-    <td class="tg-gfnm">per cycle</td>
+    <td>Voltage Profile</td>
+    <td>Continuous Capacity (mAh/g or Ah)</td>
+    <td>Voltage (V)</td>
+    <td>per cycle</td>
   </tr>
   <tr>
-    <td class="tg-xwyw">Voltage vs. Time</td>
-    <td class="tg-xwyw">Time (min)</td>
-    <td class="tg-xwyw">Voltage (V)</td>
-    <td class="tg-xwyw">per cycle</td>
+    <td>Voltage vs. Time</td>
+    <td>Time (min)</td>
+    <td>Voltage (V)</td>
+    <td>per cycle</td>
   </tr>
   <tr>
-    <td class="tg-gfnm">Discharge Capacity</td>
-    <td class="tg-gfnm">Cycle</td>
-    <td class="tg-gfnm">Discharge Capacity (mAh/g or Ah)</td>
-    <td class="tg-gfnm">per cell</td>
+    <td>Discharge Capacity</td>
+    <td>Cycle</td>
+    <td>Discharge Capacity (mAh/g or Ah)</td>
+    <td>per cell</td>
   </tr>
   <tr>
-    <td class="tg-xwyw">Discharge Areal Capacity</td>
-    <td class="tg-xwyw">Cycle</td>
-    <td class="tg-xwyw">Discharge Capacity (Ah/cm^2)</td>
-    <td class="tg-xwyw">per cell</td>
+    <td>Discharge Areal Capacity</td>
+    <td>Cycle</td>
+    <td>Discharge Capacity (Ah/cm^2)</td>
+    <td>per cell</td>
   </tr>
   <tr>
-    <td class="tg-gfnm">Total Discharge Capacity</td>
-    <td class="tg-gfnm">Cycle</td>
-    <td class="tg-gfnm">Discharge Capacity (mAh/g or Ah)</td>
-    <td class="tg-gfnm">per analysis</td>
+    <td>Total Discharge Capacity</td>
+    <td>Cycle</td>
+    <td>Discharge Capacity (mAh/g or Ah)</td>
+    <td>per analysis</td>
   </tr>
   <tr>
-    <td class="tg-xwyw">Average Voltage</td>
-    <td class="tg-xwyw">Cycle</td>
-    <td class="tg-xwyw">Voltage (V)</td>
-    <td class="tg-xwyw">per cell</td>
+    <td>Average Voltage</td>
+    <td>Cycle</td>
+    <td>Voltage (V)</td>
+    <td>per cell</td>
   </tr>
   <tr>
-    <td class="tg-gfnm">Delta Voltage</td>
-    <td class="tg-gfnm">Cycle</td>
-    <td class="tg-gfnm">Voltage (V)</td>
-    <td class="tg-gfnm">per cell</td>
+    <td>Delta Voltage</td>
+    <td>Cycle</td>
+    <td>Voltage (V)</td>
+    <td>per cell</td>
   </tr>
   <tr>
-    <td class="tg-xwyw">Capacity Loss</td>
-    <td class="tg-xwyw">Cycle</td>
-    <td class="tg-xwyw">Capacity (mAh/g or Ah)</td>
-    <td class="tg-xwyw">per cell</td>
+    <td>Capacity Loss</td>
+    <td>Cycle</td>
+    <td>Capacity (mAh/g or Ah)</td>
+    <td>per cell</td>
   </tr>
 </table>
 
-The Discharge Areal Capacity (*) can only be plotted if the area of the limiting electrode is specified.
+The Discharge Areal Capacity (\*) can only be plotted if the area of the limiting electrode is specified.
 
 Lastly, the **Total Discharge Capacity** graph is a summation of all cells within the set and plots the mean capacity with respective error bars. Columbic efficiency is also averaged and plotted within the same graph. This graph will be placed in the root directory created by the program.
