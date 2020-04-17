@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "Getting Startied"
+title: Installation
 permalink: /installation/
 ---
 
