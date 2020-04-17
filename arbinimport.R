@@ -9,6 +9,7 @@ require(purrr)
 require(zoo)
 require(plotrix)
 require(tools)
+require(shinyWidgets)
 
 if (interactive()) {
   
@@ -31,9 +32,23 @@ if (interactive()) {
     useShinyjs(),
     useShinyalert(),
     
+    setBackgroundColor(
+      color = c("ghostwhite", "lightgrey"),
+      gradient = "linear",
+      direction = "bottom",
+      shinydashboard = FALSE
+    ),
+    
     fluidRow(headerPanel("Battery Analyzer Utility")),
     
     column(4,
+      fluidRow(
+        strong("Files to be Analyzed*"), tags$br(),
+        "Import all Arbin files of interest.", tags$br(), tags$br(),
+        fileInput("files", NULL, multiple = TRUE),
+        style = "border: 1px solid black; padding: 5%; margin:5%"
+      ),
+      
       fluidRow(
         fileInput("rerun", "Optional: Import Previous R Environment", multiple = FALSE, accept = ".RData"),
         actionButton("load", "Load"),
@@ -48,13 +63,6 @@ if (interactive()) {
         numericInput( "capActive","Capacity of Limiting Active Material (mAh/g)", 155, min = 0, max = 100),
         style = "border: 1px dashed black; padding: 5%; margin:5%"
       ),
-      
-      fluidRow(
-        strong("Files to be Analyzed"), tags$br(),
-        "Import all Arbin files of interest.", tags$br(), tags$br(),
-        fileInput("files", NULL, multiple = TRUE),
-        style = "border: 1px solid black; padding: 5%; margin:5%"
-      ),
     ),
     
     column(4, align = "left", 
@@ -64,18 +72,15 @@ if (interactive()) {
              radioButtons("peakFit", "Do Peak Fitting on  dQdV Graphs? (BETA)", choices = c("No" = "noGenGraphs", "Yes" = "fit"), inline = TRUE),
              style = "margin: 5%; border: 1px solid black; padding: 5%"
            ),
+           
+           fluidRow(
+             imageOutput("birlaLogo")
+           ),
     ), 
     
     column(4, align = "center",
       fluidRow(
-        strong("Optional: Import Masses from Excel"), tags$br(),
-        "Running Analysis without Masses Will Render Raw Capacities (Ah)",
-        actionButton("excelImport", "Import", width = '80%', class = "btn-secondary", style = "height:50px; margin:5%; font-size:100%"),
-        style = "border: 1px dashed black; padding: 5%; margin:5%"
-      ),
-      
-      fluidRow(
-        textInput("dirLocation", "Enter Directory Name"),
+        textInput("dirLocation", "Enter Directory Name*"),
         actionButton("submit", "Begin Analysis", class = 'btn-success', style = "width:80%; height:100px; margin:5%, font-size:100%"),
         style = "border: 4px double black; padding: 5%; margin:5%"
       ),
@@ -85,6 +90,13 @@ if (interactive()) {
         "Customize Graphs Once Data is Available",
         disabled(actionButton("graphBuilder", "Launch", width = '80%', class = "btn-primary", style = "height:50px; margin:5%; font-size:100%")),
         style = "border: 1px solid black; padding: 5%; margin:5%"
+      ),
+      
+      fluidRow(
+        strong("Optional: Import Masses from Excel"), tags$br(),
+        "Running Analysis without Masses Will Render Raw Capacities (Ah)",
+        actionButton("excelImport", "Import", width = '80%', class = "btn-secondary", style = "height:50px; margin:5%; font-size:100%"),
+        style = "border: 1px dashed black; padding: 5%; margin:5%"
       ),
     ),
     
@@ -133,6 +145,10 @@ if (interactive()) {
       }
     })
     
+    output$birlaLogo <- renderImage({
+      list(src = "birlaLogo.png", style="display: block; margin-left: auto; margin-right: auto;")
+    }, deleteFile = FALSE)
+    
     graphbuilder <- modalDialog({
       fluidPage(
         useShinyjs(),
@@ -179,7 +195,7 @@ if (interactive()) {
       
       validFile <- FALSE
       
-      if (file_ext(file) == "RData") {
+      if (file_ext(input$rerun) == "RData") {
         validFile <- TRUE
       }
       
@@ -256,6 +272,8 @@ if (interactive()) {
     observeEvent(input$submit, {
       if (length(names(data)) <= 1) {
         shinyalert("Uh oh!", "You need to import cells first!", "error")
+      } else if (input$dirLocation == "") {
+        shinyalert("Uh oh!", "You need to enter a directory name first!", "error")
       } else {
         if (!grepl("OneDrive", getwd())) {
           shinyReturn <- ""
