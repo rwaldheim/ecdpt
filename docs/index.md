@@ -1,3 +1,7 @@
+---
+title: arbinimport
+---
+
 # Welcome to the Arbin Battery Analysis Tool!
 
 This program, written in [R](https://www.r-project.org/) using the [Shiny](https://shiny.rstudio.com/) package, aims to greatly simplify the battery analysis process and accelerating diagnostic data return on energy storage cells cycling on an Arbin battery cycler. It works by taking the raw export files from the [Arbin MITS Pro](https://www.arbin.com/software/) software and automating many standard analysis techniques while also allowing for rapid generation of common visual aids. It was developed by and is currently used by the energy storage researchers at [Birla Carbon](https://www.birlacarbon.com). 
