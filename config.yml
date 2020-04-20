@@ -1,0 +1,2 @@
+- name: Run misspell with reviewdog
+  uses: reviewdog/action-misspell@v1.0.0

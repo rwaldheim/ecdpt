@@ -23,6 +23,7 @@ require(purrr)
 require(zoo)
 require(plotrix)
 require(tools)
+require(shinyWidgets)
 
 # This line tests if the current R environment is interactive, RStudio makes an interactive environment by default
 if (interactive()) {
@@ -66,7 +67,13 @@ if (interactive()) {
     # Shinyalert is a package that makes interactive"pop-ups" (modals) easy to generate
     useShinyalert(),
     
-    # The title of the user interface
+    setBackgroundColor(
+      color = c("ghostwhite", "lightgrey"),
+      gradient = "linear",
+      direction = "bottom",
+      shinydashboard = FALSE
+    ),
+    
     fluidRow(headerPanel("Battery Analyzer Utility")),
     
     # This first column is where most user inputs are, with the exception of the directory name
@@ -74,9 +81,16 @@ if (interactive()) {
            
       # This generates the optional block in which the user can import a previous R environment
       fluidRow(
-        fileInput("rerun","Optional: Import Previous R Environment", multiple = FALSE, accept =".RData"),
-        actionButton("load","Load"),
-        style ="border: 1px dashed black; margin: 5%; padding: 5%"
+        strong("Files to be Analyzed*"), tags$br(),
+        "Import all Arbin files of interest.", tags$br(), tags$br(),
+        fileInput("files", NULL, multiple = TRUE),
+        style = "border: 1px solid black; padding: 5%; margin:5%"
+      ),
+      
+      fluidRow(
+        fileInput("rerun", "Optional: Import Previous R Environment", multiple = FALSE, accept = ".RData"),
+        actionButton("load", "Load"),
+        style = "border: 1px dashed black; margin: 5%; padding: 5%"
       ),
       
       # These are the"optional" parameters that need to be filled out if select graphs are selected
@@ -92,14 +106,6 @@ if (interactive()) {
         numericInput("capActive","Capacity of Limiting Active Material (mAh/g)", 155, min = 0, max = 100),
         style ="border: 1px dashed black; padding: 5%; margin:5%"
       ),
-      
-      # Import the Arbin files that will be analyzed
-      fluidRow(
-        strong("Files to be Analyzed"), tags$br(),
-       "Import all Arbin files of interest.", tags$br(), tags$br(),
-        fileInput("files", NULL, multiple = TRUE),
-        style ="border: 1px solid black; padding: 5%; margin:5%"
-      ),
     ),
     
     # The second column is where selection of graphs and further features are selected
@@ -114,24 +120,18 @@ if (interactive()) {
              radioButtons("peakFit","Do Peak Fitting on  dQdV Graphs? (BETA)", choices = c("No" ="noGenGraphs","Yes" ="fit"), inline = TRUE),
              style ="margin: 5%; border: 1px solid black; padding: 5%"
            ),
+           
+           fluidRow(
+             imageOutput("birlaLogo")
+           ),
     ), 
     
     # The final column is where all the"action" items are, aka clicking any of these buttons will trigger a process
     column(4, align ="center",
-           
-      # This option allows the user to import masses from Excel quickly and easily
       fluidRow(
-        strong("Optional: Import Masses from Excel"), tags$br(),
-       "Running Analysis without Masses Will Render Raw Capacities (Ah)",
-        actionButton("excelImport","Import", width = '80%', class ="btn-secondary", style ="height:50px; margin:5%; font-size:100%"),
-        style ="border: 1px dashed black; padding: 5%; margin:5%"
-      ),
-      
-      # This block performs the execution of the analysis, after asking for an directory name
-      fluidRow(
-        textInput("dirLocation","Enter Directory Name"),
-        actionButton("submit","Begin Analysis", class = 'btn-success', style ="width:80%; height:100px; margin:5%, font-size:100%"),
-        style ="border: 4px double black; padding: 5%; margin:5%"
+        textInput("dirLocation", "Enter Directory Name*"),
+        actionButton("submit", "Begin Analysis", class = 'btn-success', style = "width:80%; height:100px; margin:5%, font-size:100%"),
+        style = "border: 4px double black; padding: 5%; margin:5%"
       ),
       
       # This final block enables a button after data becomes available, which trigger the modal to build custom graphs
@@ -140,6 +140,13 @@ if (interactive()) {
        "Customize Graphs Once Data is Available",
         disabled(actionButton("graphBuilder","Launch", width = '80%', class ="btn-primary", style ="height:50px; margin:5%; font-size:100%")),
         style ="border: 1px solid black; padding: 5%; margin:5%"
+      ),
+      
+      fluidRow(
+        strong("Optional: Import Masses from Excel"), tags$br(),
+        "Running Analysis without Masses Will Render Raw Capacities (Ah)",
+        actionButton("excelImport", "Import", width = '80%', class = "btn-secondary", style = "height:50px; margin:5%; font-size:100%"),
+        style = "border: 1px dashed black; padding: 5%; margin:5%"
       ),
     ),
     
@@ -294,7 +301,10 @@ if (interactive()) {
       }
     })
     
-    # Defines the UI of the modal for the graph builder
+    output$birlaLogo <- renderImage({
+      list(src = "birlaLogo.png", style="display: block; margin-left: auto; margin-right: auto;")
+    }, deleteFile = FALSE)
+
     graphbuilder <- modalDialog({
       fluidPage(
         useShinyjs(),
@@ -431,7 +441,9 @@ if (interactive()) {
     # After some data validation, the main analysis is run on click of the"Run Analysis" button
     observeEvent(input$submit, {
       if (length(names(data)) <= 1) {
-        shinyalert("Uh oh!","You need to import cells first!","error")
+        shinyalert("Uh oh!", "You need to import cells first!", "error")
+      } else if (input$dirLocation == "") {
+        shinyalert("Uh oh!", "You need to enter a directory name first!", "error")
       } else {
         runscript()
       }
