@@ -321,7 +321,8 @@ if (interactive()) {
             ),
             
             fluidRow(style ="padding:5%; margin:5%;",
-              radioButtons("typeGraph","Graph Type:", choices = c("dQdV Graphs","Voltage Profiles","Voltage vs. Time"), inline = FALSE),
+              radioButtons("typeGraph","Graph Type:", choices = c("dQdV Graphs","Voltage Profiles","Voltage vs. Time", "Charge Voltage", "Discharge Voltage", 
+                                                                  "Average Voltage", "Delta Voltage", "Discharge Capacity", "Charge Capacity" ), inline = FALSE),
               radioButtons("plotStyle","Plot Style:", choiceNames = c("Point","Line","Both"), choiceValues = c("p","l","o"),  inline = TRUE),
               checkboxGroupInput("cells","Cell to Analyze:", choices = 1, inline = FALSE),
               hidden(checkboxGroupInput("cellsMulti","Cells to Analyze:", choices = 1, inline = FALSE)),
@@ -877,6 +878,7 @@ if (interactive()) {
       switch(input$typeGraph,
             "dQdV Graphs" = {
                tmp_data <<- data.frame(x=dQdVData[dQdVData$cell %in% cellIndex,]$voltage, y=dQdVData[dQdVData$cell %in% cellIndex,]$dQdV, cycle=dQdVData[dQdVData$cell %in% cellIndex,]$cycle, cell=dQdVData[dQdVData$cell %in% cellIndex,]$cell)
+               tmp_data <<- tmp_data[tmp_data$cycle == sort(as.numeric(input$renderCycles)),]
                
                titleLabel <<-"dQdV Plot"
                xlabel <<-"Voltage (V)"
@@ -884,6 +886,7 @@ if (interactive()) {
              },
             "Voltage Profiles" = {
                tmp_data <<- data.frame(x=(-1) * total[total$Cell %in% cellIndex,]$CC, y=total[total$Cell %in% cellIndex,]$`Voltage(V)`, cycle=total[total$Cell %in% cellIndex,]$`Cycle_Index`, cell=total[total$Cell %in% cellIndex,]$Cell)
+               tmp_data <<- tmp_data[tmp_data$cycle == sort(as.numeric(input$renderCycles)),]
                
                titleLabel <<-"Voltage Profile"
                if (sum(data$Mass) != 0) {
@@ -894,11 +897,12 @@ if (interactive()) {
                ylabel <<-"Voltage (V)"
              },
             "Voltage vs. Time" = {
-               data_pull <<- data.frame(x=(total[total$Cell %in% cellIndex,]$`Test_Time(s)` / 60), y=total[total$Cell %in% cellIndex,]$`Voltage(V)`, cycle=total[total$Cell %in% cellIndex,]$`Cycle_Index`, cell=total[total$Cell %in% cellIndex,]$cell)
+               data_pull <<- data.frame(x=(total[total$Cell %in% cellIndex,]$`Test_Time(s)` / 60), y=total[total$Cell %in% cellIndex,]$`Voltage(V)`, cycle=total[total$Cell %in% cellIndex,]$`Cycle_Index`, cell=total[total$Cell %in% cellIndex,]$Cell)
+               tmp_data <<- tmp_data[tmp_data$cycle == sort(as.numeric(input$renderCycles)),]
                
-               normalTime <<- aggregate(data_pull$x, by=list(data_pull$cycle), normalizeTime)
+               normalTime <<- aggregate(tmp_data$x, by=list(tmp_data$cycle), normalizeTime)
                for (cycle in 1:nrow(normalTime)) {
-                 tmp_data <<- rbind(tmp_data, data.frame(x=normalTime$x[[cycle]],y=data_pull[data_pull$cycle == cycle,]$y, cycle=rep(cycle, length(normalTime$x[[cycle]])), cell=data_pull[data_pull$cycle == cycle,]$cell))
+                 tmp_data <<- rbind(tmp_data, data.frame(x=normalTime$x[[cycle]],y=tmp_data[data_pull$cycle == cycle,]$y, cycle=rep(cycle, length(normalTime$x[[cycle]])), cell=data_pull[data_pull$cycle == cycle,]$cell))
                }
                
                tmp_data <<- tmp_data[tmp_data$y >= 0.01,]
@@ -907,15 +911,65 @@ if (interactive()) {
                xlabel <<-"Time (min)"
                ylabel <<-"Voltage (V)"
              },
+            "Charge Voltage" = {
+              tmp_data <<- data.frame(x=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, y=cycle_facts[cycle_facts$cell %in% cellIndex,]$chV, cycle=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, cell = cycle_facts[cycle_facts$cell %in% cellIndex,]$cell)
+
+              titleLabel <<- "Charge Voltage Plot "
+              xlabel <<- "Cycle"
+              ylabel <<- "Voltage (V)"
+            },
+            "Discharge Voltage" = {
+              tmp_data <<- data.frame(x=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, y=cycle_facts[cycle_facts$cell %in% cellIndex,]$dchV, cell=cycle_facts[cycle_facts$cell %in% cellIndex,]$cell, cycle=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle)
+              
+              titleLabel <<- "Discharge Voltage Plot "
+              xlabel <<- "Cycle"
+              ylabel <<- "Voltage (V)"
+            },
+            "Average Voltage" = {
+              tmp_data <<- data.frame(x=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, y=cycle_facts[cycle_facts$cell %in% cellIndex,]$avgV, cell=cycle_facts[cycle_facts$cell %in% cellIndex,]$cell, cycle=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle)
+              
+              titleLabel <<- "Average Voltage Plot "
+              xlabel <<- "Cycle"
+              ylabel <<- "Voltage (V)"
+            },
+            "Delta Voltage" = {
+              tmp_data <<- data.frame(x=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, y=cycle_facts[cycle_facts$cell %in% cellIndex,]$dV, cell=cycle_facts[cycle_facts$cell %in% cellIndex,]$cell, cycle=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle)
+
+              titleLabel <<- "Delta Voltage Plot "
+              xlabel <<- "Cycle"
+              ylabel <<- "Voltage (V)"
+            },
+            "Discharge Capacity" = {
+              tmp_data <<- data.frame(x=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, y=cycle_facts[cycle_facts$cell %in% cellIndex,]$DCap, cell=cycle_facts[cycle_facts$cell %in% cellIndex,]$cell, cycle=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle)
+              
+              titleLabel <<- "Discharge Capacity Plot "
+              xlabel <<- "Cycle"
+              if (sum(data$Mass) != 0) {
+                ylabel <<- "Capacity (mAh/g)"
+              } else {
+                ylabel <<- "Capacity (Ah)"
+              }
+            },
+            "Charge Capacity" = {
+              tmp_data <<- data.frame(x=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, y=cycle_facts[cycle_facts$cell %in% cellIndex,]$CCap, cell=cycle_facts[cycle_facts$cell %in% cellIndex,]$cell, cycle=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle)
+              
+              titleLabel <<- "Charge Capacity Plot "
+              xlabel <<- "Cycle"
+              if (sum(data$Mass) != 0) {
+                ylabel <<- "Capacity (mAh/g)"
+              } else {
+                ylabel <<- "Capacity (Ah)"
+              }
+            }
              
       )
       
       tmp_data <<- tmp_data[is.finite(tmp_data$x),]
       tmp_data <<- tmp_data[is.finite(tmp_data$y),]
       tmp_data <<- tmp_data[is.finite(tmp_data$cycle),]
+      tmp_data <<- tmp_data[is.finite(tmp_data$cell),]
       
-      tmp_data <<- tmp_data[tmp_data$cycle == sort(as.numeric(input$renderCycles)),]
-      tmp_data$color <<- sapply(tmp_data$cycle, function(x) {match(x, input$renderCycles)})
+      tmp_data$color <<- sapply(tmp_data$cycle, function(x) {match(x, input$renderCycles, nomatch = 1)})
       tmp_data$symbol <<- sapply(tmp_data$cell, function(x) {match(x, cellIndex)})
 
       tryCatch({
