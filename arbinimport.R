@@ -44,7 +44,6 @@ if (interactive()) {
   total <- data.frame()
   cycle_facts <- data.frame()
   tmp_data <- data.frame()
-  data_pull <- data.frame()
   tmp_cycles <- vector()
   titleLabel <-""
   xlabel <-""
@@ -321,7 +320,8 @@ if (interactive()) {
             ),
             
             fluidRow(style ="padding:5%; margin:5%;",
-              radioButtons("typeGraph","Graph Type:", choices = c("dQdV Graphs","Voltage Profiles","Voltage vs. Time", "Charge Voltage", "Discharge Voltage", 
+              radioButtons("typeGraph","Graph Type:", choices = c("dQdV Graphs","Voltage Profiles", #"Voltage vs. Time", 
+                                                                  "Charge Voltage", "Discharge Voltage", 
                                                                   "Average Voltage", "Delta Voltage", "Discharge Capacity", "Charge Capacity" ), inline = FALSE),
               radioButtons("plotStyle","Plot Style:", choiceNames = c("Point","Line","Both"), choiceValues = c("p","l","o"),  inline = TRUE),
               checkboxGroupInput("cells","Cell to Analyze:", choices = 1, inline = FALSE),
@@ -897,14 +897,17 @@ if (interactive()) {
                ylabel <<-"Voltage (V)"
              },
             "Voltage vs. Time" = {
-               data_pull <<- data.frame(x=(total[total$Cell %in% cellIndex,]$`Test_Time(s)` / 60), y=total[total$Cell %in% cellIndex,]$`Voltage(V)`, cycle=total[total$Cell %in% cellIndex,]$`Cycle_Index`, cell=total[total$Cell %in% cellIndex,]$Cell)
+               tmp_data <<- data.frame(x=(total[total$Cell %in% cellIndex,]$`Test_Time(s)` / 60), y=total[total$Cell %in% cellIndex,]$`Voltage(V)`, cycle=total[total$Cell %in% cellIndex,]$`Cycle_Index`, cell=total[total$Cell %in% cellIndex,]$Cell)
                tmp_data <<- tmp_data[tmp_data$cycle == sort(as.numeric(input$renderCycles)),]
                
-               normalTime <<- aggregate(tmp_data$x, by=list(tmp_data$cycle), normalizeTime)
-               for (cycle in 1:nrow(normalTime)) {
-                 tmp_data <<- rbind(tmp_data, data.frame(x=normalTime$x[[cycle]],y=tmp_data[data_pull$cycle == cycle,]$y, cycle=rep(cycle, length(normalTime$x[[cycle]])), cell=data_pull[data_pull$cycle == cycle,]$cell))
+               for (cell in cellIndex) {
+                 normalTime <<- rbind(normalTime, aggregate(tmp_data[tmp_data$cell == cell,]$x, by=list(tmp_data[tmp_data$cell == cell,]$cycle), normalizeTime))
                }
                
+               for (cycle in 1:nrow(normalTime)) {
+                 tmp_data <<- rbind(tmp_data, data.frame(x=normalTime$x[[cycle]],y=tmp_data[tmp_data$cycle == cycle,]$y, cycle=rep(cycle, length(normalTime$x[[cycle]])), cell=tmp_data[tmp_data$cycle == cycle,]$cell))
+               }
+
                tmp_data <<- tmp_data[tmp_data$y >= 0.01,]
                
                titleLabel <<-"Voltge vs. Time Plot"
