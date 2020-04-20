@@ -32,7 +32,7 @@ if (interactive()) {
   # All the global variables within the script, aka variables that need to be accessed by more than one
   # function or session
   #
-  # "Reactive Values" are ones that need to be readily changed, such as user inputs and variables to be displayed
+  #"Reactive Values" are ones that need to be readily changed, such as user inputs and variables to be displayed
   # 
   # ######
   data <- reactiveValues(data = data.frame())
@@ -45,13 +45,13 @@ if (interactive()) {
   tmp_data <- data.frame()
   data_pull <- data.frame()
   tmp_cycles <- vector()
-  titleLabel <- ""
-  xlabel <- ""
-  ylabel <- ""
+  titleLabel <-""
+  xlabel <-""
+  ylabel <-""
   addParams <- FALSE
   catMetric <<- vector()
-  legTitle <<- ""
-  sheetName <<- ""
+  legTitle <<-""
+  sheetName <<-""
 
   # ######
   # 
@@ -63,7 +63,7 @@ if (interactive()) {
     # Utilizing javascript within Shiny allows for addd features such as enable/disable of inputs
     useShinyjs(),
     
-    # Shinyalert is a package that makes interactive "pop-ups" (modals) easy to generate
+    # Shinyalert is a package that makes interactive"pop-ups" (modals) easy to generate
     useShinyalert(),
     
     # The title of the user interface
@@ -74,72 +74,72 @@ if (interactive()) {
            
       # This generates the optional block in which the user can import a previous R environment
       fluidRow(
-        fileInput("rerun", "Optional: Import Previous R Environment", multiple = FALSE, accept = ".RData"),
-        actionButton("load", "Load"),
-        style = "border: 1px dashed black; margin: 5%; padding: 5%"
+        fileInput("rerun","Optional: Import Previous R Environment", multiple = FALSE, accept =".RData"),
+        actionButton("load","Load"),
+        style ="border: 1px dashed black; margin: 5%; padding: 5%"
       ),
       
-      # These are the "optional" parameters that need to be filled out if select graphs are selected
+      # These are the"optional" parameters that need to be filled out if select graphs are selected
       fluidRow(
         strong("Optional Parameters"), tags$br(),
-        "Parameters responsible for certain graphs.", tags$br(), tags$br(),
+       "Parameters responsible for certain graphs.", tags$br(), tags$br(),
         
         # Used for dishcharge areal capacity graphs
-        numericInput("area", "Limiting Electrode Area (cm^2)", 2.74, min = 0),
+        numericInput("area","Limiting Electrode Area (cm^2)", 2.74, min = 0),
         
         # Used for C-Rate calculations
-        numericInput( "perActive","Active Loading of Limiting Electrode (wt%)", 96, min = 0, max = 100),
-        numericInput( "capActive","Capacity of Limiting Active Material (mAh/g)", 155, min = 0, max = 100),
-        style = "border: 1px dashed black; padding: 5%; margin:5%"
+        numericInput("perActive","Active Loading of Limiting Electrode (wt%)", 96, min = 0, max = 100),
+        numericInput("capActive","Capacity of Limiting Active Material (mAh/g)", 155, min = 0, max = 100),
+        style ="border: 1px dashed black; padding: 5%; margin:5%"
       ),
       
       # Import the Arbin files that will be analyzed
       fluidRow(
         strong("Files to be Analyzed"), tags$br(),
-        "Import all Arbin files of interest.", tags$br(), tags$br(),
+       "Import all Arbin files of interest.", tags$br(), tags$br(),
         fileInput("files", NULL, multiple = TRUE),
-        style = "border: 1px solid black; padding: 5%; margin:5%"
+        style ="border: 1px solid black; padding: 5%; margin:5%"
       ),
     ),
     
     # The second column is where selection of graphs and further features are selected
-    column(4, align = "left", 
+    column(4, align ="left", 
            fluidRow(
              # Presents options for graphs to be generated
-             "Choose graphs to be generated: ",
-             actionButton("whatGraph", "What's this?", class = "btn-link"),
-             checkboxGroupInput("gGraphs", NULL, choices = c("dQdV Graphs", "Voltage Profiles", "Voltage vs. Time", "Discharge Capacity", "Discharge Areal Capacity",
-                                                              "Total Discharge Capacity", "Average Voltage", "Delta Voltage", "Capacity Loss"), inline = FALSE),
+            "Choose graphs to be generated:",
+             actionButton("whatGraph","What's this?", class ="btn-link"),
+             checkboxGroupInput("gGraphs", NULL, choices = c("dQdV Graphs","Voltage Profiles","Voltage vs. Time","Discharge Capacity","Discharge Areal Capacity",
+                                                             "Total Discharge Capacity","Average Voltage","Delta Voltage","Capacity Loss"), inline = FALSE),
              # Asks if the user would like peak fitting done on on the dQdV plots
-             radioButtons("peakFit", "Do Peak Fitting on  dQdV Graphs? (BETA)", choices = c("No" = "noGenGraphs", "Yes" = "fit"), inline = TRUE),
-             style = "margin: 5%; border: 1px solid black; padding: 5%"
+             radioButtons("peakFit","Do Peak Fitting on  dQdV Graphs? (BETA)", choices = c("No" ="noGenGraphs","Yes" ="fit"), inline = TRUE),
+             style ="margin: 5%; border: 1px solid black; padding: 5%"
            ),
     ), 
     
-    # The final column is where all the "action" items are, aka clicking any of these buttons will trigger a process
-    column(4, align = "center",
+    # The final column is where all the"action" items are, aka clicking any of these buttons will trigger a process
+    column(4, align ="center",
            
       # This option allows the user to import masses from Excel quickly and easily
       fluidRow(
         strong("Optional: Import Masses from Excel"), tags$br(),
-        "Running Analysis without Masses Will Render Raw Capacities (Ah)",
-        actionButton("excelImport", "Import", width = '80%', class = "btn-secondary", style = "height:50px; margin:5%; font-size:100%"),
-        style = "border: 1px dashed black; padding: 5%; margin:5%"
+       "Running Analysis without Masses Will Render Raw Capacities (Ah)",
+        actionButton("excelImport","Import", width = '80%', class ="btn-secondary", style ="height:50px; margin:5%; font-size:100%"),
+        style ="border: 1px dashed black; padding: 5%; margin:5%"
       ),
       
       # This block performs the execution of the analysis, after asking for an directory name
       fluidRow(
-        textInput("dirLocation", "Enter Directory Name"),
-        actionButton("submit", "Begin Analysis", class = 'btn-success', style = "width:80%; height:100px; margin:5%, font-size:100%"),
-        style = "border: 4px double black; padding: 5%; margin:5%"
+        textInput("dirLocation","Enter Directory Name"),
+        actionButton("submit","Begin Analysis", class = 'btn-success', style ="width:80%; height:100px; margin:5%, font-size:100%"),
+        style ="border: 4px double black; padding: 5%; margin:5%"
       ),
       
       # This final block enables a button after data becomes available, which trigger the modal to build custom graphs
       fluidRow(
         strong("Custom Graph Builder"), tags$br(),
-        "Customize Graphs Once Data is Available",
-        disabled(actionButton("graphBuilder", "Launch", width = '80%', class = "btn-primary", style = "height:50px; margin:5%; font-size:100%")),
-        style = "border: 1px solid black; padding: 5%; margin:5%"
+       "Customize Graphs Once Data is Available",
+        disabled(actionButton("graphBuilder","Launch", width = '80%', class ="btn-primary", style ="height:50px; margin:5%; font-size:100%")),
+        style ="border: 1px solid black; padding: 5%; margin:5%"
       ),
     ),
     
@@ -151,7 +151,7 @@ if (interactive()) {
   
   # ######
   # 
-  # This is the server functon of Shiny. It defines all the "processing" of the data that the user initiated through the interface
+  # This is the server functon of Shiny. It defines all the"processing" of the data that the user initiated through the interface
   # 
   # ######
   server <- function(input, output, session) {
@@ -161,10 +161,10 @@ if (interactive()) {
     
     # Defines the modal in which the cell masses can be exported from Excel
     graphModal <- modalDialog({
-      fluidPage(style = "font-size:15pt;",
+      fluidPage(style ="font-size:15pt;",
         tags$head(tags$style(".modal-dialog{min-width:60%}")),
 
-        fluidRow(align = "center",
+        fluidRow(align ="center",
           HTML('
             <style type="text/css">
             .tg  {border-collapse:collapse;border-spacing:0;}
@@ -251,30 +251,30 @@ if (interactive()) {
             </table>
           ')
         ),
-      )}, title = "Graph Types", easyClose = TRUE)
+      )}, title ="Graph Types", easyClose = TRUE)
     
     excelModal <- modalDialog({
-      fluidPage(style = "font-size:15pt;",
+      fluidPage(style ="font-size:15pt;",
                 useShinyjs(),
                 useShinyalert(),
                 
                 tags$head(tags$style(".modal-dialog{width:80%}")),
                 tags$head(tags$style(".modal-body{ min-height:1000px}")),
                 
-                fluidRow(align = "center",
+                fluidRow(align ="center",
                          HTML( '<ol align="left">
                                  <li>Open an excel file containing the masses of each cell.</li>
                                  <li>Copy the values in the order of cells. (Must be vertical and continuous)</li>
                                 </ol>
-                              <p><b>Once you hit "Import", the program will grab the masses directly from your clipboard</b></p>
+                              <p><b>Once you hit"Import", the program will grab the masses directly from your clipboard</b></p>
                               <p align="left">Example:</p>'),
                          imageOutput("importGIF"),
                 ),
-      )}, title = "Import Masses from Excel Dialog", height = "100%", easyClose = TRUE, footer = actionButton("excelMasses", "Import"))
+      )}, title ="Import Masses from Excel Dialog", height ="100%", easyClose = TRUE, footer = actionButton("excelMasses","Import"))
     
     # Renders the GIF image for the excelModal
     output$importGIF <- renderImage({
-      list(src = "excelImport.gif", width = "70%")
+      list(src ="excelImport.gif", width ="70%")
     }, deleteFile = FALSE)
     
     # Ensures the files imported for analysis are Excel files
@@ -282,7 +282,7 @@ if (interactive()) {
       validFile <- FALSE
       
       for (file in input$files) {
-        if (file_ext(file) == "xlsx" | file_ext(file) == "xls") {
+        if (file_ext(file) =="xlsx" | file_ext(file) =="xls") {
           validFile <- TRUE
         }
       }
@@ -290,7 +290,7 @@ if (interactive()) {
       if (validFile) {
         renderTable()
       } else {
-        shinyalert("That isn't right...", "Please upload an Excel file.", "error")
+        shinyalert("That isn't right...","Please upload an Excel file.","error")
       }
     })
     
@@ -310,35 +310,35 @@ if (interactive()) {
               headerPanel("Graph Options"),
             ),
             
-            fluidRow(style = "padding:5%;",
-              radioButtons("typeGraph", "Graph Type:", choices = c("dQdV Graphs", "Voltage Profiles", "Voltage vs. Time"), inline = FALSE),
-              radioButtons("plotStyle", "Plot Style:", choiceNames = c("Point", "Line", "Both"), choiceValues = c("p", "l", "o"),  inline = TRUE),
-              checkboxGroupInput("cells", "Cell to Analyze:", choices = 1, inline = FALSE),
-              hidden(checkboxGroupInput("cellsMulti", "Cells to Analyze:", choices = 1, inline = FALSE)),
-              selectInput("renderCycles", "Cycles of Interest:", choices = 1, multiple = TRUE),
+            fluidRow(style ="padding:5%;",
+              radioButtons("typeGraph","Graph Type:", choices = c("dQdV Graphs","Voltage Profiles","Voltage vs. Time"), inline = FALSE),
+              radioButtons("plotStyle","Plot Style:", choiceNames = c("Point","Line","Both"), choiceValues = c("p","l","o"),  inline = TRUE),
+              checkboxGroupInput("cells","Cell to Analyze:", choices = 1, inline = FALSE),
+              hidden(checkboxGroupInput("cellsMulti","Cells to Analyze:", choices = 1, inline = FALSE)),
+              selectInput("renderCycles","Cycles of Interest:", choices = 1, multiple = TRUE),
             ),
              
             fluidRow(
-             textInput("fileName", "Name of graph file:"),
-             actionButton("saveGraph", "Save Graph", width = '100%', class = 'btn-primary'),
-             style = "border: 4px double black; padding: 5%;"
+             textInput("fileName","Name of graph file:"),
+             actionButton("saveGraph","Save Graph", width = '100%', class = 'btn-primary'),
+             style ="border: 4px double black; padding: 5%;"
             ),
           ),
           
           mainPanel(
-                 plotOutput("outputPlot", height = "800px")
+                 plotOutput("outputPlot", height ="800px")
           )
         )
       )
-    }, size = "l", title = "Post-Processing Graph Builder")
+    }, size ="l", title ="Post-Processing Graph Builder")
     
     # Method for importing the previous R environment
     observeEvent(input$load, {
-      load(paste("history/", input$rerun[[1]], sep = ""))
+      load(paste("history/", input$rerun[[1]], sep =""))
       
       validFile <- FALSE
       
-      if (file_ext(input$rerun$datapath) == "RData") {
+      if (file_ext(input$rerun$datapath) =="RData") {
         validFile <- TRUE
       }
       
@@ -350,12 +350,12 @@ if (interactive()) {
         cycle_facts <<- cycle_facts
         
         output$channels <- renderDataTable(data, editable = TRUE, options=list(columnDefs = list(list(visible=FALSE, targets=c(4)))), 
-                                           colnames = c("File", "Sheet", "Mass (g)", "Filepath", "Limiting Electrode Area (cm^2)", "Active Material Loading (wt%)", 
-                                                        "Active Mateial Capacity (mAh/g)"))
+                                           colnames = c("File","Sheet","Mass (g)","Filepath","Limiting Electrode Area (cm^2)","Active Material Loading (wt%)", 
+                                                       "Active Mateial Capacity (mAh/g)"))
         
         enable("graphBuilder")
       } else {
-        shinyalert("That isn't right...", "Please upload an RData file.", "error")
+        shinyalert("That isn't right...","Please upload an RData file.","error")
       }
     })
     
@@ -371,7 +371,7 @@ if (interactive()) {
         file_sheet <- data.frame()
         for (i in 1:nrow(files)) {
           sheets <- excel_sheets(files[i, 4])
-          file_sheet <- rbind(file_sheet, data.frame(name = rep(files[["name"]][i], length(sheets)), "sheet" = sheets, "Mass" = rep(0, length(sheets)),
+          file_sheet <- rbind(file_sheet, data.frame(name = rep(files[["name"]][i], length(sheets)),"sheet" = sheets,"Mass" = rep(0, length(sheets)),
                                                      datapath = rep(files[["datapath"]][i], length(sheets)), area = rep(input$area, length(sheets)),
                                                      perActive = rep(input$perActive, length(sheets)), capActive = rep(input$capActive, length(sheets))))
         }
@@ -381,8 +381,8 @@ if (interactive()) {
         data
   
       }, editable = FALSE, options=list(columnDefs = list(list(visible=FALSE, targets=c(4)))), 
-      colnames = c("File", "Sheet", "Mass (g)", "Filepath", "Limiting Electrode Area (cm^2)", "Active Material Loading (wt%)", 
-                   "Active Mateial Capacity (mAh/g)"))
+      colnames = c("File","Sheet","Mass (g)","Filepath","Limiting Electrode Area (cm^2)","Active Material Loading (wt%)", 
+                  "Active Mateial Capacity (mAh/g)"))
     }
     
     # Show the excelImport modal when the button is clicked
@@ -397,16 +397,16 @@ if (interactive()) {
     # Data validation the masses imported from Excel, if valid they are placed into the datatable
     observeEvent(input$excelMasses, {
       if (length(names(data)) <= 1) {
-        shinyalert("Uh oh!", "You need to import cells first!", "error")
+        shinyalert("Uh oh!","You need to import cells first!","error")
         removeModal()
       } else {
         tryCatch({
           masses <- read.table("clipboard",sep="\t")
-          names(masses)[names(masses) == "V1"] <- "Mass"
+          names(masses)[names(masses) =="V1"] <-"Mass"
           data$Mass <<- masses
         }, error = function(cond) {
           print(cond)
-          shinyalert("Something isn't right...", "The number of masses imported did not match the amount of cells present or your clipboard didn't contain numeric values. Please try again.", "error")
+          shinyalert("Something isn't right...","The number of masses imported did not match the amount of cells present or your clipboard didn't contain numeric values. Please try again.","error")
           removeModal()
         }, finally = {
           proxy = dataTableProxy("channels")
@@ -419,10 +419,10 @@ if (interactive()) {
       }
     })
     
-    # After some data validation, the main analysis is run on click of the "Run Analysis" button
+    # After some data validation, the main analysis is run on click of the"Run Analysis" button
     observeEvent(input$submit, {
       if (length(names(data)) <= 1) {
-        shinyalert("Uh oh!", "You need to import cells first!", "error")
+        shinyalert("Uh oh!","You need to import cells first!","error")
       } else {
         runscript()
       }
@@ -433,7 +433,7 @@ if (interactive()) {
       
       # Sets up a progress bar in which to estimate how long the execution of the code will take
       progress <- Progress$new(session, min = 0, max = nrow(data))
-      progress$set(message = "Plugging and chugging...\n", detail = "Starting up...")
+      progress$set(message ="Plugging and chugging...\n", detail ="Starting up...")
       
       # Closes all graphics devices that may be lingering (prevents an excess from opening and slowing down the analysis)
       graphics.off()
@@ -469,10 +469,10 @@ if (interactive()) {
           # Define the length of the values
           n <- length(cycle$y)
           
-          # Generate a smoothed function of the data, tunable by the variable "span"
+          # Generate a smoothed function of the data, tunable by the variable"span"
           y.smooth <- loess(cycle$y ~ cycle$x, span=span)$fitted
           
-          # Defines a new dataset that intersects the smoothed data at its peaks, tunable by "w"
+          # Defines a new dataset that intersects the smoothed data at its peaks, tunable by"w"
           y.max <- rollapply(zoo(y.smooth), 2*w+1, max, align="center")
           x.max <- rollapply(zoo(cycle$x), 2*w+1, median, align="center")
           
@@ -485,7 +485,7 @@ if (interactive()) {
       }
       
       # Update the status once all set-up functions are complete
-      progress$set(detail = "Starting first cell...")
+      progress$set(detail ="Starting first cell...")
       
       # ######
       # 
@@ -496,7 +496,7 @@ if (interactive()) {
         
         # ######
         # 
-        # This is where all code that should be executed on a "per cell" basis, to prepare for analysis
+        # This is where all code that should be executed on a"per cell" basis, to prepare for analysis
         # 
         # ######
         
@@ -504,15 +504,15 @@ if (interactive()) {
         tmp_excel <- read_excel(toString(data$datapath[row]), toString(data$sheet[row]))
         
         # Create an nested directory for all the data and, if applicable, then further folders for graphs of interest
-        dir.create(paste(input$dirLocation, data$sheet[row], sep = "/"))
-        if (is.element("dQdV Graphs", input$gGraphs)) dir.create(paste(input$dirLocation, data$sheet[row], "dQdV Plots", sep = "/"))
-        if (is.element("Voltage Profiles", input$gGraphs)) dir.create(paste(input$dirLocation, data$sheet[row], "Voltage Profiles", sep = "/"))
-        if (is.element("Voltage vs. Time", input$gGraphs)) dir.create(paste(input$dirLocation, data$sheet[row], "Voltage v Time", sep = "/"))
-        if (input$peakFit == "fit") dir.create(paste(input$dirLocation, data$sheet[row], "dQdV Peak Fitting", sep = "/"))
+        dir.create(paste(input$dirLocation, data$sheet[row], sep ="/"))
+        if (is.element("dQdV Graphs", input$gGraphs)) dir.create(paste(input$dirLocation, data$sheet[row],"dQdV Plots", sep ="/"))
+        if (is.element("Voltage Profiles", input$gGraphs)) dir.create(paste(input$dirLocation, data$sheet[row],"Voltage Profiles", sep ="/"))
+        if (is.element("Voltage vs. Time", input$gGraphs)) dir.create(paste(input$dirLocation, data$sheet[row],"Voltage v Time", sep ="/"))
+        if (input$peakFit =="fit") dir.create(paste(input$dirLocation, data$sheet[row],"dQdV Peak Fitting", sep ="/"))
         
         # Check if masses have been imported, if they have not then all future calculations will be done on a raw capacity basis
         if (sum(data$Mass) != 0) {
-          ylabel <- "Discharge Capacity (mAh/g)"
+          ylabel <-"Discharge Capacity (mAh/g)"
           
           tmp_excel$Q.d <- as.numeric(tmp_excel$`Discharge_Capacity(Ah)` * (1000 / data$Mass[[1]][row]))
           tmp_excel$Q.c <- as.numeric(tmp_excel$`Charge_Capacity(Ah)`* (1000 / data$Mass[[1]][row]))
@@ -520,7 +520,7 @@ if (interactive()) {
           tmp_excel$CC <- tmp_excel$Q.d - tmp_excel$Q.c
           tmp_excel$CE <- (tmp_excel$Q.d / tmp_excel$Q.c) * 100
         } else {
-          ylabel <- "Discharge Capacity (Ah)"
+          ylabel <-"Discharge Capacity (Ah)"
           
           tmp_excel$CC <- tmp_excel$`Discharge_Capacity(Ah)` - tmp_excel$`Charge_Capacity(Ah)`
           tmp_excel$CE <- (tmp_excel$`Discharge_Capacity(Ah)` / tmp_excel$`Charge_Capacity(Ah)`) * 100
@@ -586,36 +586,36 @@ if (interactive()) {
             
           # ######
           # 
-          # Code meant to be run on data "per cycle" should be written here
+          # Code meant to be run on data"per cycle" should be written here
           # 
           # ######
           
           # dQdV plotting
           if (is.element("dQdV Graphs", input$gGraphs)) {
-            png(paste(input$dirLocation, "/", data$sheet[row], "/", "dQdV Plots/", data$name[row], data$sheet[row], "Cycle ", toString(i)," dQdV Plot.png", sep = ""))
-            plot(dQdVData[dQdVData$cycle == i,]$voltage, dQdVData[dQdVData$cycle == i,]$dQdV, main=paste("dQdV Plot for ",  input$dirLocation, data$sheet[row], "Cycle ", toString(i)), xlab="Voltage (V)", ylab="dQdV (mAh/V)")
+            png(paste(input$dirLocation,"/", data$sheet[row],"/","dQdV Plots/", data$name[row], data$sheet[row],"Cycle", toString(i)," dQdV Plot.png", sep =""))
+            plot(dQdVData[dQdVData$cycle == i,]$voltage, dQdVData[dQdVData$cycle == i,]$dQdV, main=paste("dQdV Plot for",  input$dirLocation, data$sheet[row],"Cycle", toString(i)), xlab="Voltage (V)", ylab="dQdV (mAh/V)")
             dev.off()
           }
           
           # Voltage profile plotting
           if (is.element("Voltage Profiles", input$gGraphs)) {
-            png(paste(input$dirLocation, "/", data$sheet[row], "/", "Voltage Profiles/", data$name[row], data$sheet[row], "Cycle ", toString(i)," Voltage Profile Plot.png", sep = ""))
+            png(paste(input$dirLocation,"/", data$sheet[row],"/","Voltage Profiles/", data$name[row], data$sheet[row],"Cycle", toString(i)," Voltage Profile Plot.png", sep =""))
             if (sum(data$Mass) != 0) {
-              plot(tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Q.d`, tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)`, type="l", main=paste("Voltage Profile for ",  input$dirLocation, data$sheet[row]), xlab= ylabel, ylab="Voltage (V)")
+              plot(tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Q.d`, tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)`, type="l", main=paste("Voltage Profile for",  input$dirLocation, data$sheet[row]), xlab= ylabel, ylab="Voltage (V)")
             } else {
-              plot(tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Discharge_Capacity(Ah)`, tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)`, type="l", main=paste("Voltage Profile for ",  input$dirLocation, data$sheet[row]), xlab=ylabel, ylab="Voltage (V)")
+              plot(tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Discharge_Capacity(Ah)`, tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)`, type="l", main=paste("Voltage Profile for",  input$dirLocation, data$sheet[row]), xlab=ylabel, ylab="Voltage (V)")
             }
             dev.off()
           }
           
           # Perform peak fitting if the user requested it
-          if (input$peakFit == "fit") {
+          if (input$peakFit =="fit") {
             w = 20
             span = 0.05
             
             tryCatch({
-              png(paste(input$dirLocation, "/", data$sheet[row], "/", "dQdV Peak Fitting/", data$name[row], data$sheet[row], "Cycle ", toString(i)," dQdV Plot.png", sep = ""))
-              plot(dQdVData[dQdVData$cycle == i,]$voltage, dQdVData[dQdVData$cycle == i,]$dQdV, main=paste("dQdV Plot for ",  input$dirLocation, data$sheet[row], "Cycle ", toString(i)), xlab="Voltage (V)", ylab="dQdV (mAh/V)")
+              png(paste(input$dirLocation,"/", data$sheet[row],"/","dQdV Peak Fitting/", data$name[row], data$sheet[row],"Cycle", toString(i)," dQdV Plot.png", sep =""))
+              plot(dQdVData[dQdVData$cycle == i,]$voltage, dQdVData[dQdVData$cycle == i,]$dQdV, main=paste("dQdV Plot for",  input$dirLocation, data$sheet[row],"Cycle", toString(i)), xlab="Voltage (V)", ylab="dQdV (mAh/V)")
               chargeCycle <- data.frame(x=dQdVData[dQdVData$cycle == i & dQdVData$c_d == 0,]$voltage, y=dQdVData[dQdVData$cycle == i & dQdVData$c_d == 0,]$dQdV)
               dischargeCycle <- data.frame(x=dQdVData[dQdVData$cycle == i & dQdVData$c_d == 1,]$voltage, y=dQdVData[dQdVData$cycle == i & dQdVData$c_d == 1,]$dQdV)
               cPeaks <- argmax(chargeCycle, w, span)
@@ -633,8 +633,8 @@ if (interactive()) {
           
           # Voltage vs. Time plotting
           if (is.element("Voltage vs. Time", input$gGraphs)) {
-            png(paste(input$dirLocation, "/", data$sheet[row], "/", "Voltage v Time/", data$name[row], data$sheet[row], "Cycle ", toString(i)," Voltage Profile Plot.png", sep = ""))
-            plot((tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Test_Time(s)` - tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Test_Time(s)`[[1]]) / 60, tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)`, type="l", main=paste("Voltage vs. Time for ",  input$dirLocation, data$sheet[row]), xlab="Time (min)", ylab="Voltage (V)")
+            png(paste(input$dirLocation,"/", data$sheet[row],"/","Voltage v Time/", data$name[row], data$sheet[row],"Cycle", toString(i)," Voltage Profile Plot.png", sep =""))
+            plot((tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Test_Time(s)` - tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Test_Time(s)`[[1]]) / 60, tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)`, type="l", main=paste("Voltage vs. Time for",  input$dirLocation, data$sheet[row]), xlab="Time (min)", ylab="Voltage (V)")
             dev.off()
           }
           
@@ -655,7 +655,7 @@ if (interactive()) {
         
         # ######
         # 
-        # Code meant to be run on data "per cell" should be written here
+        # Code meant to be run on data"per cell" should be written here
         # 
         # ######
         
@@ -663,64 +663,73 @@ if (interactive()) {
         
         # Discharge capacity plotting, with coulombic efficiency being plotted alongside
         if (is.element("Discharge Capacity", input$gGraphs)) {
-          png(paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row]," Discharge Capacity Plot.png", sep = ""))
+          png(paste(input$dirLocation,"/", data$sheet[row],"/", data$name[row], data$sheet[row]," Discharge Capacity Plot.png", sep =""))
           eol <- cell_data$`DCap`[[1]] * 0.8
-          plot(cell_data$cycle, cell_data$DCap, type = "p", main=paste("Discharge Capacity for ",  input$dirLocation), xlab=NA, ylab=ylabel, mai=c(1,1,1,1))
+          plot(cell_data$cycle, cell_data$DCap, type ="p", main=paste("Discharge Capacity for",  input$dirLocation), xlab=NA, ylab=ylabel, mai=c(1,1,1,1))
           par(new = T)
-          plot(cell_data$cycle, cell_data$CE, type = "p", axes=F, col = "red", ylab=NA, xlab="Cycle", ylim = c(0, 105))
+          plot(cell_data$cycle, cell_data$CE, type ="p", axes=F, col ="red", ylab=NA, xlab="Cycle", ylim = c(0, 105))
           axis(side = 4)
-          mtext(side = 4, line = 2, "Coulombic Efficiency (%)")
-          abline(h=eol, lty = "dotted")
+          mtext(side = 4, line = 2,"Coulombic Efficiency (%)")
+          abline(h=eol, lty ="dotted")
           dev.off()
         }
         
         # Discharge capacity plotting, with coulombic efficiency being plotted alongside
         if (is.element("Discharge Areal Capacity", input$gGraphs)) {
-          png(paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row]," Discharge Areal Capacity Plot.png", sep = ""))
-          eol <- ((cell_data$DCap[[1]] * 1000) / data$area[row]) * 0.8
-          plot(cell_data$cycle, ((cell_data$DCap * 1000) / data$area[row]), type = "p", main=paste("Discharge Areal Capacity for ",  input$dirLocation), xlab=NA, ylab="Discharge Capacity (mAh/cm^2)", mai=c(1,1,1,1))
+          png(paste(input$dirLocation,"/", data$sheet[row],"/", data$name[row], data$sheet[row]," Discharge Areal Capacity Plot.png", sep =""))
+          new_par <- old_par <- par("mar")
+          new_par[4] <- old_par[2]
+          par(mar = new_par)
+          if (sum(data$Mass) != 0) {
+            eol <- ((cell_data$DCap[[1]] * data$Mass[row,]) / data$area[row]) * 0.8
+            plot(cell_data$cycle, ((cell_data$DCap * data$Mass[row,]) / data$area[row]), type ="p", main=paste("Discharge Areal Capacity for",  input$dirLocation), xlab=NA, ylab="Discharge Capacity (mAh/cm^2)", mai = c(1,1,1,2))
+          } else {
+            eol <- ((cell_data$DCap[[1]] * 1000) / data$area[row]) * 0.8
+            plot(cell_data$cycle, ((cell_data$DCap * 1000) / data$area[row]), type ="p", main=paste("Discharge Areal Capacity for",  input$dirLocation), xlab=NA, ylab="Discharge Capacity (mAh/cm^2)", mai = c(1,1,1,2))
+          }
+          abline(h=eol, lty ="dotted")
           par(new = T)
-          plot(cell_data$cycle, cell_data$CE, type = "p", axes=F, col = "red", ylab=NA, xlab="Cycle", ylim = c(0, 105))
-          axis(side = 4)
-          mtext(side = 4, line = 2, "Coulombic Efficiency (%)")
-          abline(h=eol, lty = "dotted")
-          dev.off()
+          plot(cell_data$cycle, cell_data$CE, type ="p", axes=F, col ="red", ylab=NA, xlab="Cycle", ylim = c(0, 105))
+          mtext(side = 4, line = 3,"Coulombic Efficiency (%)", col = "red")
+          axis(side = 4, col ="red", col.axis = "red")
+          dev.off()        
         }
+
         
         # Average voltage plotting
         if (is.element("Average Voltage", input$gGraphs)) {
-          png(paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row]," Average Voltage Plot.png", sep = ""))
-          plot(cell_data$cycle, cell_data$chV, col="blue", main=paste("Average Voltage Plot for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)", ylim=c(min(cell_data[,2:4]), max(cell_data[,2:4])))
-          points(cell_data$cycle, cell_data$dchV, col="red", main=paste("Average Voltage Plot for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)")
-          points(cell_data$cycle, cell_data$avgV, col="black", main=paste("Average Voltage Plot for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)")
-          legend("bottomright", c("Charge Voltage", "Discharge Voltage", "Average Voltage"), col=c("blue", "red", "black"), pch=19)
+          png(paste(input$dirLocation,"/", data$sheet[row],"/", data$name[row], data$sheet[row]," Average Voltage Plot.png", sep =""))
+          plot(cell_data$cycle, cell_data$chV, col="blue", main=paste("Average Voltage Plot for",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)", ylim=c(min(cell_data[,2:4]), max(cell_data[,2:4])))
+          points(cell_data$cycle, cell_data$dchV, col="red", main=paste("Average Voltage Plot for",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)")
+          points(cell_data$cycle, cell_data$avgV, col="black", main=paste("Average Voltage Plot for",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)")
+          legend("bottomright", c("Charge Voltage","Discharge Voltage","Average Voltage"), col=c("blue","red","black"), pch=19)
           dev.off()
         }
         
         # Delta voltage plotting
         if (is.element("Delta Voltage", input$gGraphs)) {
-          png(paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row]," Delta Voltage Plot.png", sep = ""))
-          plot(cell_data$cycle, cell_data$dV, main=paste("Delta Voltage Plot for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)", ylim =c(0, 0.5))
+          png(paste(input$dirLocation,"/", data$sheet[row],"/", data$name[row], data$sheet[row]," Delta Voltage Plot.png", sep =""))
+          plot(cell_data$cycle, cell_data$dV, main=paste("Delta Voltage Plot for",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)", ylim =c(0, 0.5))
           dev.off()
         }
         
         # Capacity Loss plotting
         if (is.element("Capacity Loss", input$gGraphs)) {
-          png(paste(input$dirLocation, "/", data$sheet[row], "/", data$name[row], data$sheet[row]," Capacity Loss Plot.png", sep = ""))
-          plot(cell_data$cycle, cell_data$lostCap, main=paste("Capacity Loss Plot for ",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab= ylabel, ylim = c(mean(cell_data$lostCap) + (2* sd(cell_data$lostCap)), mean(cell_data$lostCap) - (1.5* sd(cell_data$lostCap))))
+          png(paste(input$dirLocation,"/", data$sheet[row],"/", data$name[row], data$sheet[row]," Capacity Loss Plot.png", sep =""))
+          plot(cell_data$cycle, cell_data$lostCap, main=paste("Capacity Loss Plot for",  input$dirLocation, data$sheet[row]), xlab="Cycle", ylab= ylabel, ylim = c(mean(cell_data$lostCap) + (2* sd(cell_data$lostCap)), mean(cell_data$lostCap) - (1.5* sd(cell_data$lostCap))))
           abline(h=median(cell_data$lostCap), lty="dotted")
           dev.off()
         }
         
         # Save all data within the cell's directory
-        write.csv(tmp_excel, file = paste(input$dirLocation, "/", data$sheet[row], "/", data$sheet[row], ".csv", sep = ""))
+        write.csv(tmp_excel, file = paste(input$dirLocation,"/", data$sheet[row],"/", data$sheet[row],".csv", sep =""))
         
         # Append summation data to the larger datasets to be worked with later
         final <- rbind(final, tmp_excel)
         numCycles <<- rbind(numCycles, data.frame(sheet=data$sheet[row], cycles=nrow(cell_data)))
         
         # Update progress bar
-        progress$set(value = row, detail = paste("Finished ", row, " of ", nrow(data), " cells."))
+        progress$set(value = row, detail = paste("Finished", row," of", nrow(data)," cells."))
       }
       
       # ######
@@ -730,12 +739,12 @@ if (interactive()) {
       # ######
       
       # With iterations complete, final calculations are being worked
-      progress$set(detail = "Wrapping up...")
+      progress$set(detail ="Wrapping up...")
       
       # Get the last status of each cycle for each cell (namely capacity)
       stats <- cycle_facts %>% group_by(cycle) %>% summarise_each(mean)
-      capSEs <- cycle_facts[c("cycle", "DCap")] %>% group_by(cycle) %>% summarise_each(se)
-      ceSEs <- cycle_facts[c("cycle", "CE")] %>% group_by(cycle) %>% summarise_each(se)
+      capSEs <- cycle_facts[c("cycle","DCap")] %>% group_by(cycle) %>% summarise_each(se)
+      ceSEs <- cycle_facts[c("cycle","CE")] %>% group_by(cycle) %>% summarise_each(se)
       stats <- stats[, !names(stats) %in% c("cell")]
       stats <- cbind(stats, capSE = capSEs$DCap, ceSE = ceSEs$CE)
       
@@ -745,41 +754,41 @@ if (interactive()) {
       
       # Total dishcharge capacity plotting
       if (is.element("Total Discharge Capacity", input$gGraphs)) {
-        png(paste(getwd(),"/", input$dirLocation, "/", data$name[row], "Total Discharge Capacity Plot.png", sep = ""))
+        png(paste(getwd(),"/", input$dirLocation,"/", data$name[row],"Total Discharge Capacity Plot.png", sep =""))
         eol <- stats$`DCap`[[1]] * 0.8
-        plot(stats$cycle, stats$DCap, type = "p", main=paste("Discharge Capacity for ",  input$dirLocation), xlab=NA, ylab=ylabel, mai=c(1,1,1,1))
+        plot(stats$cycle, stats$DCap, type ="p", main=paste("Discharge Capacity for",  input$dirLocation), xlab=NA, ylab=ylabel, mai=c(1,1,1,1))
         arrows(stats$cycle, stats$DCap - stats$capSE, stats$cycle, stats$DCap + stats$capSE, length=0.05, angle=90, code=3)
         par(new = T)
-        plot(stats$cycle, stats$CE, type = "p", axes=F, col = "red", ylab=NA, xlab="Cycle", ylim = c(0, 105))
-        arrows(stats$cycle, stats$CE - stats$ceSE, stats$cycle, stats$CE + stats$ceSE, length=0.05, angle=90, code=3, col = "red")
-        axis(side = 4, col = "red")
-        mtext(side = 4, line = 2, "Coulombic Efficiency (%)")
-        abline(h=eol, lty = "dotted")
+        plot(stats$cycle, stats$CE, type ="p", axes=F, col ="red", ylab=NA, xlab="Cycle", ylim = c(0, 105))
+        arrows(stats$cycle, stats$CE - stats$ceSE, stats$cycle, stats$CE + stats$ceSE, length=0.05, angle=90, code=3, col ="red")
+        axis(side = 4, col ="red")
+        mtext(side = 4, line = 2,"Coulombic Efficiency (%)")
+        abline(h=eol, lty ="dotted")
         dev.off()
       }
       
       # Save total data and stats
-      write.csv(stats, file = paste(getwd(), "/", input$dirLocation, "/", input$dirLocation, " Summary.csv", sep = ""))
-      write.csv(final, file = paste(getwd(), "/", input$dirLocation, "/", input$dirLocation, " Total.csv", sep = ""))
-      write.csv(dQdVData, file = paste(getwd(), "/", input$dirLocation, "/", input$dirLocation, " dQdV Data.csv", sep = ""))
-      write.csv(cycle_facts, file = paste(getwd(), "/", input$dirLocation, "/", input$dirLocation, " Cycle Facts.csv", sep = ""))
+      write.csv(stats, file = paste(getwd(),"/", input$dirLocation,"/", input$dirLocation," Summary.csv", sep =""))
+      write.csv(final, file = paste(getwd(),"/", input$dirLocation,"/", input$dirLocation," Total.csv", sep =""))
+      write.csv(dQdVData, file = paste(getwd(),"/", input$dirLocation,"/", input$dirLocation," dQdV Data.csv", sep =""))
+      write.csv(cycle_facts, file = paste(getwd(),"/", input$dirLocation,"/", input$dirLocation," Cycle Facts.csv", sep =""))
       
       # If a histor directory does not exist, create it. Save all the data revelant to plotting to a RData file.
       if (!dir.exists("history/")) {
         dir.create("history/")
       } 
-      save(data, dQdVData, total, cycle_facts, numCycles, file = paste("history/", input$dirLocation, ".RData"))
+      save(data, dQdVData, total, cycle_facts, numCycles, file = paste("history/", input$dirLocation,".RData"))
       
       # Modal for completed analysis
-      shinyalert("Analysis Complete!", paste("All your data are now in ", input$dirLocation), 
-                 type = "success",
+      shinyalert("Analysis Complete!", paste("All your data are now in", input$dirLocation), 
+                 type ="success",
                  showCancelButton = TRUE,
-                 cancelButtonText = "Exit",
+                 cancelButtonText ="Exit",
                  showConfirmButton = TRUE,
-                 confirmButtonText = "Graph Builder",
+                 confirmButtonText ="Graph Builder",
                  callbackR = function(x) {
                    if (x) {
-                     updateRadioButtons(session, "cells", choices = data$sheet)
+                     updateRadioButtons(session,"cells", choices = data$sheet)
                      showModal(graphbuilder)
                    }
                  })
@@ -811,8 +820,8 @@ if (interactive()) {
       disable("perActive")
       disable("capActive")
       
-      choices <- c("dQdV Graphs", "Voltage Profiles", "Voltage vs. Time", "Discharge Capacity", "Discharge Areal Capacity",
-                   "Total Discharge Capacity", "Average Voltage", "Delta Voltage")
+      choices <- c("dQdV Graphs","Voltage Profiles","Voltage vs. Time","Discharge Capacity","Discharge Areal Capacity",
+                  "Total Discharge Capacity","Average Voltage","Delta Voltage")
       
       if (is.element("Discharge Areal Capacity", input$gGraphs)) {
         enable("area")
@@ -838,32 +847,32 @@ if (interactive()) {
       # Switch statements defining the bulk of the processing, depending on the desired graph
       # 
       # ######
-      #if (input$perType == "Cycle Analysis") {
+      #if (input$perType =="Cycle Analysis") {
       sheetName <<- input$cells
       
       # Get the indicies in which the desired cells are in the data frame containing the number of cycles
       cellIndex <- match(input$cells, numCycles$sheet)
       
       switch(input$typeGraph,
-             "dQdV Graphs" = {
+            "dQdV Graphs" = {
                tmp_data <<- data.frame(x=dQdVData[dQdVData$cell %in% cellIndex,]$voltage, y=dQdVData[dQdVData$cell %in% cellIndex,]$dQdV, cycle=dQdVData[dQdVData$cell %in% cellIndex,]$cycle, cell=dQdVData[dQdVData$cell %in% cellIndex,]$cell)
                
-               titleLabel <<- "dQdV Plot"
-               xlabel <<- "Voltage (V)"
-               ylabel <<- "dQdV (mAh/V)"
+               titleLabel <<-"dQdV Plot"
+               xlabel <<-"Voltage (V)"
+               ylabel <<-"dQdV (mAh/V)"
              },
-             "Voltage Profiles" = {
+            "Voltage Profiles" = {
                tmp_data <<- data.frame(x=total[total$Cell %in% cellIndex,]$CC, y=total[total$Cell %in% cellIndex,]$`Voltage(V)`, cycle=total[total$Cell %in% cellIndex,]$`Cycle_Index`, cell=total[total$Cell %in% cellIndex,]$Cell)
                
-               titleLabel <<- "Voltage Profile"
+               titleLabel <<-"Voltage Profile"
                if (sum(data$Mass) != 0) {
-                 xlabel <- "Continuous Capacity (mAh/g)"
+                 xlabel <-"Continuous Capacity (mAh/g)"
                } else {
-                 xlabel <- "Continuous Capacity (Ah)"
+                 xlabel <-"Continuous Capacity (Ah)"
                }
-               ylabel <<- "Voltage (V)"
+               ylabel <<-"Voltage (V)"
              },
-             "Voltage vs. Time" = {
+            "Voltage vs. Time" = {
                data_pull <<- data.frame(x=(total[total$Cell %in% cellIndex,]$`Test_Time(s)` / 60), y=total[total$Cell %in% cellIndex,]$`Voltage(V)`, cycle=total[total$Cell %in% cellIndex,]$`Cycle_Index`, cell=total[total$Cell %in% cellIndex,]$cell)
                
                normalTime <<- aggregate(data_pull$x, by=list(data_pull$cycle), normalizeTime)
@@ -873,9 +882,9 @@ if (interactive()) {
                
                tmp_data <<- tmp_data[tmp_data$y >= 0.01,]
                
-               titleLabel <<- "Voltge vs. Time Plot"
-               xlabel <<- "Time (min)"
-               ylabel <<- "Voltage (V)"
+               titleLabel <<-"Voltge vs. Time Plot"
+               xlabel <<-"Time (min)"
+               ylabel <<-"Voltage (V)"
              },
              
       )
@@ -889,12 +898,12 @@ if (interactive()) {
       tmp_data$symbol <<- sapply(tmp_data$cell, function(x) {match(x, cellIndex)})
 
       tryCatch({
-        if (input$plotStyle == "o" | input$plotStyle == "p") {
+        if (input$plotStyle =="o" | input$plotStyle =="p") {
           plot(tmp_data$x, tmp_data$y, type = input$plotStyle, col = tmp_data$color, pch = tmp_data$symbol, main=titleLabel, xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
-          legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells), col = c(unique(tmp_data$color), rep("black", length(input$cells))), pch = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title = "Cycle", ncol=2)
-        } else if (input$plotStyle == "l") {
+          legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells), col = c(unique(tmp_data$color), rep("black", length(input$cells))), pch = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title ="Cycle", ncol=2)
+        } else if (input$plotStyle =="l") {
           newLine <- subset(tmp_data, tmp_data$color == 1 & tmp_data$symbol == 1)
-          plot(newLine$x, newLine$y, type = "l", col = newLine$color, lty = newLine$symbol, main=titleLabel, xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+          plot(newLine$x, newLine$y, type ="l", col = newLine$color, lty = newLine$symbol, main=titleLabel, xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
           
           for (i in 1:length(input$renderCycles)) {
             for (n in 1:length(cellIndex)) {
@@ -903,11 +912,11 @@ if (interactive()) {
             }
           }
           
-          legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells), col = c(unique(tmp_data$color), rep("black", length(input$cells))), lty = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title = "Cycle", ncol=2)
+          legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells), col = c(unique(tmp_data$color), rep("black", length(input$cells))), lty = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title ="Cycle", ncol=2)
         }
       },
       error=function(cond) {
-        text(0.5, 0.5, labels = "You don messed up A-aron!\n (no data to plot)")
+        text(0.5, 0.5, labels ="You don messed up A-aron!\n (no data to plot)")
         print(cond)
         return(NA)
       })
@@ -916,29 +925,29 @@ if (interactive()) {
     # Method for handling changes in cell selection
     observeEvent(input$cells, {
       tmp_cycles <<- input$renderCycles
-      updateSelectInput(session, "renderCycles", choices = 1:numCycles[numCycles$sheet == input$cells,]$cycles, selected = tmp_cycles)
+      updateSelectInput(session,"renderCycles", choices = 1:numCycles[numCycles$sheet == input$cells,]$cycles, selected = tmp_cycles)
     })
     
     # Error handling for graphBuilder and then showing modal
     observeEvent(input$graphBuilder, {
       if(dim(numCycles)[1] == 0 | dim(dQdVData)[1] == 0 | dim(cycle_facts)[1] == 0 | dim(total) == 0) {
-        shinyalert("No Data!", "Please run the analysis first or load a previous environment.", "error")
+        shinyalert("No Data!","Please run the analysis first or load a previous environment.","error")
       } else {
-        updateCheckboxGroupInput(session, "cells", choices = data$sheet)
+        updateCheckboxGroupInput(session,"cells", choices = data$sheet)
         showModal(graphbuilder)
       }
     })
     
     # Method for saving graph generated by graphBuilder
     observeEvent(input$saveGraph, {
-      png(paste(input$fileName, ".png"))
+      png(paste(input$fileName,".png"))
       
-      if (input$plotStyle == "o" | input$plotStyle == "p") {
+      if (input$plotStyle =="o" | input$plotStyle =="p") {
         plot(tmp_data$x, tmp_data$y, type = input$plotStyle, col = tmp_data$color, pch = tmp_data$symbol, main=titleLabel, xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
-        legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells), col = c(unique(tmp_data$color), rep("black", length(input$cells))), pch = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title = "Cycle", ncol=2)
-      } else if (input$plotStyle == "l") {
+        legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells), col = c(unique(tmp_data$color), rep("black", length(input$cells))), pch = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title ="Cycle", ncol=2)
+      } else if (input$plotStyle =="l") {
         newLine <- subset(tmp_data, tmp_data$color == 1 & tmp_data$symbol == 1)
-        plot(newLine$x, newLine$y, type = "l", col = newLine$color, lty = newLine$symbol, main=titleLabel, xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+        plot(newLine$x, newLine$y, type ="l", col = newLine$color, lty = newLine$symbol, main=titleLabel, xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
         
         for (i in 1:length(input$renderCycles)) {
           for (n in 1:length(cellIndex)) {
@@ -947,12 +956,12 @@ if (interactive()) {
           }
         }
         
-        legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells), col = c(unique(tmp_data$color), rep("black", length(input$cells))), lty = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title = "Cycle", ncol=2)
+        legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells), col = c(unique(tmp_data$color), rep("black", length(input$cells))), lty = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title ="Cycle", ncol=2)
       }
       
       dev.off()
       
-      shinyalert("Success!", paste("Plot saved in working directory:\n", getwd()), "success")
+      shinyalert("Success!", paste("Plot saved in working directory:\n", getwd()),"success")
     })
   }
 }
