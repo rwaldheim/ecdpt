@@ -424,19 +424,7 @@ if (interactive()) {
       if (length(names(data)) <= 1) {
         shinyalert("Uh oh!", "You need to import cells first!", "error")
       } else {
-        if (!grepl("OneDrive", getwd())) {
-          shinyReturn <- ""
-          shinyalert("Uh Oh!", "You do not appear to be in a shared directory!", type = "error",
-               showConfirmButton = TRUE, confirmButtonText = "Ignore", showCancelButton = TRUE,
-               cancelButtonText = "Abort",
-               callbackR = function(x) {
-                 if (x) {
-                   runscript()
-                 }
-               })
-        } else {
-          runscript()
-        }
+        runscript()
       }
     })
     
@@ -888,7 +876,8 @@ if (interactive()) {
                titleLabel <<- "Voltge vs. Time Plot"
                xlabel <<- "Time (min)"
                ylabel <<- "Voltage (V)"
-             }, 
+             },
+             
       )
       
       tmp_data <<- tmp_data[is.finite(tmp_data$x),]
