@@ -4,11 +4,11 @@ title: arbinimport
 
 # Welcome to the Arbin Battery Analysis Tool!
 
-This program, written in [R](https://www.r-project.org/) using the [Shiny](https://shiny.rstudio.com/) package, aims to greatly simplify the battery analysis process and accelerating diagnostic data return on energy storage cells cycling on an Arbin battery cycler. It works by taking the raw export files from the [Arbin MITS Pro](https://www.arbin.com/software/) software and automating many standard analysis techniques while also allowing for rapid generation of common visual aids. It was developed by and is currently used by the energy storage researchers at [Birla Carbon](https://www.birlacarbon.com). 
+This program, written in [R](https://www.r-project.org/) using the [Shiny](https://shiny.rstudio.com/) package, aims to simplify the battery analysis process and acelerate diagnostic data return on energy storage cells cycling on an Arbin battery cycler. After uploading the raw Excel files from the [Arbin MITS Pro](https://www.arbin.com/software/) software to the program, it automates many standard analysis techniques while also allowing for rapid generation of common battery analysis graphs. The Arbin Battery Analysis Tool was developed by and is currently used by the Materials Innovation group at [Birla Carbon](https://www.birlacarbon.com). 
 
-If you are new to the program and would like to get started, see our [Installation](Installation.md) page!
+If you are new to the program and would like to get started, see our [Installation](Installation.md) page.
 
-If you already have all the required software installed and configured, see our [Begin Analyzing](begin-analyzing.md)!
+If you already have all the required software installed and configured, see our [Begin Analyzing](begin-analyzing.md) page.
 
 ## High-Level Operation
 
@@ -57,28 +57,14 @@ Some other inputs that are optional, depending on the desired outputs, are the *
 
 Now that we've established what the required inputs are, what does the program generate? 
 
-Regardless of inputs selected, the program will generate a directory (folder) in which all data will be placed, then a subdirectory for each cell analyzed. If select graphs are chosen to be generated, these will create directries of their own within each respective cell's folder. 
+Regardless of inputs selected, the program will generate a directory (folder) in which all data will be placed, then a subdirectory for each cell analyzed. If select graphs are chosen to be generated, these will create directories of their own within each respective cell's folder. 
 
-In its default state, the program will generate numerous data files placed throughout this file system. At the highest level (in the main folder), there will be two files generated: a **[directory name] Summary.csv** and **[directory name] Total.csv**. The **Summary** file will contain all the values in the input file, as well as some additional metrics, averaged on a *per cycle* basis for each cell individually. The **Total** file will contain all the raw data imported for each cell, concatenated into one large file. Two additional files that could be present, based on the user selection, are the **Total Discharge Capacity** and **Total Discharge Areal Capacity** graphs.
-
-Within each cell's directory, there will be three data files generated: **[cell name].csv**, **[cell name] dQdV Data.csv**, and **[cell name] Cycle Facts.csv**. The contents of each file are as follows:
+In its default state, the program will generate numerous data files placed throughout this file system. At the highest level (in the main folder), there will be three files generated: **[directory name] Total.csv**, **[directory name] dQdV Data.csv**, and **[cell name] Cycle Facts.csv**. The **Total** file will contain all the raw data imported for each cell, concatenated into one large file. The contents of the remaining files are as follows:
 
 <table>
   <tr>
     <th>File</th>
     <th>Attributes</th>
-  </tr>
-  <tr>
-    <td>[cell name].csv</td>
-    <td style="text-align: left;">
-      <ul>
-        <li>the raw data from the input file plus some additional columns:</li>
-        <li><code>Q.d</code> : Discharge Capacity (mAh/g)*</li>
-        <li><code>Q.c</code> : Charge Capacity (mAh/g)*</li>
-        <li><code>CC</code> : Continuous Capacity (if masses are specifed, units are mAh/g, and Ah if not)</li>
-        <li><code>CE</code> : Coulombic Efficiency (%)</li>
-      </ul>
-    </td>
   </tr>
   <tr>
     <td>[cell name] dQdV Data.csv</td>
@@ -90,7 +76,7 @@ Within each cell's directory, there will be three data files generated: **[cell 
         <li><code>c_d</code> : indicated whether the given values correlate to a charge or discharge cycle</li>
         <li><code>voltage</code> : the voltage (V)</li>
         <li><code>dQdV</code> : the differential capacity (Ah/V)</li>
-        <li><code>F_L</code> : indictes whether the given values correlate to the first of a new rate</li>
+        <li><code>F_L</code> : indicates whether the given values correlate to the first of a new rate</li>
       </ul>
     </td>
   </tr>
@@ -105,9 +91,12 @@ Within each cell's directory, there will be three data files generated: **[cell 
         <li><code>dchV</code> : the discharge voltage (V)</li>
         <li><code>avgV</code> : the average voltage (V)</li>
         <li><code>dV</code> : the delta voltage (V)</li>
-        <li><code>DCap</code> : the dsicharge capacity (either mAh/g or Ah)</li>
+        <li><code>DCap</code> : the discharge capacity (either mAh/g or Ah)</li>
         <li><code>CCap</code> : the charge capacity (either mAh/g or Ah)</li>
         <li><code>CE</code> : the coulombic efficiency (%)</li>
+        <li><code>lostCap</code> : the capacity lost between the current and previous cycle (either mAh/g or Ah)</li>
+        <li><code>capSE</code> : the standard error of the discharge capacity (either mAh/g or Ah)</li>
+        <li><code>ceSE</code> : the standard error of the coulombic efficiency (%)</li>
       </ul>
     </td>
   </tr>
