@@ -570,6 +570,8 @@ if (interactive()) {
           # 
           # ######
           
+          progress$set(detail = paste("Analyzing cell", row,", cycle", i))
+          
           steps <- split(cycle, cycle$Step_Index)
           for (step in steps) {
             
