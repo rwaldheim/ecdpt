@@ -569,6 +569,7 @@ if (interactive()) {
           # Within each cycle, take out the individual steps. These include the charge, discharge, and others.
           # 
           # ######
+          
           steps <- split(cycle, cycle$Step_Index)
           for (step in steps) {
             
@@ -612,6 +613,7 @@ if (interactive()) {
           # 
           # ######
           
+          tryCatch({
           # dQdV plotting
           if (is.element("dQdV Graphs", input$gGraphs)) {
             png(paste(input$dirLocation,"/", data$sheet[row],"/","dQdV Plots/", data$name[row], data$sheet[row],"Cycle", toString(i)," dQdV Plot.png", sep =""))
@@ -659,6 +661,9 @@ if (interactive()) {
             plot((tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Test_Time(s)` - tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Test_Time(s)`[[1]]) / 60, tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)`, type="l", main=paste("Voltage vs. Time for",  input$dirLocation, data$sheet[row]), xlab="Time (min)", ylab="Voltage (V)")
             dev.off()
           }
+          }, error = function(cond) {
+            print(cond)
+          })
           
           if (sum(data$Mass) != 0) {
             DCap <- tail(cycle$Q.d, 1)
@@ -688,15 +693,15 @@ if (interactive()) {
           png(paste(input$dirLocation,"/", data$sheet[row],"/", data$name[row], data$sheet[row]," Discharge Capacity Plot.png", sep =""))
           eol <- cell_data$`DCap`[[1]] * 0.8
           plot(cell_data$cycle, cell_data$DCap, type ="p", main=paste("Discharge Capacity for",  input$dirLocation), xlab=NA, ylab=ylabel, mai=c(1,1,1,1))
+          abline(h=eol, lty ="dotted")
           par(new = T)
           plot(cell_data$cycle, cell_data$CE, type ="p", axes=F, col ="red", ylab=NA, xlab="Cycle", ylim = c(0, 105))
-          axis(side = 4)
-          mtext(side = 4, line = 2,"Coulombic Efficiency (%)")
-          abline(h=eol, lty ="dotted")
+          mtext(side = 4, line = 3,"Coulombic Efficiency (%)", col = "red")
+          axis(side = 4, col ="red", col.axis = "red")
           dev.off()
         }
         
-        # Discharge capacity plotting, with coulombic efficiency being plotted alongside
+        # Discharge areal capacity plotting, with coulombic efficiency being plotted alongside
         if (is.element("Discharge Areal Capacity", input$gGraphs)) {
           png(paste(input$dirLocation,"/", data$sheet[row],"/", data$name[row], data$sheet[row]," Discharge Areal Capacity Plot.png", sep =""))
           new_par <- old_par <- par("mar")
@@ -764,11 +769,9 @@ if (interactive()) {
       progress$set(detail ="Wrapping up...")
       
       # Get the last status of each cycle for each cell (namely capacity)
-      stats <- cycle_facts %>% group_by(cycle) %>% summarise_each(mean)
       capSEs <- cycle_facts[c("cycle","DCap")] %>% group_by(cycle) %>% summarise_each(se)
       ceSEs <- cycle_facts[c("cycle","CE")] %>% group_by(cycle) %>% summarise_each(se)
-      stats <- stats[, !names(stats) %in% c("cell")]
-      stats <- cbind(stats, capSE = capSEs$DCap, ceSE = ceSEs$CE)
+      cycle_facts <- cbind(cycle_facts, capSE = capSEs$DCap, ceSE = ceSEs$CE)
       
       # Send all the data to a global variable to be used elsewhere
       total <<- final
@@ -777,20 +780,19 @@ if (interactive()) {
       # Total dishcharge capacity plotting
       if (is.element("Total Discharge Capacity", input$gGraphs)) {
         png(paste(getwd(),"/", input$dirLocation,"/", data$name[row],"Total Discharge Capacity Plot.png", sep =""))
-        eol <- stats$`DCap`[[1]] * 0.8
-        plot(stats$cycle, stats$DCap, type ="p", main=paste("Discharge Capacity for",  input$dirLocation), xlab=NA, ylab=ylabel, mai=c(1,1,1,1))
-        arrows(stats$cycle, stats$DCap - stats$capSE, stats$cycle, stats$DCap + stats$capSE, length=0.05, angle=90, code=3)
+        eol <- cycle_facts$`DCap`[[1]] * 0.8
+        plot(cycle_facts$cycle, cycle_facts$DCap, type ="p", main=paste("Discharge Capacity for",  input$dirLocation), xlab=NA, ylab=ylabel, mai=c(1,1,1,1))
+        arrows(cycle_facts$cycle, cycle_facts$DCap - cycle_facts$capSE, cycle_facts$cycle, cycle_facts$DCap + cycle_facts$capSE, length=0.05, angle=90, code=3)
+        abline(h=eol, lty ="dotted")
         par(new = T)
-        plot(stats$cycle, stats$CE, type ="p", axes=F, col ="red", ylab=NA, xlab="Cycle", ylim = c(0, 105))
-        arrows(stats$cycle, stats$CE - stats$ceSE, stats$cycle, stats$CE + stats$ceSE, length=0.05, angle=90, code=3, col ="red")
+        plot(cycle_facts$cycle, cycle_facts$CE, type ="p", axes=F, col ="red", ylab=NA, xlab="Cycle", ylim = c(0, 105))
+        arrows(cycle_facts$cycle, cycle_facts$CE - cycle_facts$ceSE, cycle_facts$cycle, cycle_facts$CE + cycle_facts$ceSE, length=0.05, angle=90, code=3, col ="red")
         axis(side = 4, col ="red")
         mtext(side = 4, line = 2,"Coulombic Efficiency (%)")
-        abline(h=eol, lty ="dotted")
         dev.off()
       }
       
       # Save total data and stats
-      write.csv(stats, file = paste(getwd(),"/", input$dirLocation,"/", input$dirLocation," Summary.csv", sep =""))
       write.csv(final, file = paste(getwd(),"/", input$dirLocation,"/", input$dirLocation," Total.csv", sep =""))
       write.csv(dQdVData, file = paste(getwd(),"/", input$dirLocation,"/", input$dirLocation," dQdV Data.csv", sep =""))
       write.csv(cycle_facts, file = paste(getwd(),"/", input$dirLocation,"/", input$dirLocation," Cycle Facts.csv", sep =""))
@@ -810,7 +812,8 @@ if (interactive()) {
                  confirmButtonText ="Graph Builder",
                  callbackR = function(x) {
                    if (x) {
-                     updateRadioButtons(session,"cells", choices = data$sheet)
+                     cells <- filter(data, grepl('Channel', sheet))
+                     updateCheckboxGroupButtons(session, "cells", choices = cells$sheet)
                      showModal(graphbuilder)
                    }
                  })
