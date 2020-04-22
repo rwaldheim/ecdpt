@@ -783,9 +783,11 @@ if (interactive()) {
       progress$set(detail ="Wrapping up...")
       
       # Get the last status of each cycle for each cell (namely capacity)
+      DCap <- cycle_facts[c("cycle","DCap")] %>% group_by(cycle) %>% summarise_each(mean)
+      CE <- cycle_facts[c("cycle","CE")] %>% group_by(cycle) %>% summarise_each(mean)
       capSEs <- cycle_facts[c("cycle","DCap")] %>% group_by(cycle) %>% summarise_each(se)
       ceSEs <- cycle_facts[c("cycle","CE")] %>% group_by(cycle) %>% summarise_each(se)
-      cycle_facts <- cbind(cycle_facts, capSE = capSEs$DCap, ceSE = ceSEs$CE)
+      stats <- cbind(cycle = capSEs$cycle, DCap = DCap$DCap, CE = CE$CE, capSE = capSEs$DCap, ceSE = ceSEs$CE)
       
       # Send all the data to a global variable to be used elsewhere
       total <<- final
@@ -794,19 +796,20 @@ if (interactive()) {
       # Total dishcharge capacity plotting
       if (is.element("Total Discharge Capacity", input$gGraphs)) {
         png(paste(getwd(),"/", dirLocation(),"/", data$name[row],"Total Discharge Capacity Plot.png", sep =""))
-        eol <- cycle_facts$`DCap`[[1]] * 0.8
-        plot(cycle_facts$cycle, cycle_facts$DCap, type ="p", main=paste("Discharge Capacity for",  dirLocation()), xlab=NA, ylab=ylabel, mai=c(1,1,1,1))
-        arrows(cycle_facts$cycle, cycle_facts$DCap - cycle_facts$capSE, cycle_facts$cycle, cycle_facts$DCap + cycle_facts$capSE, length=0.05, angle=90, code=3)
+        eol <- stats$`DCap`[[1]] * 0.8
+        plot(stats$cycle, stats$DCap, type ="p", main=paste("Discharge Capacity for",  dirLocation()), xlab=NA, ylab=ylabel, mai=c(1,1,1,1))
+        arrows(stats$cycle, stats$DCap - stats$capSE, stats$cycle, stats$DCap + stats$capSE, length=0.05, angle=90, code=3)
         abline(h=eol, lty ="dotted")
         par(new = T)
-        plot(cycle_facts$cycle, cycle_facts$CE, type ="p", axes=F, col ="red", ylab=NA, xlab="Cycle", ylim = c(0, 105))
-        arrows(cycle_facts$cycle, cycle_facts$CE - cycle_facts$ceSE, cycle_facts$cycle, cycle_facts$CE + cycle_facts$ceSE, length=0.05, angle=90, code=3, col ="red")
+        plot(stats$cycle, stats$CE, type ="p", axes=F, col ="red", ylab=NA, xlab="Cycle", ylim = c(0, 105))
+        arrows(stats$cycle, stats$CE - stats$ceSE, stats$cycle, stats$CE + stats$ceSE, length=0.05, angle=90, code=3, col ="red")
         axis(side = 4, col ="red")
         mtext(side = 4, line = 2,"Coulombic Efficiency (%)")
         dev.off()
       }
       
       # Save total data and stats
+      write.csv(stats, file = paste(getwd(),"/", dirLocation(),"/", dirLocation()," Summary.csv", sep =""))
       write.csv(final, file = paste(getwd(),"/", dirLocation(),"/", dirLocation()," Total.csv", sep =""))
       write.csv(dQdVData, file = paste(getwd(),"/", dirLocation(),"/", dirLocation()," dQdV Data.csv", sep =""))
       write.csv(cycle_facts, file = paste(getwd(),"/", dirLocation(),"/", dirLocation()," Cycle Facts.csv", sep =""))
