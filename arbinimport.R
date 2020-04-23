@@ -627,6 +627,9 @@ if (interactive()) {
           # 
           # ######
           
+          dQdVData <<- dQdVData[is.finite(dQdVData$voltage),]
+          dQdVData <<- dQdVData[is.finite(dQdVData$dQdV),]
+          
           tryCatch({
           # dQdV plotting
           if (is.element("dQdV Graphs", input$gGraphs)) {
@@ -1014,7 +1017,11 @@ if (interactive()) {
         }
       },
       error=function(cond) {
-        text(0.5, 0.5, labels ="You don messed up A-aron!\n (no data to plot)")
+        if (length(input$cells) != 0) {
+          text(0.5, 0.5, labels ="This graph requires you to select cycles!")
+        } else {
+          text(0.5, 0.5, labels ="You don messed up A-aron!\n (no data to plot)")
+        }
         print(cond)
         return(NA)
       })
