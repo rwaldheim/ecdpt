@@ -1018,9 +1018,9 @@ if (interactive()) {
       },
       error=function(cond) {
         if (length(input$cells) != 0) {
-          text(0.5, 0.5, labels ="This graph requires you to select cycles!")
+          text(0.5, 0.5, labels ="This graph requires you to select a cycle!", cex = 1.5)
         } else {
-          text(0.5, 0.5, labels ="You don messed up A-aron!\n (no data to plot)")
+          text(0.5, 0.5, labels ="You don messed up A-aron!\n (no data to plot)", cex = 1.5)
         }
         print(cond)
         return(NA)
