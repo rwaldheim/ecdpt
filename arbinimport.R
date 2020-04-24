@@ -129,7 +129,7 @@ if (interactive()) {
     # The final column is where all the"action" items are, aka clicking any of these buttons will trigger a process
     column(4, align ="center",
       fluidRow(
-        textInput("dirName", "Folder Name*"), tags$br(),
+        textInput("dirName", "Analysis Name*"), tags$br(),
         "Current Location: ", textOutput("currDir", inline = TRUE), tags$br(),
         actionButton("chooseDir", "Change Output Location*", class = "btn-secondary", style = "width:80%; margin:5%; font-size:100%"), tags$br(),
         helpText("The folder in which data will be placed will be created within this folder"),
@@ -310,16 +310,8 @@ if (interactive()) {
     observeEvent(input$chooseDir, {
       dirLocation(tk_choose.dir())
       
-      while (dirLocation() == "") {}
-      
-      output$currDir <- renderText({paste(split_path(dirLocation())[1], "(", split_path(dirLocation())[2], ")")})
-    })
-    
-    observe({
-      if(dirLocation() == "") {
-        output$dirLocation <- renderText({"None"})
-      } else {
-        output$dirLocation <- renderText({basename(dirLocation())})
+      if (!is.na(dirLocation())) {
+        output$currDir <- renderText({paste(split_path(dirLocation())[1], "(", split_path(dirLocation())[2], ")")})
       }
     })
     
@@ -465,10 +457,10 @@ if (interactive()) {
     observeEvent(input$submit, {
       if (length(names(data)) <= 1) {
         shinyalert("Uh oh!", "You need to import cells first!", "error")
-      } else if (dirLocation() == "") {
+      } else if (is.na(dirLocation()) | dirLocation() == "") {
         shinyalert("Uh oh!", "You need to enter a directory name first!", "error")
       } else if (input$dirName == "") {
-        shinyalert("Uh oh!", "You need to enter a folder name first!", "error")
+        shinyalert("Uh oh!", "You need to enter an analysis name first!", "error")
       } else {
         runscript()
       }
@@ -836,22 +828,14 @@ if (interactive()) {
       if (!dir.exists(paste(dirLocation(), "history", sep = "/"))) {
         dir.create(paste(dirLocation(), "history", sep = "/"))
       } 
-      save(dirLocation, data, dQdVData, total, cycle_facts, numCycles, file = paste(dirLocation(), "/history/", input$dirName, ".RData", sep = ""))
+      save(dirLocation, input$dirName, data, dQdVData, total, cycle_facts, numCycles, file = paste(dirLocation(), "/history/", input$dirName, ".RData", sep = ""))
       
       # Modal for completed analysis
-      shinyalert("Analysis Complete!", paste("All your data are now in", dirLocation()), 
+      shinyalert("Analysis Complete!", paste("All your data are now in ", dirLocation(), "/", input$dirName, sep = ""), 
                  type ="success",
                  showCancelButton = TRUE,
                  cancelButtonText ="Exit",
-                 showConfirmButton = TRUE,
-                 confirmButtonText ="Graph Builder",
-                 callbackR = function(x) {
-                   if (x) {
-                     cells <- filter(data, grepl('Channel', sheet))
-                     updateCheckboxGroupButtons(session, "cells", choices = cells$sheet)
-                     showModal(graphbuilder)
-                   }
-                 })
+                 )
       
       # Finish progress bar
       progress$set(value = nrow(data))
