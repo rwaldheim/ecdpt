@@ -149,7 +149,7 @@ if (interactive()) {
       fluidRow(
         strong("Optional: Import Active Material Masses from Excel"), tags$br(),
         "Running Analysis without Masses Will Render Raw Capacities (Ah)",
-        textAreaInput("masses", NULL),
+        textAreaInput("masses", NULL, height = "100px", resize = "vertical"),
         helpText("Enter the masses separated by a new line and in the order they appear in the data table below."),
         actionButton("excelImport", "Import"),
         style = "border: 1px dashed black; padding: 5%; margin:5%"
