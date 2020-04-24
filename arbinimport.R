@@ -45,6 +45,7 @@ if (interactive()) {
   total <- data.frame()
   cycle_facts <- data.frame()
   tmp_data <- data.frame()
+  dirName <<- ""
   tmp_cycles <- vector()
   titleLabel <-""
   xlabel <-""
@@ -132,7 +133,7 @@ if (interactive()) {
         textInput("dirName", "Analysis Name*"), tags$br(),
         "Current Location: ", textOutput("currDir", inline = TRUE), tags$br(),
         actionButton("chooseDir", "Change Output Location*", class = "btn-secondary", style = "width:80%; margin:5%; font-size:100%"), tags$br(),
-        helpText("The folder in which data will be placed will be created within this folder"),
+        helpText("The analysis will create a folder within the selected folder."),
         actionButton("submit", "Begin Analysis", class = 'btn-success', style = "width:80%; height:100px; margin:5%; font-size:100%"),
         style = "border: 4px double black; padding: 5%; margin:5%"
       ),
@@ -142,14 +143,15 @@ if (interactive()) {
         strong("Custom Graph Builder"), tags$br(),
        "Customize Graphs Once Data is Available",
         disabled(actionButton("graphBuilder","Launch", width = '80%', class ="btn-primary", style ="height:50px; margin:5%; font-size:100%")), tags$br(),
-        "Data Loaded: ", textOutput("dirLocation", inline = TRUE),
         style ="border: 1px solid black; padding: 5%; margin:5%"
       ),
       
       fluidRow(
-        strong("Optional: Import Masses from Excel"), tags$br(),
+        strong("Optional: Import Active Material Masses from Excel"), tags$br(),
         "Running Analysis without Masses Will Render Raw Capacities (Ah)",
-        actionButton("excelImport", "Import", width = '80%', class = "btn-secondary", style = "height:50px; margin:5%; font-size:100%"),
+        textAreaInput("masses", NULL),
+        helpText("Enter the masses separated by a new line and in the order they appear in the data table below."),
+        actionButton("excelImport", "Import"),
         style = "border: 1px dashed black; padding: 5%; margin:5%"
       ),
     ),
@@ -265,25 +267,6 @@ if (interactive()) {
           ')
         ),
       )}, title ="Graph Types", easyClose = TRUE)
-    
-    excelModal <- modalDialog({
-      fluidPage(style ="font-size:15pt;",
-                useShinyjs(),
-                useShinyalert(),
-                
-                tags$head(tags$style(".modal-dialog{width:80%}")),
-                tags$head(tags$style(".modal-body{ min-height:1000px}")),
-                
-                fluidRow(align ="center",
-                         HTML( '<ol align="left">
-                                 <li>Open an excel file containing the masses of each cell.</li>
-                                 <li>Copy the values in the order of cells. (Must be vertical and continuous)</li>
-                                </ol>
-                              <p><b>Once you hit"Import", the program will grab the masses directly from your clipboard</b></p>
-                              <p align="left">Example:</p>'),
-                         imageOutput("importGIF"),
-                ),
-      )}, title ="Import Masses from Excel Dialog", height ="100%", easyClose = TRUE, footer = actionButton("excelMasses","Import"))
     
     # Renders the GIF image for the excelModal
     output$importGIF <- renderImage({
@@ -419,28 +402,23 @@ if (interactive()) {
       colnames = c("File","Sheet","Mass (g)","Filepath","Limiting Electrode Area (cm^2)"))
     }
     
-    # Show the excelImport modal when the button is clicked
-    observeEvent(input$excelImport, {
-      showModal(excelModal)
-    })
-    
     observeEvent(input$whatGraph, {
       showModal(graphModal)
     })
     
     # Data validation the masses imported from Excel, if valid they are placed into the datatable
-    observeEvent(input$excelMasses, {
+    observeEvent(input$excelImport, {
       if (length(names(data)) <= 1) {
         shinyalert("Uh oh!","You need to import cells first!","error")
         removeModal()
       } else {
         tryCatch({
-          masses <- read.table("clipboard",sep="\t")
+          masses <- strsplit(strRep(input$masses, "\n", ","), ",", fixed = TRUE)
           names(masses)[names(masses) =="V1"] <-"Mass"
-          data$Mass <<- masses
+          data$Mass <<- masses[[1]]
         }, error = function(cond) {
           print(cond)
-          shinyalert("Something isn't right...","The number of masses imported did not match the amount of cells present or your clipboard didn't contain numeric values. Please try again.","error")
+          shinyalert("Something isn't right...","The number of masses imported did not match the amount of cells present or the text contained some special characters. Please try again.","error")
           removeModal()
         }, finally = {
           proxy = dataTableProxy("channels")
@@ -550,7 +528,7 @@ if (interactive()) {
         
         # Check if masses have been imported, if they have not then all future calculations will be done on a raw capacity basis
         if (sum(data$Mass) != 0) {
-          ylabel <-"Discharge Capacity (mAh/g)"
+          ylabel <-"Capacity (mAh/g)"
           
           tmp_excel$Q.d <- as.numeric(tmp_excel$`Discharge_Capacity(Ah)` * (1000 / data$Mass[[1]][row]))
           tmp_excel$Q.c <- as.numeric(tmp_excel$`Charge_Capacity(Ah)`* (1000 / data$Mass[[1]][row]))
@@ -558,7 +536,7 @@ if (interactive()) {
           tmp_excel$CC <- tmp_excel$Q.d - tmp_excel$Q.c
           tmp_excel$CE <- (tmp_excel$Q.d / tmp_excel$Q.c) * 100
         } else {
-          ylabel <-"Discharge Capacity (Ah)"
+          ylabel <-"Capacity (Ah)"
           
           tmp_excel$CC <- tmp_excel$`Discharge_Capacity(Ah)` - tmp_excel$`Charge_Capacity(Ah)`
           tmp_excel$CE <- (tmp_excel$`Discharge_Capacity(Ah)` / tmp_excel$`Charge_Capacity(Ah)`) * 100
@@ -645,11 +623,7 @@ if (interactive()) {
           # Voltage profile plotting
           if (is.element("Voltage Profiles", input$gGraphs)) {
             png(paste(dirLocation(), "/",  input$dirName,"/", data$sheet[row],"/","Voltage Profiles/", data$name[row], data$sheet[row],"Cycle", toString(i)," Voltage Profile Plot.png", sep =""))
-            if (sum(data$Mass) != 0) {
-              plot(tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Q.d`, tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)`, type="l", main=paste("Voltage Profile for",  input$dirName, data$sheet[row]), xlab= ylabel, ylab="Voltage (V)")
-            } else {
-              plot(tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Discharge_Capacity(Ah)`, tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)`, type="l", main=paste("Voltage Profile for",  input$dirName, data$sheet[row]), xlab=ylabel, ylab="Voltage (V)")
-            }
+            plot((-1) * tmp_excel[tmp_excel$`Cycle_Index` == i,]$CC, tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)`, type="l", main=paste("Voltage Profile for",  input$dirName, data$sheet[row]), xlab= paste("Continuous", ylabel), ylab="Voltage (V)")
             dev.off()
           }
           
@@ -713,7 +687,7 @@ if (interactive()) {
         if (is.element("Discharge Capacity", input$gGraphs)) {
           png(paste(dirLocation(), "/",  input$dirName,"/", data$sheet[row],"/", data$name[row], data$sheet[row]," Discharge Capacity Plot.png", sep =""))
           eol <- cell_data$`DCap`[[1]] * 0.8
-          plot(cell_data$cycle, cell_data$DCap, type ="p", main=paste("Discharge Capacity for",  input$dirName), xlab=NA, ylab=ylabel, mai=c(1,1,1,1))
+          plot(cell_data$cycle, cell_data$DCap, type ="p", main=paste("Discharge Capacity for",  input$dirName), xlab=NA, ylab=paste("Discharge",  ylabel), mai=c(1,1,1,1))
           abline(h=eol, lty ="dotted")
           par(new = T)
           plot(cell_data$cycle, cell_data$CE, type ="p", axes=F, col ="red", ylab=NA, xlab="Cycle", ylim = c(0, 105))
@@ -804,7 +778,7 @@ if (interactive()) {
         if (is.element("Total Discharge Capacity", input$gGraphs)) {
           png(paste(dirLocation(),"/", data$name[row],"Total Discharge Capacity Plot.png", sep =""))
           eol <- stats$`DCap`[[1]] * 0.8
-          plot(stats$cycle, stats$DCap, type ="p", main=paste("Discharge Capacity for",  input$dirName), xlab=NA, ylab=ylabel, mai=c(1,1,1,1))
+          plot(stats$cycle, stats$DCap, type ="p", main=paste("Discharge Capacity for",  input$dirName), xlab=NA, ylab=paste("Discharge", ylabel), mai=c(1,1,1,1))
           arrows(stats$cycle, stats$DCap - stats$capSE, stats$cycle, stats$DCap + stats$capSE, length=0.05, angle=90, code=3)
           abline(h=eol, lty ="dotted")
           par(new = T)
@@ -827,14 +801,15 @@ if (interactive()) {
       # If a histor directory does not exist, create it. Save all the data revelant to plotting to a RData file.
       if (!dir.exists(paste(dirLocation(), "history", sep = "/"))) {
         dir.create(paste(dirLocation(), "history", sep = "/"))
-      } 
-      save(dirLocation, input$dirName, data, dQdVData, total, cycle_facts, numCycles, file = paste(dirLocation(), "/history/", input$dirName, ".RData", sep = ""))
+      }
+      
+      dirName <<- input$dirName
+      
+      save(dirLocation, dirName, data, dQdVData, total, cycle_facts, numCycles, file = paste(dirLocation(), "/history/", input$dirName, ".RData", sep = ""))
       
       # Modal for completed analysis
       shinyalert("Analysis Complete!", paste("All your data are now in ", dirLocation(), "/", input$dirName, sep = ""), 
                  type ="success",
-                 showCancelButton = TRUE,
-                 cancelButtonText ="Exit",
                  )
       
       # Finish progress bar
@@ -970,9 +945,9 @@ if (interactive()) {
               titleLabel <<- "Discharge Capacity Plot "
               xlabel <<- "Cycle"
               if (sum(data$Mass) != 0) {
-                ylabel <<- "Capacity (mAh/g)"
+                ylabel <<- "Discharge Capacity (mAh/g)"
               } else {
-                ylabel <<- "Capacity (Ah)"
+                ylabel <<- "Discharge Capacity (Ah)"
               }
             },
             "Charge Capacity" = {
@@ -981,9 +956,9 @@ if (interactive()) {
               titleLabel <<- "Charge Capacity Plot "
               xlabel <<- "Cycle"
               if (sum(data$Mass) != 0) {
-                ylabel <<- "Capacity (mAh/g)"
+                ylabel <<- "Charge Capacity (mAh/g)"
               } else {
-                ylabel <<- "Capacity (Ah)"
+                ylabel <<- "Charge Capacity (Ah)"
               }
             }
              
@@ -999,11 +974,11 @@ if (interactive()) {
 
       tryCatch({
         if (input$plotStyle =="o" | input$plotStyle =="p") {
-          plot(tmp_data$x, tmp_data$y, type = input$plotStyle, col = tmp_data$color, pch = tmp_data$symbol, main=titleLabel, xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+          plot(tmp_data$x, tmp_data$y, type = input$plotStyle, col = tmp_data$color, pch = tmp_data$symbol, main=titleLabel, xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel, cex.lab = 1.5, cex.main = 1.5)
           legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells), col = c(unique(tmp_data$color), rep("black", length(input$cells))), pch = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title ="Cycle", ncol=2)
         } else if (input$plotStyle =="l") {
           newLine <- subset(tmp_data, tmp_data$color == 1 & tmp_data$symbol == 1)
-          plot(newLine$x, newLine$y, type ="l", col = newLine$color, lty = newLine$symbol, main=titleLabel, xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+          plot(newLine$x, newLine$y, type ="l", col = newLine$color, lty = newLine$symbol, main=titleLabel, xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel, cex.lab = 1.5, cex.main = 1.5)
           
           for (i in 1:length(input$renderCycles)) {
             for (n in 1:length(cellIndex)) {
@@ -1052,11 +1027,11 @@ if (interactive()) {
       png(paste(input$fileName,".png"))
       
       if (input$plotStyle =="o" | input$plotStyle =="p") {
-        plot(tmp_data$x, tmp_data$y, type = input$plotStyle, col = tmp_data$color, pch = tmp_data$symbol, main=titleLabel, xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+        plot(tmp_data$x, tmp_data$y, type = input$plotStyle, col = tmp_data$color, pch = tmp_data$symbol, main=titleLabel, xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel, cex.lab = 1.5, cex.main = 1.5)
         legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells), col = c(unique(tmp_data$color), rep("black", length(input$cells))), pch = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title ="Cycle", ncol=2)
       } else if (input$plotStyle =="l") {
         newLine <- subset(tmp_data, tmp_data$color == 1 & tmp_data$symbol == 1)
-        plot(newLine$x, newLine$y, type ="l", col = newLine$color, lty = newLine$symbol, main=titleLabel, xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel)
+        plot(newLine$x, newLine$y, type ="l", col = newLine$color, lty = newLine$symbol, main=titleLabel, xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel, cex.lab = 1.5, cex.main = 1.5)
         
         for (i in 1:length(input$renderCycles)) {
           for (n in 1:length(cellIndex)) {
