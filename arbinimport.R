@@ -530,8 +530,8 @@ if (interactive()) {
         if (sum(data$Mass) != 0) {
           ylabel <-"Capacity (mAh/g)"
           
-          tmp_excel$Q.d <- as.numeric(tmp_excel$`Discharge_Capacity(Ah)` * (1000 / data$Mass[[1]][row]))
-          tmp_excel$Q.c <- as.numeric(tmp_excel$`Charge_Capacity(Ah)`* (1000 / data$Mass[[1]][row]))
+          tmp_excel$Q.d <- as.numeric(tmp_excel$`Discharge_Capacity(Ah)` * (1000 / data$Mass[row]))
+          tmp_excel$Q.c <- as.numeric(tmp_excel$`Charge_Capacity(Ah)`* (1000 / data$Mass[row]))
           
           tmp_excel$CC <- tmp_excel$Q.d - tmp_excel$Q.c
           tmp_excel$CE <- (tmp_excel$Q.d / tmp_excel$Q.c) * 100
