@@ -115,8 +115,10 @@ if (interactive()) {
              # Presents options for graphs to be generated
             "Choose graphs to be generated:",
              actionButton("whatGraph","What's this?", class ="btn-link"),
+             actionButton("customGraph", "Advanced Settings", class = "btn-link"),
              checkboxGroupInput("gGraphs", NULL, choices = c("dQdV Graphs","Voltage Profiles","Voltage vs. Time","Discharge Capacity","Discharge Areal Capacity",
                                                              "Total Discharge Capacity","Average Voltage","Delta Voltage","Capacity Loss"), inline = FALSE),
+             checkboxGroupInput("animations", NULL, choices = c(""), inline = FALSE),
              # Asks if the user would like peak fitting done on on the dQdV plots
              radioButtons("peakFit","Do Peak Fitting on  dQdV Graphs? (BETA)", choices = c("No" ="noGenGraphs","Yes" ="fit"), inline = TRUE),
              style ="margin: 5%; border: 1px solid black; padding: 5%"
@@ -178,6 +180,7 @@ if (interactive()) {
     graphModal <- modalDialog({
       fluidPage(style ="font-size:15pt;",
         tags$head(tags$style(".modal-dialog{min-width:60%}")),
+        tags$head(tags$style(".modal-body{ min-height:400px}")),
 
         fluidRow(align ="center",
           HTML('
@@ -301,6 +304,50 @@ if (interactive()) {
     output$birlaLogo <- renderImage({
       list(src = "birlaLogo.png", style="display: block; margin-left: auto; margin-right: auto;")
     }, deleteFile = FALSE)
+    
+    observeEvent(input$customGraph, {
+      showModal(graphSettings)
+    })
+    
+    graphSettings <- modalDialog({
+      fluidPage(
+        useShinyjs(),
+        useShinyalert(),
+        
+        tags$head(tags$style(".modal-dialog{width:80%}")),
+        tags$head(tags$style(".modal-body{ min-height:400px}")),
+        
+        h4("***Warning: altering the bounds of any graph may result in data being hidden or features harder to isolate. It is recommended to only alter these values if you already know the constraints of your system."),
+        
+        column(6,
+          tags$div(`id` = "dQdV",
+            h3("dQdV Graphs"),
+            numericInput("dQdVXmin", "Min X: ", value = 0),
+            numericInput("dQdVXmax", "Max X: ", value = 0),
+            numericInput("dQdVYmin", "Min Y: ", value = 0),
+            numericInput("dQdVYmax", "Max Y: ", value = 0)
+          ),
+          
+          tags$div(`id` = "dQdV",
+            h3("dQdV Graphs"),
+            numericInput("dQdVXmin", "Min X: ", value = 0),
+            numericInput("dQdVXmax", "Max X: ", value = 0),
+            numericInput("dQdVYmin", "Min Y: ", value = 0),
+            numericInput("dQdVYmax", "Max Y: ", value = 0)
+          )
+        ),
+        
+        column(6, 
+          tags$div(`id` = "VP",
+            h3("Voltage Profiles"),
+            numericInput("VPXmin", "Min X: ", value = 0),
+            numericInput("VPXmax", "Max X: ", value = 0),
+            numericInput("VPYmin", "Min Y: ", value = 0),
+            numericInput("VPYmax", "Max Y: ", value = 0)
+         )
+        ),
+      )
+    }, size ="l", title ="Advanced Graph Settings")
 
     graphbuilder <- modalDialog({
       fluidPage(
@@ -835,6 +882,7 @@ if (interactive()) {
     
     # Enable/Disable input field based on desired grph selection
     observeEvent(input$gGraphs, {
+      updateCheckboxGroupInput(session, "animations", choices = input$gGraphs)
       disable("area")
       disable("perActive")
       disable("capActive")
