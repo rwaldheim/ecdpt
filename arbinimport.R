@@ -413,7 +413,7 @@ if (interactive()) {
         removeModal()
       } else {
         tryCatch({
-          masses <- as.double(unlist(strsplit(strRep(input$masses, "\n", ","), ",", fixed = TRUE)))
+          masses <- lapply(strsplit(strRep(input$masses, "\n", ","), ",", fixed = TRUE), as.double)
           names(masses)[names(masses) =="V1"] <-"Mass"
           data$Mass <<- masses[[1]]
         }, error = function(cond) {
