@@ -1,18 +1,14 @@
-on: [push, pull_request]
-
-name: R-CMD-check
+name: Styler Checker
+on: [push]
 
 jobs:
-  R-CMD-check:
-    runs-on: macOS-latest
+  linters:
+    name: stylelint
+    runs-on: Windows-latest
+
     steps:
-      - uses: actions/checkout@v2
-      - uses: r-lib/actions/setup-r@master
-      - name: Install dependencies
-        run: |
-          install.packages(c("remotes", "rcmdcheck"))
-          remotes::install_deps(dependencies = TRUE)
-        shell: Rscript {0}
-      - name: Check
-        run: rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "error")
-        shell: Rscript {0}
+      - uses: actions/checkout@v1
+      - uses: actions-hub/stylelint@master
+        env:
+          PATTERN: "*.scss"
+          INDENT_SPACES: 4
