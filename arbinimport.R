@@ -345,13 +345,20 @@ if (interactive()) {
           ),
           
           mainPanel(
-                 plotOutput("outputPlot", height ="800px", click = "plot_click"),
                  fluidRow(
+                  plotOutput("outputPlot", height ="800px", click = "plot_click"),
+                  style = "padding: 5%;",
+                 ),
+                 fluidRow(
+                   h3("Graph Formatting"),
+                   helpText("*If left blank, they will be calculated using the min and max of the data to be plotted."),
                    column(2,
                    numericInput("xMin", "X Min", value = NULL),
+                   sliderInput("textSize", "Text Size", min = 0.1, max = 5, value = 1, ticks = FALSE),
                    ),
                    column(2,
                    numericInput("xMax", "X Max", value = NULL),
+                   sliderInput("pointSize", "Point/Line Size", min = 0.1, max = 5, value = 1, ticks = FALSE),
                    ),
                    column(2, 
                    numericInput("yMin", "Y Min", value = NULL),
@@ -359,7 +366,7 @@ if (interactive()) {
                    column(2,
                    numericInput("yMax", "Y Max", value = NULL),
                    ),
-                   style ="border: 1px dashed black; padding: 5%; margin: 5%;"
+                   style ="border: 1px dashed black; padding: 2%;",
                  )
           )
         )
@@ -999,16 +1006,17 @@ if (interactive()) {
       
       tryCatch({
         if (input$plotStyle =="o" | input$plotStyle =="p") {
-          plot(tmp_data$x, tmp_data$y, type = input$plotStyle, col = tmp_data$color, pch = tmp_data$symbol, main=titleLabel, xlim = c(bounds[1], bounds[2]), ylim = c(bounds[3], bounds[4]),  xlab=xlabel, ylab=ylabel, cex.lab = 1.5, cex.main = 1.5)
+          par(mar=c(5.1, 6.1, 4.1, 2.1))
+          plot(tmp_data$x, tmp_data$y, type = input$plotStyle, col = tmp_data$color, pch = tmp_data$symbol, main=titleLabel, xlim = c(bounds[1], bounds[2]), ylim = c(bounds[3], bounds[4]),  xlab=xlabel, ylab=ylabel, cex = input$pointSize, cex.axis = input$textSize, cex.lab = input$textSize, cex.main = input$textSize)
           legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells), col = c(unique(tmp_data$color), rep("black", length(input$cells))), pch = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title ="Cycle", ncol=2)
         } else if (input$plotStyle =="l") {
           newLine <- subset(tmp_data, tmp_data$color == 1 & tmp_data$symbol == 1)
-          plot(newLine$x, newLine$y, type ="l", col = newLine$color, lty = newLine$symbol, main=titleLabel, xlim = c(bounds[1], bounds[2]), ylim = c(bounds[3], bounds[4]),  xlab=xlabel, ylab=ylabel, cex.lab = 1.5, cex.main = 1.5)
+          plot(newLine$x, newLine$y, type ="l", col = newLine$color, lty = newLine$symbol, main=titleLabel, xlim = c(bounds[1], bounds[2]), ylim = c(bounds[3], bounds[4]),  xlab=xlabel, ylab=ylabel, lwd = input$pointSize, cex.axis = input$textSize, cex.lab = input$textSize, cex.main = input$textSize)
           
           for (i in 1:length(input$renderCycles)) {
             for (n in 1:length(cellIndex)) {
               newLine <- subset(tmp_data, tmp_data$color == i & tmp_data$symbol == n)
-              lines(newLine$x, newLine$y, col = newLine$color, lty = newLine$symbol)
+              lines(newLine$x, newLine$y, col = newLine$color, lty = newLine$symbol, lwd = input$pointSize)
             }
           }
           
@@ -1017,9 +1025,9 @@ if (interactive()) {
       },
       error=function(cond) {
         if (length(input$cells) != 0) {
-          text(0.5, 0.5, labels ="This graph requires you to select a cycle!", cex = 1.5)
+          text(0.5, 0.5, labels ="This graph requires you to select a cycle!", cex = 2)
         } else {
-          text(0.5, 0.5, labels ="You don messed up A-aron!\n (no data to plot)", cex = 1.5)
+          text(0.5, 0.5, labels ="You don messed up A-aron!\n (no data to plot)", cex = 2)
         }
         print(cond)
         return(NA)
@@ -1052,16 +1060,16 @@ if (interactive()) {
       png(paste(input$fileName,".png"))
       
       if (input$plotStyle =="o" | input$plotStyle =="p") {
-        plot(tmp_data$x, tmp_data$y, type = input$plotStyle, col = tmp_data$color, pch = tmp_data$symbol, main=titleLabel, xlim = c(bounds[1], bounds[2]), ylim = c(bounds[3], bounds[4]),  xlab=xlabel, ylab=ylabel, cex.lab = 1.5, cex.main = 1.5)
+        plot(tmp_data$x, tmp_data$y, type = input$plotStyle, col = tmp_data$color, pch = tmp_data$symbol, main=titleLabel, xlim = c(bounds[1], bounds[2]), ylim = c(bounds[3], bounds[4]),  xlab=xlabel, ylab=ylabel, cex = input$pointSize, cex.axis = input$textSize, cex.lab = input$textSize, cex.main = input$textSize)
         legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells), col = c(unique(tmp_data$color), rep("black", length(input$cells))), pch = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title ="Cycle", ncol=2)
       } else if (input$plotStyle =="l") {
         newLine <- subset(tmp_data, tmp_data$color == 1 & tmp_data$symbol == 1)
-        plot(newLine$x, newLine$y, type ="l", col = newLine$color, lty = newLine$symbol, main=titleLabel, xlim = c(bounds[1], bounds[2]), ylim = c(bounds[3], bounds[4]),  xlab=xlabel, ylab=ylabel, cex.lab = 1.5, cex.main = 1.5)
+        plot(newLine$x, newLine$y, type ="l", col = newLine$color, lty = newLine$symbol, main=titleLabel, xlim = c(bounds[1], bounds[2]), ylim = c(bounds[3], bounds[4]),  xlab=xlabel, ylab=ylabel, lwd = input$pointSize, cex.axis = input$textSize, cex.lab = input$textSize, cex.main = input$textSize)
         
         for (i in 1:length(input$renderCycles)) {
           for (n in 1:length(cellIndex)) {
             newLine <- subset(tmp_data, tmp_data$color == i & tmp_data$symbol == n)
-            lines(newLine$x, newLine$y, col = newLine$color, lty = newLine$symbol)
+            lines(newLine$x, newLine$y, col = newLine$color, lty = newLine$symbol, lwd = input$pointSize)
           }
         }
         
