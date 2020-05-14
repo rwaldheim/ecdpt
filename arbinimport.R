@@ -54,6 +54,7 @@ if (interactive()) {
   catMetric <<- vector()
   legTitle <<-""
   sheetName <<-""
+  bounds <<- vector()
 
   # ######
   # 
@@ -344,7 +345,22 @@ if (interactive()) {
           ),
           
           mainPanel(
-                 plotOutput("outputPlot", height ="800px", click = "plot_click")
+                 plotOutput("outputPlot", height ="800px", click = "plot_click"),
+                 fluidRow(
+                   column(2,
+                   numericInput("xMin", "X Min", value = NULL),
+                   ),
+                   column(2,
+                   numericInput("xMax", "X Max", value = NULL),
+                   ),
+                   column(2, 
+                   numericInput("yMin", "Y Min", value = NULL),
+                   ),
+                   column(2,
+                   numericInput("yMax", "Y Max", value = NULL),
+                   ),
+                   style ="border: 1px dashed black; padding: 5%; margin: 5%;"
+                 )
           )
         )
       )
@@ -856,6 +872,8 @@ if (interactive()) {
       
       tmp_data <<- data.frame()
       
+      bounds <<- c(input$xMin, input$xMax, input$yMin, input$yMax)
+      
       # Define function to normalize Voltage vs. Time plots
       normalizeTime <- function(x) {
         return(x - x[[1]])
@@ -971,14 +989,21 @@ if (interactive()) {
       
       tmp_data$color <<- sapply(tmp_data$cycle, function(x) {match(x, input$renderCycles, nomatch = 1)})
       tmp_data$symbol <<- sapply(tmp_data$cell, function(x) {match(x, cellIndex)})
-
+      
+      if (any(sapply(bounds, is.na))) {
+        if (is.na(bounds[1])) bounds[1] <<- min(tmp_data$x)
+        if (is.na(bounds[2])) bounds[2] <<- max(tmp_data$x)
+        if (is.na(bounds[3])) bounds[3] <<- min(tmp_data$y)
+        if (is.na(bounds[4])) bounds[4] <<- max(tmp_data$y)
+      }
+      
       tryCatch({
         if (input$plotStyle =="o" | input$plotStyle =="p") {
-          plot(tmp_data$x, tmp_data$y, type = input$plotStyle, col = tmp_data$color, pch = tmp_data$symbol, main=titleLabel, xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel, cex.lab = 1.5, cex.main = 1.5)
+          plot(tmp_data$x, tmp_data$y, type = input$plotStyle, col = tmp_data$color, pch = tmp_data$symbol, main=titleLabel, xlim = c(bounds[1], bounds[2]), ylim = c(bounds[3], bounds[4]),  xlab=xlabel, ylab=ylabel, cex.lab = 1.5, cex.main = 1.5)
           legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells), col = c(unique(tmp_data$color), rep("black", length(input$cells))), pch = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title ="Cycle", ncol=2)
         } else if (input$plotStyle =="l") {
           newLine <- subset(tmp_data, tmp_data$color == 1 & tmp_data$symbol == 1)
-          plot(newLine$x, newLine$y, type ="l", col = newLine$color, lty = newLine$symbol, main=titleLabel, xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel, cex.lab = 1.5, cex.main = 1.5)
+          plot(newLine$x, newLine$y, type ="l", col = newLine$color, lty = newLine$symbol, main=titleLabel, xlim = c(bounds[1], bounds[2]), ylim = c(bounds[3], bounds[4]),  xlab=xlabel, ylab=ylabel, cex.lab = 1.5, cex.main = 1.5)
           
           for (i in 1:length(input$renderCycles)) {
             for (n in 1:length(cellIndex)) {
@@ -1027,11 +1052,11 @@ if (interactive()) {
       png(paste(input$fileName,".png"))
       
       if (input$plotStyle =="o" | input$plotStyle =="p") {
-        plot(tmp_data$x, tmp_data$y, type = input$plotStyle, col = tmp_data$color, pch = tmp_data$symbol, main=titleLabel, xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel, cex.lab = 1.5, cex.main = 1.5)
+        plot(tmp_data$x, tmp_data$y, type = input$plotStyle, col = tmp_data$color, pch = tmp_data$symbol, main=titleLabel, xlim = c(bounds[1], bounds[2]), ylim = c(bounds[3], bounds[4]),  xlab=xlabel, ylab=ylabel, cex.lab = 1.5, cex.main = 1.5)
         legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells), col = c(unique(tmp_data$color), rep("black", length(input$cells))), pch = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title ="Cycle", ncol=2)
       } else if (input$plotStyle =="l") {
         newLine <- subset(tmp_data, tmp_data$color == 1 & tmp_data$symbol == 1)
-        plot(newLine$x, newLine$y, type ="l", col = newLine$color, lty = newLine$symbol, main=titleLabel, xlim = c(min(tmp_data$x), max(tmp_data$x)), ylim = c(min(tmp_data$y), max(tmp_data$y)),  xlab=xlabel, ylab=ylabel, cex.lab = 1.5, cex.main = 1.5)
+        plot(newLine$x, newLine$y, type ="l", col = newLine$color, lty = newLine$symbol, main=titleLabel, xlim = c(bounds[1], bounds[2]), ylim = c(bounds[3], bounds[4]),  xlab=xlabel, ylab=ylabel, cex.lab = 1.5, cex.main = 1.5)
         
         for (i in 1:length(input$renderCycles)) {
           for (n in 1:length(cellIndex)) {
