@@ -116,7 +116,7 @@ if (interactive()) {
              # Presents options for graphs to be generated
             "Choose graphs to be generated:",
              actionButton("whatGraph","What's this?", class ="btn-link"),
-             checkboxGroupInput("gGraphs", NULL, choices = c("dQdV Graphs","Voltage Profiles","Voltage vs. Time","Discharge Capacity","Discharge Areal Capacity",
+             checkboxGroupInput("gGraphs", NULL, choices = c("Discharge Capacity","Discharge Areal Capacity",
                                                              "Total Discharge Capacity","Average Voltage","Delta Voltage","Capacity Loss"), inline = FALSE),
              # Asks if the user would like peak fitting done on on the dQdV plots
              radioButtons("peakFit","Do Peak Fitting on  dQdV Graphs? (BETA)", choices = c("No" ="noGenGraphs","Yes" ="fit"), inline = TRUE),
@@ -502,27 +502,6 @@ if (interactive()) {
       # Defines the equation for standard error of a vector
       se <- function(x) {sd(x) / sqrt(length(x))}
       
-      # Function that identifies peaks of a given dataset
-      argmax <- function(cycle, w, span) {
-        
-          # Define the length of the values
-          n <- length(cycle$y)
-          
-          # Generate a smoothed function of the data, tunable by the variable"span"
-          y.smooth <- loess(cycle$y ~ cycle$x, span=span)$fitted
-          
-          # Defines a new dataset that intersects the smoothed data at its peaks, tunable by"w"
-          y.max <- rollapply(zoo(y.smooth), 2*w+1, max, align="center")
-          x.max <- rollapply(zoo(cycle$x), 2*w+1, median, align="center")
-          
-          # Returns the difference between the smoothed and intersecting functions, of which values less than zero are intersections
-          delta <- y.max - y.smooth[-c(1:w, n+1-1:w)]
-          i.max <- which(delta <= 0) + w
-          
-          #Return the results as a list
-          list(x=cycle$x[i.max], i=i.max, y.hat=y.smooth)
-      }
-      
       # Update the status once all set-up functions are complete
       progress$set(detail ="Starting first cell...")
       
@@ -634,54 +613,6 @@ if (interactive()) {
           
           dQdVData <<- dQdVData[is.finite(dQdVData$voltage),]
           dQdVData <<- dQdVData[is.finite(dQdVData$dQdV),]
-          
-          tryCatch({
-          # dQdV plotting
-          if (is.element("dQdV Graphs", input$gGraphs)) {
-            png(paste(dirLocation(), "/",  input$dirName,"/", data$sheet[row],"/","dQdV Plots/", data$name[row], data$sheet[row],"Cycle", toString(i)," dQdV Plot.png", sep =""))
-            plot(dQdVData[dQdVData$cycle == i,]$voltage, dQdVData[dQdVData$cycle == i,]$dQdV, main=paste("dQdV Plot for",  input$dirName, data$sheet[row],"Cycle", toString(i)), xlab="Voltage (V)", ylab="dQdV (mAh/V)")
-            dev.off()
-          }
-          
-          # Voltage profile plotting
-          if (is.element("Voltage Profiles", input$gGraphs)) {
-            png(paste(dirLocation(), "/",  input$dirName,"/", data$sheet[row],"/","Voltage Profiles/", data$name[row], data$sheet[row],"Cycle", toString(i)," Voltage Profile Plot.png", sep =""))
-            plot((-1) * tmp_excel[tmp_excel$`Cycle_Index` == i,]$CC, tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)`, type="l", main=paste("Voltage Profile for",  input$dirName, data$sheet[row]), xlab= paste("Continuous", ylabel), ylab="Voltage (V)")
-            dev.off()
-          }
-          
-          # Perform peak fitting if the user requested it
-          if (input$peakFit =="fit") {
-            w = 20
-            span = 0.05
-            
-            tryCatch({
-              png(paste(dirLocation(), "/",  input$dirName,"/", data$sheet[row],"/","dQdV Peak Fitting/", data$name[row], data$sheet[row],"Cycle", toString(i)," dQdV Plot.png", sep =""))
-              plot(dQdVData[dQdVData$cycle == i,]$voltage, dQdVData[dQdVData$cycle == i,]$dQdV, main=paste("dQdV Plot for",  input$dirName, data$sheet[row],"Cycle", toString(i)), xlab="Voltage (V)", ylab="dQdV (mAh/V)")
-              chargeCycle <- data.frame(x=dQdVData[dQdVData$cycle == i & dQdVData$c_d == 0,]$voltage, y=dQdVData[dQdVData$cycle == i & dQdVData$c_d == 0,]$dQdV)
-              dischargeCycle <- data.frame(x=dQdVData[dQdVData$cycle == i & dQdVData$c_d == 1,]$voltage, y=dQdVData[dQdVData$cycle == i & dQdVData$c_d == 1,]$dQdV)
-              cPeaks <- argmax(chargeCycle, w, span)
-              dPeaks <- argmax(abs(dischargeCycle), w, span)
-              abline(v=c(cPeaks$x, dPeaks$x))
-              text(c(cPeaks$x, dPeaks$x) + 0.01, rep(0,length(c(cPeaks$x, dPeaks$x))), labels = round(c(cPeaks$x, dPeaks$x),2), srt = 90)
-              dev.off()
-            }, 
-            error=function(cond) {
-              graphics.off()
-              return(NA)
-            }
-            )
-          }
-          
-          # Voltage vs. Time plotting
-          if (is.element("Voltage vs. Time", input$gGraphs)) {
-            png(paste(dirLocation(), "/",  input$dirName,"/", data$sheet[row],"/","Voltage v Time/", data$name[row], data$sheet[row],"Cycle", toString(i)," Voltage Profile Plot.png", sep =""))
-            plot((tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Test_Time(s)` - tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Test_Time(s)`[[1]]) / 60, tmp_excel[tmp_excel$`Cycle_Index` == i,]$`Voltage(V)`, type="l", main=paste("Voltage vs. Time for",  input$dirName, data$sheet[row]), xlab="Time (min)", ylab="Voltage (V)")
-            dev.off()
-          }
-          }, error = function(cond) {
-            print(cond)
-          })
           
           if (sum(data$Mass) != 0) {
             DCap <- tail(cycle$Q.d, 1)
