@@ -375,7 +375,7 @@ if (interactive()) {
     
     # Method for importing the previous R environment
     observeEvent(input$load, {
-      load(paste("history/", input$rerun[[1]], sep =""))
+      load(input$rerun$datapath[[1]])
       
       validFile <- FALSE
       
@@ -417,7 +417,7 @@ if (interactive()) {
                                                      datapath = rep(files[["datapath"]][i], length(sheets)), area = rep(input$area, length(sheets))))
         }
         
-        data <<- filter(file_sheet, grepl('Channel', sheet))
+        data <<- filter(file_sheet, grepl('Channel', sheet) & !grepl('Chart', sheet))
         
         data
   
