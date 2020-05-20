@@ -4,7 +4,7 @@ title: arbinimport
 
 # Welcome to the Arbin Battery Analysis Tool!
 
-This program, written in [R](https://www.r-project.org/) using the [Shiny](https://shiny.rstudio.com/) package, aims to simplify the battery analysis process and acelerate diagnostic data return on energy storage cells cycling on an Arbin battery cycler. After uploading the raw Excel files from the [Arbin MITS Pro](https://www.arbin.com/software/) software to the program, it automates many standard analysis techniques while also allowing for rapid generation of common battery analysis graphs. The Arbin Battery Analysis Tool was developed by and is currently used by the Materials Innovation group at [Birla Carbon](https://www.birlacarbon.com). 
+This program, written in [R](https://www.r-project.org/) using the [Shiny](https://shiny.rstudio.com/) package, aims to simplify the battery analysis process and acelerate diagnostic data return on energy storage cells cycling on an Arbin battery cycler. After uploading the raw Excel files from the [Arbin MITS Pro](https://www.arbin.com/software/) software to the program, it automates many standard analysis techniques while also allowing for rapid generation of common battery analysis graphs. The Arbin Battery Analysis Tool was developed by and is currently maintained by the Materials Innovation group at [Birla Carbon](https://www.birlacarbon.com). 
 
 If you are new to the program and would like to get started, see our [Installation](Installation.md) page.
 
@@ -51,15 +51,15 @@ At a minimum, all the application needs is the **data file** as exported from th
 
 The exact format and which values are present are configurable within the Arbin software. In order for the program to execute corrrectly, the values marked with a (\*) should be present.
 
-Some other inputs that are optional, depending on the desired outputs, are the **area of the limiting electrode**, **weight percent of active material in the limiting electrode**, and the **capacity of the limiting active material**. 
+All other inputs are optional, depending on the desired outputs.
 
 ### Outputs
 
 Now that we've established what the required inputs are, what does the program generate? 
 
-Regardless of inputs selected, the program will generate a directory (folder) in which all data will be placed, then a subdirectory for each cell analyzed. If select graphs are chosen to be generated, these will create directories of their own within each respective cell's folder. 
+Regardless of inputs selected, the program will generate a directory (folder) in which all data will be placed, then a subdirectory for each cell analyzed. 
 
-In its default state, the program will generate numerous data files placed throughout this file system. At the highest level (in the main folder), there will be three files generated: **[directory name] Total.csv**, **[directory name] dQdV Data.csv**, and **[cell name] Cycle Facts.csv**. The **Total** file will contain all the raw data imported for each cell, concatenated into one large file. The contents of the remaining files are as follows:
+In its default state, the program will generate numerous data files placed throughout this file system. At the highest level (in the main folder), there will be four files generated: **[directory name] Total.csv**, **[directory name] dQdV Data.csv**, **[directory name] Cycle Facts.csv**, and **[directory name] Summary.csv**. The **Total** file will contain all the raw data imported for each cell, concatenated into one large file for easy import into other analyzers. The contents of the remaining files are as follows:
 
 <table>
   <tr>
@@ -67,7 +67,7 @@ In its default state, the program will generate numerous data files placed throu
     <th>Attributes</th>
   </tr>
   <tr>
-    <td>[cell name] dQdV Data.csv</td>
+    <td>[directory name] dQdV Data.csv</td>
     <td style="text-align: left;">
       <ul>
         <li>an index<br></li>
@@ -91,15 +91,28 @@ In its default state, the program will generate numerous data files placed throu
         <li><code>dchV</code> : the discharge voltage (V)</li>
         <li><code>avgV</code> : the average voltage (V)</li>
         <li><code>dV</code> : the delta voltage (V)</li>
-        <li><code>DCap</code> : the discharge capacity (either mAh/g or Ah)</li>
-        <li><code>CCap</code> : the charge capacity (either mAh/g or Ah)</li>
+        <li><code>DCap</code> : the discharge capacity (mAh/g or Ah)</li>
+        <li><code>CCap</code> : the charge capacity (mAh/g or Ah)</li>
         <li><code>CE</code> : the coulombic efficiency (%)</li>
-        <li><code>lostCap</code> : the capacity lost between the current and previous cycle (either mAh/g or Ah)</li>
-        <li><code>capSE</code> : the standard error of the discharge capacity (either mAh/g or Ah)</li>
+        <li><code>lostCap</code> : the capacity lost between the current and previous cycle (mAh/g or Ah)</li>
+        <li><code>capSE</code> : the standard error of the discharge capacity (mAh/g or Ah)</li>
         <li><code>ceSE</code> : the standard error of the coulombic efficiency (%)</li>
       </ul>
     </td>
   </tr>
+  <tr>
+  <td>[directory name] Summmary.csv</td>
+  <td style="text-align: left;">
+    <ul>
+      <li>an index<br></li>
+      <li><code>cycle</code> : the cycle number</li>
+      <li><code>DCap</code> : the average discharge capacity for the cells within the analysis (mAh/g or Ah)</li>
+      <li><code>CE</code> : the average coulombic efficiency for the cells within the analysis (%)</li>
+      <li><code>capSE</code> : the discharge capacity standard error (mAh/g or Ah)</li>
+      <li><code>ceSE</code> : the coulombic efficiency standard error (%)</li>
+    </ul>
+  </td>
+</tr>
 </table>
       
 Values with (\*) are only present if the cell masses are specified
@@ -114,24 +127,6 @@ In addition to all the data files, there are multiple graphs than can be generat
     <th>X Axis</th>
     <th>Y Axis</th>
     <th><span style="font-weight:bold">Plot Frequency</span><br></th>
-  </tr>
-  <tr>
-    <td>dQdV Graph</td>
-    <td>Voltage (V)</td>
-    <td>dQdV (Ah/V)</td>
-    <td>per cycle</td>
-  </tr>
-  <tr>
-    <td>Voltage Profile</td>
-    <td>Continuous Capacity (mAh/g or Ah)</td>
-    <td>Voltage (V)</td>
-    <td>per cycle</td>
-  </tr>
-  <tr>
-    <td>Voltage vs. Time</td>
-    <td>Time (min)</td>
-    <td>Voltage (V)</td>
-    <td>per cycle</td>
   </tr>
   <tr>
     <td>Discharge Capacity</td>
@@ -173,4 +168,4 @@ In addition to all the data files, there are multiple graphs than can be generat
 
 The Discharge Areal Capacity (\*) can only be plotted if the area of the limiting electrode is specified.
 
-Lastly, the **Total Discharge Capacity** graph is a summation of all cells within the set and plots the mean capacity with respective error bars. Columbic efficiency is also averaged and plotted within the same graph. This graph will be placed in the root directory created by the program.
+Lastly, the **Total Discharge Capacity** graph is a summation of all cells within the set and plots the mean capacity with respective error bars. Columbic efficiency is also averaged and plotted within the same graph.
