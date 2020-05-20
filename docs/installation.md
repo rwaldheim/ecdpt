@@ -1,7 +1,5 @@
 ---
-layout: default
 title: Installation
-permalink: /installation/
 ---
 
 # Getting Started
@@ -9,8 +7,8 @@ permalink: /installation/
 We're excited to see you want to start analyzing with us!
 
 To summarize the the below procedure, you will require the following (if you do not already):
-- [git](https://git-scm.com/)*
-- a github account (https://github.com)*
+- [git](https://git-scm.com/)\*
+- a [github](github.com) account\*
 - [R](https://www.r-project.org/)
 - [RStudio](https://rstudio.com/)
 
@@ -34,18 +32,14 @@ You do not need to create a GitHub account to simply access the code and upgrade
 
 ### Installing R
 
-R is a programming language, much like Java or Python, but it has a much heavier leaning towards statistical computing. 
-1. You can download the language compiler [here](https://cran.r-project.org/mirrors.html), making sure to choose the mirror closest to you for the fastest performance.
-2. Select the version that matches your operating system.
-3. Select "base" then “Download R [version number] for [operating system]”.
-4. Wait for the installation to complete.
+R is a programming language, much like Java or Python, but it has a much heavier leaning towards statistical computing. You can download the language compiler [here](https://cran.r-project.org/mirrors.html), making sure to choose the mirror closest to you for the fastest performance.
 
 ### Installing RStudio
 
-The last step is to install RStudio. RStudio is a development platform meant to develop and edit the R scripts. It also included many handy features while editing and compiling, most notably for the purposes of this script is the [Shiny](https://shiny.rstudio.com/) package in which the user interface is generated. It can be installed [here](https://rstudio.com/products/rstudio/download/), choose the free license of "RStudio Desktop" and complete the installation with all default prompts.
+The last installation is RStudio. RStudio is a development platform meant to develop and edit R scripts. It also included many handy features while editing and compiling, most notably for the purposes of this script is the [Shiny](https://shiny.rstudio.com/) package in which the user interface is generated. It can be installed [here](https://rstudio.com/products/rstudio/download/), choose the free license of "RStudio Desktop" and complete the installation with all default prompts.
 
 ## Installation without git (not recommended)
 
-This method simply allows you to download the script and open it up in RStudio. If you do not have them already, install [R](#Installing-R) and [RStudio][#Installing-RStudio) per the above instructions. 
+This method simply allows you to download the script and open it up in RStudio. If you do not have them already, install [R](#Installing-R) and [RStudio](#Installing-RStudio) per the above instructions. 
 
 Next, navigate to the [repository homepage](https://github.com/2ryan09/arbinimport) on GitHub. Click on "Clone or Download" then "Download ZIP". This will download a compressed .zip file to your computer containing all the files in the repository.

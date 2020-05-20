@@ -12,6 +12,8 @@ This page assumes the R project has been opened up and is currently loaded into 
 
 In order to start the script, begin by pressing the "Run App" button located in the top right corner of the script window. This will take you to the homepage of the application. Here, you will see all the options you have when setting up the analysis. As mentioned on the [Welcome](index.md) page, the only input reauired to begin the analysis is the **data file** that has been exported from Arbin.
 
+<div style="text-align: center"><img src="homepage.png"></div>
+
 ### Files to be Analyzed
 
 This is where you put the files that have been exported from the Arbin software. Below is an example of some of the columns that might be present in your file, with the columns marked with a (\*) as mandatory:
@@ -67,24 +69,6 @@ Each of these graphs are unselected by default. A summary of the graphs generate
     <th><span style="font-weight:bold">Plot Frequency</span><br></th>
   </tr>
   <tr>
-    <td>dQdV Graph</td>
-    <td>Voltage (V)</td>
-    <td>dQdV (Ah/V)</td>
-    <td>per cycle</td>
-  </tr>
-  <tr>
-    <td>Voltage Profile</td>
-    <td>Continuous Capacity (mAh/g or Ah)</td>
-    <td>Voltage (V)</td>
-    <td>per cycle</td>
-  </tr>
-  <tr>
-    <td>Voltage vs. Time</td>
-    <td>Time (min)</td>
-    <td>Voltage (V)</td>
-    <td>per cycle</td>
-  </tr>
-  <tr>
     <td>Discharge Capacity</td>
     <td>Cycle</td>
     <td>Discharge Capacity (mAh/g or Ah)</td>
@@ -122,9 +106,25 @@ Each of these graphs are unselected by default. A summary of the graphs generate
   </tr>
 </table>
 
-### Peak Fitting (BETA)
+In addition to the static graphs that can be generated, there is also the option to generate select animations. These are graphs typically plotted on a "per cycle" basis, but to avoid the generation of hundreds of animation, they can be summed up in a simple gif. The options available currently are:
 
-The option to apply a peak fitting algorithm to the dQdV graphs. This feature is still experimental, but the method implemented ([reference](https://rpubs.com/mengxu/peak_detection)) works better than other base-R implementations for noisy data.
+<table>
+  <tr>
+    <th>Graph</th>
+    <th>X Axis</th>
+    <th>Y Axis</th>
+  </tr>
+  <tr>
+    <td>Differential Capacity (dQdV)</td>
+    <td>Voltage (V)</td>
+    <td>Differental Capacity (Ah/V)</td>
+  </tr>
+  <tr>
+    <td>Voltage Profile</td>
+    <td>Continuous Capacity (mAh/g or Ah)</td>
+    <td>Voltage (V)</td>
+  </tr>
+</table>
 
 ### Directory Name and Run Analysis
 
@@ -149,13 +149,29 @@ Once you have submitted all the data you wish to be processed, you are ready to 
 The Graph Builder can be enabled in one of two ways: through the completion of an analysis or the import of a previous R environment.
 
 The graph builder is where the rapid diagnostics come to light as it is no longer needed to open up the data in another application and worry about further configuration. WIthin the contents of the graph builder, you are able to bring your data to life without the need of an external plotter. The underlying goal of this utility was to allow the quickest access to your data without worrying about formatting or data filtering, so all the variables are live implemented as soon as they are chosen. In its current implementation, you are able to select from the following variables in realtime:
-* Graph Type
-	* Many of these are the ones that could be generated during the analysis, but this allows for comparisons to be made within the same plot
-* Plot Style
-	* All plots generated during analysis are point plot, but the Graph Builder gives you the flexability to plot in points, lines, or both
-* Cells to Analyze
-	* These are the individual cells associated with the particular analysis
-* Cycles of Interest
-	* These are all the cycles associated with the particular cells. The cell with the largest number of cycles determines what is seen. If two cells are selected and one does not possess a cycle the other does, it is simply ignored in plotting.
+
+<div style="text-align: center"><img src="graph-builder.png"></div>
+
+### Graph Type
+
+Many of these are the ones that could be generated during the analysis, but this allows for comparisons to be made within the same plot
+
+### Plot Style
+
+All plots generated during analysis are point plot, but the Graph Builder gives you the flexability to plot in points, lines, or both
+
+### Cells to Analyze
+
+These are the individual cells associated with the particular analysis
+
+### Cycles of Interest
+
+These are all the cycles associated with the particular cells. The cell with the largest number of cycles determines what is seen. If two cells are selected and one does not possess a cycle the other does, it is simply ignored in plotting.
+
+### Coordinates
+
+Whenever you click within the plot area, the coordinates of the location are displayed here.
+
+### Save Graph 
 
 Once you have configured the graph to your desire, there are two modes of export: copy and paste the graph directly into your final format (best for presentations or word documents) or you can type a name for the file and click "Save Graph". This will save the graph under the given name within your working directory (displayed upon successful completion).
