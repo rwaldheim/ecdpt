@@ -8,7 +8,7 @@ We're excited to see you want to start analyzing with us!
 
 To summarize the the below procedure, you will require the following (if you do not already):
 - [git](https://git-scm.com/)\*
-- a [github](github.com) account\*
+- a [github](https://github.com) account\*
 - [R](https://www.r-project.org/)
 - [RStudio](https://rstudio.com/)
 
