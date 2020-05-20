@@ -122,8 +122,6 @@ if (interactive()) {
                                                              "Total Discharge Capacity","Average Voltage","Delta Voltage","Capacity Loss"), inline = FALSE),
             "Choose graphs to animate:",
              checkboxGroupInput("gAnim", NULL, choices = c("dQdV Plots", "Voltage Profiles"), inline = FALSE),
-             # Asks if the user would like peak fitting done on on the dQdV plots
-             radioButtons("peakFit","Do Peak Fitting on  dQdV Graphs? (BETA)", choices = c("No" ="noGenGraphs","Yes" ="fit"), inline = TRUE),
              style ="margin: 5%; border: 1px solid black; padding: 5%"
            ),
            
@@ -479,7 +477,9 @@ if (interactive()) {
       progress$set(message ="Plugging and chugging...\n", detail ="Starting up...")
       
       # Closes all graphics devices that may be lingering (prevents an excess from opening and slowing down the analysis)
-      graphics.off()
+      while (dev.cur() != 1) {
+        dev.off()
+      }
       
       # Resets the variables for the graph builder so new results are concatenated to old ones
       numCycles <<- data.frame()
