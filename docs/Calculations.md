@@ -1,5 +1,6 @@
 ---
 layout: default
+title: Calculations
 ---
 
 Below are the detailed explanations for each of the calculations made within the script:
