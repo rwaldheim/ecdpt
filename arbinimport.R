@@ -26,6 +26,8 @@ require(plotrix)
 require(tools)
 require(shinyWidgets)
 
+require(gifski)
+
 # This line tests if the current R environment is interactive, RStudio makes an interactive environment by default
 if (interactive()) {
   
@@ -118,6 +120,8 @@ if (interactive()) {
              actionButton("whatGraph","What's this?", class ="btn-link"),
              checkboxGroupInput("gGraphs", NULL, choices = c("Discharge Capacity","Discharge Areal Capacity",
                                                              "Total Discharge Capacity","Average Voltage","Delta Voltage","Capacity Loss"), inline = FALSE),
+            "Choose graphs to animate:",
+             checkboxGroupInput("gAnim", NULL, choices = c("dQdV Plots", "Voltage Profiles"), inline = FALSE),
              # Asks if the user would like peak fitting done on on the dQdV plots
              radioButtons("peakFit","Do Peak Fitting on  dQdV Graphs? (BETA)", choices = c("No" ="noGenGraphs","Yes" ="fit"), inline = TRUE),
              style ="margin: 5%; border: 1px solid black; padding: 5%"
@@ -695,6 +699,33 @@ if (interactive()) {
           plot(cell_data$cycle, cell_data$lostCap, main=paste("Capacity Loss Plot for",  input$dirName, data$sheet[row]), xlab="Cycle", ylab= ylabel, ylim = c(mean(cell_data$lostCap) + (2* sd(cell_data$lostCap)), mean(cell_data$lostCap) - (1.5* sd(cell_data$lostCap))))
           abline(h=median(cell_data$lostCap), lty="dotted")
           dev.off()
+        }
+        
+        if (is.element("dQdV Plots", input$gAnim)) {
+          dQdVplot <- function(){
+            tmp_data <- dQdVData[dQdVData$cell == row,]
+            first_cycle <- dQdVData[dQdVData$cell == row & dQdVData$cycle == 2,]
+            datalist <- split(tmp_data, tmp_data$cycle)
+            lapply(datalist, function(plotData){
+              p <- plot(plotData$voltage, plotData$dQdV, main=paste("dQdV Plot for",  input$dirName, data$sheet[row], "Cycle", plotData$cycle[[1]]), xlab="Voltage (V)", ylab= "dQdV (Ah/V)", 
+                        xlim = c(min(tmp_data$voltage), max(tmp_data$voltage)), ylim = c(min(tmp_data$dQdV), max(tmp_data$dQdV))) + 
+                   points(first_cycle$voltage, first_cycle$dQdV, col = rgb(red = 1, green = 0, blue = 0, alpha = 0.5))
+            })
+          }
+          save_gif(dQdVplot(), paste(dirLocation(), input$dirName, data$sheet[row], "dQdV Animation.gif", sep = "/"), delay = 0.2)
+        }
+        
+        if (is.element("Voltage Profiles", input$gAnim)) {
+          vpPlot <- function(){
+            first_cycle <- tmp_excel[tmp_excel$`Cycle_Index` == 2,]
+            datalist <- split(tmp_excel, tmp_excel$`Cycle_Index`)
+            lapply(datalist, function(plotData){
+              p <- plot(plotData$CC, plotData$`Voltage(V)`, main=paste("Voltage Profile for",  input$dirName, data$sheet[row], "Cycle", plotData$`Cycle_Index`[[1]]), xlab=ylabel, ylab= "Voltage (V)", 
+                        xlim = c(min(tmp_excel$CC), max(tmp_excel$CC)), ylim = c(min(tmp_excel$`Voltage(V)`), max(tmp_excel$`Voltage(V)`))) + 
+                points(first_cycle$CC, first_cycle$`Voltage(V)`, col = rgb(red = 1, green = 0, blue = 0, alpha = 0.5))
+            })
+          }
+          save_gif(vpPlot(), paste(dirLocation(), input$dirName, data$sheet[row], "Voltage Profile Animation.gif", sep = "/"), delay = 0.2)
         }
         
         # Save all data within the cell's directory
