@@ -4,7 +4,7 @@ title: Begin Analyzing
 
 # Let's Get Started!
 
-If you do not have all the required software installed and configured yet, please first visit the [Installation](Installation.md) page first.
+If you do not have all the required software installed and configured yet, please first visit the [Installation](installation.md) page first.
 
 This page assumes the R project has been opened up and is currently loaded into the RStudio window.
 
