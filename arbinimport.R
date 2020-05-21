@@ -124,10 +124,6 @@ if (interactive()) {
              checkboxGroupInput("gAnim", NULL, choices = c("dQdV Plots", "Voltage Profiles"), inline = FALSE),
              style ="margin: 5%; border: 1px solid black; padding: 5%"
            ),
-           
-           fluidRow(
-             imageOutput("birlaLogo")
-           ),
     ), 
     
     # The final column is where all the"action" items are, aka clicking any of these buttons will trigger a process
@@ -271,11 +267,6 @@ if (interactive()) {
         ),
       )}, title ="Graph Types", easyClose = TRUE)
     
-    # Renders the GIF image for the excelModal
-    output$importGIF <- renderImage({
-      list(src ="excelImport.gif", width ="70%")
-    }, deleteFile = FALSE)
-    
     # Ensures the files imported for analysis are Excel files
     observeEvent(input$files, {
       validFile <- FALSE
@@ -300,10 +291,6 @@ if (interactive()) {
         output$currDir <- renderText({paste(split_path(dirLocation())[1], "(", split_path(dirLocation())[2], ")")})
       }
     })
-    
-    output$birlaLogo <- renderImage({
-      list(src = "birlaLogo.png", style="display: block; margin-left: auto; margin-right: auto;")
-    }, deleteFile = FALSE)
 
     graphbuilder <- modalDialog({
       fluidPage(
@@ -530,8 +517,7 @@ if (interactive()) {
         if (is.element("dQdV Graphs", input$gGraphs)) dir.create(paste(dirLocation(), input$dirName, data$sheet[row],"dQdV Plots", sep ="/"))
         if (is.element("Voltage Profiles", input$gGraphs)) dir.create(paste(dirLocation(), input$dirName, data$sheet[row],"Voltage Profiles", sep ="/"))
         if (is.element("Voltage vs. Time", input$gGraphs)) dir.create(paste(dirLocation(), input$dirName, data$sheet[row],"Voltage v Time", sep ="/"))
-        if (input$peakFit =="fit") dir.create(paste(dirLocation(), input$dirName, data$sheet[row],"dQdV Peak Fitting", sep ="/"))
-        
+
         # Check if masses have been imported, if they have not then all future calculations will be done on a raw capacity basis
         if (sum(data$Mass) != 0) {
           ylabel <-"Capacity (mAh/g)"
