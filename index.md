@@ -1,10 +1,10 @@
 ---
-title: arbinimport
+title: EcDPT
 ---
 
-# Welcome to the Arbin Battery Analysis Tool!
+# Welcome to the Electrochemical Data Processing Tool!
 
-This program, written in [R](https://www.r-project.org/) using the [Shiny](https://shiny.rstudio.com/) package, aims to simplify the battery analysis process and acelerate diagnostic data return on energy storage cells cycling on an Arbin battery cycler. After uploading the raw Excel files from the [Arbin MITS Pro](https://www.arbin.com/software/) software to the program, it automates many standard analysis techniques while also allowing for rapid generation of common battery analysis graphs. The Arbin Battery Analysis Tool was developed by and is currently maintained by the Materials Innovation group at [Birla Carbon](https://www.birlacarbon.com). 
+This program, written in [R](https://www.r-project.org/) using the [Shiny](https://shiny.rstudio.com/) package, aims to simplify the battery analysis process and acelerate diagnostic data return on energy storage cells cycling on an [Arbin](https://arbin.com/) battery cycler. After uploading the raw Excel files from the [Arbin MITS Pro](https://www.arbin.com/software/) software to the program, it automates many standard analysis techniques while also allowing for rapid generation of common battery analysis graphs. The Arbin Battery Analysis Tool was developed by and is currently maintained by the Materials Innovation group at [Birla Carbon](https://www.birlacarbon.com). 
 
 If you are new to the program and would like to get started, see our [Installation](installation.md) page.
 
@@ -167,5 +167,7 @@ In addition to all the data files, there are multiple graphs than can be generat
 </table>
 
 The Discharge Areal Capacity (\*) can only be plotted if the area of the limiting electrode is specified.
+
+Finally, you can also generate two animations, based on "per cycle" graphs: dQdV plots and voltage profiles. These allow for great visual aids for deciphering when certain electrochemical event happen throughout cycling.
 
 Lastly, the **Total Discharge Capacity** graph is a summation of all cells within the set and plots the mean capacity with respective error bars. Columbic efficiency is also averaged and plotted within the same graph.
