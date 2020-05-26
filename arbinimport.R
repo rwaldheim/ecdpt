@@ -78,7 +78,7 @@ if (interactive()) {
       shinydashboard = FALSE
     ),
     
-    fluidRow(headerPanel("Battery Analyzer Utility")),
+    fluidRow(headerPanel("Electrochemical Data Processing Tool (EcDPT)")),
     
     # This first column is where most user inputs are, with the exception of the directory name
     column(4,
