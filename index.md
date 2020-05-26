@@ -2,7 +2,7 @@
 title: EcDPT
 ---
 
-# Welcome to the Electrochemical Data Processing Tool!
+# Welcome to the Electrochemical Data Processing Tool (EcDPT)!
 
 This program, written in [R](https://www.r-project.org/) using the [Shiny](https://shiny.rstudio.com/) package, aims to simplify the battery analysis process and acelerate diagnostic data return on energy storage cells cycling on an [Arbin](https://arbin.com/) battery cycler. After uploading the raw Excel files from the [Arbin MITS Pro](https://www.arbin.com/software/) software to the program, it automates many standard analysis techniques while also allowing for rapid generation of common battery analysis graphs. The Arbin Battery Analysis Tool was developed by and is currently maintained by the Materials Innovation group at [Birla Carbon](https://www.birlacarbon.com). 
 
