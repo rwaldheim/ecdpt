@@ -168,6 +168,6 @@ In addition to all the data files, there are multiple graphs than can be generat
 
 The Discharge Areal Capacity (\*) can only be plotted if the area of the limiting electrode is specified.
 
-Finally, you can also generate two animations, based on "per cycle" graphs: dQdV plots and voltage profiles. These allow for great visual aids for deciphering when certain electrochemical event happen throughout cycling.
+You can also generate two animations, based on "per cycle" graphs: dQdV plots and voltage profiles. These allow for great visual aids for deciphering when certain electrochemical event happen throughout cycling.
 
 Lastly, the **Total Discharge Capacity** graph is a summation of all cells within the set and plots the mean capacity with respective error bars. Columbic efficiency is also averaged and plotted within the same graph.
