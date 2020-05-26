@@ -646,13 +646,8 @@ if (interactive()) {
           new_par <- old_par <- par("mar")
           new_par[4] <- old_par[2]
           par(mar = new_par)
-          if (sum(data$Mass) != 0) {
-            eol <- ((cell_data$DCap[[1]] * data$Mass[row,]) / data$area[row]) * 0.8
-            plot(cell_data$cycle, ((cell_data$DCap * data$Mass[row,]) / data$area[row]), type ="p", main=paste("Discharge Areal Capacity for",  input$dirName), xlab=NA, ylab="Discharge Capacity (mAh/cm^2)", mai = c(1,1,1,2))
-          } else {
-            eol <- ((cell_data$DCap[[1]] * 1000) / data$area[row]) * 0.8
-            plot(cell_data$cycle, ((cell_data$DCap * 1000) / data$area[row]), type ="p", main=paste("Discharge Areal Capacity for",  input$dirName), xlab=NA, ylab="Discharge Capacity (mAh/cm^2)", mai = c(1,1,1,2))
-          }
+          eol <- ((cell_data$DCap[[1]] * 1000) / data$area[row]) * 0.8
+          plot(cell_data$cycle, ((cell_data$DCap * 1000) / data$area[row]), type ="p", main=paste("Discharge Areal Capacity for",  input$dirName), xlab=NA, ylab="Discharge Capacity (mAh/cm^2)", mai = c(1,1,1,2))
           abline(h=eol, lty ="dotted")
           par(new = T)
           plot(cell_data$cycle, cell_data$CE, type ="p", axes=F, col ="red", ylab=NA, xlab="Cycle", ylim = c(0, 105))
