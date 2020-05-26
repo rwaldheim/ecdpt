@@ -6,6 +6,8 @@ If you are new to the program and would like to get started, see our [Installati
 
 If you already have all the required software installed and configured, see our [Begin Analyzing](begin-analyzing.md) page.
 
+We encourage all who desire to contribute to use the [issues](https://github.com/rwaldheim/ecdpt/issues) to highlight bugs or feature requests and submit pull requests as needed!
+
 ## High-Level Operation
 
 Let's start with the basics: what are the inputs?
