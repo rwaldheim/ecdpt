@@ -79,7 +79,7 @@ In its default state, the program will generate numerous data files placed throu
     </td>
   </tr>
   <tr>
-    <td>[cell name] Cycle Facts.csv</td>
+    <td>[directory name] Cycle Facts.csv</td>
     <td style="text-align: left;">
       <ul>
         <li>an index</li>
@@ -93,8 +93,6 @@ In its default state, the program will generate numerous data files placed throu
         <li><code>CCap</code> : the charge capacity (mAh/g or Ah)</li>
         <li><code>CE</code> : the coulombic efficiency (%)</li>
         <li><code>lostCap</code> : the capacity lost between the current and previous cycle (mAh/g or Ah)</li>
-        <li><code>capSE</code> : the standard error of the discharge capacity (mAh/g or Ah)</li>
-        <li><code>ceSE</code> : the standard error of the coulombic efficiency (%)</li>
       </ul>
     </td>
   </tr>
