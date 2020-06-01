@@ -762,6 +762,8 @@ if (interactive()) {
         print(cond)
       })
       
+      cycle_facts$cellFade <<- c(0, diff(cycle_facts$DCap))
+      
       # Save total data and stats
       write.csv(stats, file = paste(dirLocation(), "/",  input$dirName,"/", basename(dirLocation())," Summary.csv", sep =""))
       write.csv(final, file = paste(dirLocation(), "/",  input$dirName,"/", basename(dirLocation())," Total.csv", sep =""))
