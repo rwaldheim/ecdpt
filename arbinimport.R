@@ -169,9 +169,13 @@ if (interactive()) {
   server <- function(input, output, session) {
     
     # This sets the maximum file size Shiny will import, the default of 5Mb is not large enough to handle Arbin files
-    options(shiny.maxRequestSize=50*1024^2)
+    options(shiny.maxRequestSize=100*1024^2)
     
     split_path <- function(x) if (dirname(x)==x) x else c(basename(x),split_path(dirname(x)))
+    
+    export_to_origin <- function(data_path) {
+      system(paste("C:/Users/rwaldhei/AppData/Local/Programs/Python/Python38-32/python.exe rPyO.py ", dirLocation(), "/", input$dirName, sep = ''))
+    }
     
     # Defines the modal in which the cell masses can be exported from Excel
     graphModal <- modalDialog({
@@ -775,7 +779,12 @@ if (interactive()) {
       
       # Modal for completed analysis
       shinyalert("Analysis Complete!", paste("All your data are now in ", dirLocation(), "/", input$dirName, sep = ""), 
-                 type ="success",
+                 type ="success", showConfirmButton = TRUE, showCancelButton = TRUE, confirmButtonText = "Generate Origin File", cancelButtonText = "Continue",
+                 callbackR = function(x) {
+                   if (x) {
+                     export_to_origin()
+                   }
+                 }
                  )
       
       # Finish progress bar
