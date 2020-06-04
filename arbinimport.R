@@ -57,6 +57,7 @@ if (interactive()) {
   legTitle <<-""
   sheetName <<-""
   bounds <<- vector()
+  compCycleFacts <<- data.frame()
 
   # ######
   # 
@@ -117,12 +118,15 @@ if (interactive()) {
            fluidRow(
              # Presents options for graphs to be generated
             "Choose graphs to be generated:",
-             actionButton("whatGraph","What's this?", class ="btn-link"),
-             checkboxGroupInput("gGraphs", NULL, choices = c("Discharge Capacity","Discharge Areal Capacity",
+            actionButton("whatGraph","What's this?", class ="btn-link"),
+            checkboxGroupInput("gGraphs", NULL, choices = c("Discharge Capacity","Discharge Areal Capacity",
                                                              "Total Discharge Capacity","Average Voltage","Delta Voltage","Capacity Loss"), inline = FALSE),
             "Choose graphs to animate:",
-             checkboxGroupInput("gAnim", NULL, choices = c("dQdV Plots", "Voltage Profiles"), inline = FALSE),
-             style ="margin: 5%; border: 1px solid black; padding: 5%"
+            checkboxGroupInput("gAnim", NULL, choices = c("dQdV Plots", "Voltage Profiles"), inline = FALSE),
+            "Advanced Analysis",
+            #radioButtons("advCalc", NULL, choices = c("No", "Yes"), inline = TRUE),
+            #helpText(HTML("Advanced Analysis includes:<ul><li>C-Rate Calculations</li><li>Capacity Fade per Rate</li><li>Origin Export</ul>")),
+            style ="margin: 5%; border: 1px solid black; padding: 5%"
            ),
     ), 
     
@@ -172,6 +176,9 @@ if (interactive()) {
     options(shiny.maxRequestSize=100*1024^2)
     
     split_path <- function(x) if (dirname(x)==x) x else c(basename(x),split_path(dirname(x)))
+    
+    # Defines the equation for standard error of a vector
+    se <- function(x) {sd(x) / sqrt(length(x))}
     
     export_to_origin <- function(data_path) {
       system(paste("C:/Users/rwaldhei/AppData/Local/Programs/Python/Python38-32/python.exe rPyO.py ", dirLocation(), "/", input$dirName, sep = ''))
@@ -311,13 +318,20 @@ if (interactive()) {
               headerPanel("Graph Options"),
             ),
             
+            fluidRow(style = "padding:5%; border: 1px solid black;",
+             strong("Basis for Plot Types"), tags$br(),
+             helpText("Between Analysis requires a second dataset to be imported"), tags$br(), tags$br(),
+             radioButtons("perType", NULL, choices = c("Within Analysis", "Between Analyses"), inline = TRUE),
+             hidden(fileInput("compAnalysis", "Data to Compare"))
+            ),
+            
             fluidRow(style ="padding:5%; margin:5%;",
               radioButtons("typeGraph","Graph Type:", choices = c("dQdV Graphs","Voltage Profiles", "Voltage vs. Time", 
                                                                   "Charge Voltage", "Discharge Voltage", 
                                                                   "Average Voltage", "Delta Voltage", "Discharge Capacity", "Charge Capacity" ), inline = FALSE),
               radioButtons("plotStyle","Plot Style:", choiceNames = c("Point","Line","Both"), choiceValues = c("p","l","o"),  inline = TRUE),
               checkboxGroupInput("cells","Cell to Analyze:", choices = 1, inline = FALSE),
-              hidden(checkboxGroupInput("cellsMulti","Cells to Analyze:", choices = 1, inline = FALSE)),
+              hidden(checkboxGroupInput("analysis","Analyses to Compare:", choices = 1, inline = FALSE)),
               selectInput("renderCycles","Cycles of Interest:", choices = 1, multiple = TRUE),
             ),
             
@@ -493,9 +507,6 @@ if (interactive()) {
       
       # Creates the directory in which all data will be stored
       dir.create(paste(dirLocation(), input$dirName, sep = "/"))
-      
-      # Defines the equation for standard error of a vector
-      se <- function(x) {sd(x) / sqrt(length(x))}
       
       # Update the status once all set-up functions are complete
       progress$set(detail ="Starting first cell...")
@@ -846,110 +857,130 @@ if (interactive()) {
       # Switch statements defining the bulk of the processing, depending on the desired graph
       # 
       # ######
-      #if (input$perType =="Cycle Analysis") {
-      sheetName <<- input$cells
-      
-      # Get the indicies in which the desired cells are in the data frame containing the number of cycles
-      cellIndex <- match(input$cells, numCycles$sheet)
-      
-      switch(input$typeGraph,
-            "dQdV Graphs" = {
-               tmp_data <<- data.frame(x=dQdVData[dQdVData$cell %in% cellIndex,]$voltage, y=dQdVData[dQdVData$cell %in% cellIndex,]$dQdV, cycle=dQdVData[dQdVData$cell %in% cellIndex,]$cycle, cell=dQdVData[dQdVData$cell %in% cellIndex,]$cell)
-               tmp_data <<- tmp_data[tmp_data$cycle == sort(as.numeric(input$renderCycles)),]
-               
-               titleLabel <<-"dQdV Plot"
-               xlabel <<-"Voltage (V)"
-               ylabel <<-"dQdV (mAh/V)"
-             },
-            "Voltage Profiles" = {
-               tmp_data <<- data.frame(x=(-1) * total[total$Cell %in% cellIndex,]$CC, y=total[total$Cell %in% cellIndex,]$`Voltage(V)`, cycle=total[total$Cell %in% cellIndex,]$`Cycle_Index`, cell=total[total$Cell %in% cellIndex,]$Cell)
-               tmp_data <<- tmp_data[tmp_data$cycle == sort(as.numeric(input$renderCycles)),]
-               
-               titleLabel <<-"Voltage Profile"
-               if (sum(data$Mass) != 0) {
-                 xlabel <-"Continuous Capacity (mAh/g)"
-               } else {
-                 xlabel <-"Continuous Capacity (Ah)"
-               }
-               ylabel <<-"Voltage (V)"
-             },
-            "Voltage vs. Time" = {
-               tmp_data <<- data.frame(x=(total[total$Cell %in% cellIndex,]$`Test_Time(s)` / 60), y=total[total$Cell %in% cellIndex,]$`Voltage(V)`, cycle=total[total$Cell %in% cellIndex,]$`Cycle_Index`, cell=total[total$Cell %in% cellIndex,]$Cell)
-               tmp_data <<- tmp_data[tmp_data$cycle %in% input$renderCycles,]
-               
-               x <- 0
-               
-               for (cell in cellIndex) {
-                 normalTime <<- c(normalTime, t(aggregate(tmp_data[tmp_data$cell == cell,]$x, by=list(tmp_data[tmp_data$cell == cell,]$cycle), normalizeTime)[,2]))
-               }
-               
-               tmp_data <<- data.frame(x=unlist(normalTime), y=tmp_data$y, cycle=tmp_data$cycle, cell=tmp_data$cell)
-               tmp_data <<- tmp_data[tmp_data$y >= 0.01,]
-               
-               titleLabel <<-"Voltge vs. Time Plot"
-               xlabel <<-"Time (min)"
-               ylabel <<-"Voltage (V)"
-             },
-            "Charge Voltage" = {
-              tmp_data <<- data.frame(x=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, y=cycle_facts[cycle_facts$cell %in% cellIndex,]$chV, cycle=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, cell = cycle_facts[cycle_facts$cell %in% cellIndex,]$cell)
-
-              titleLabel <<- "Charge Voltage Plot "
-              xlabel <<- "Cycle"
-              ylabel <<- "Voltage (V)"
-            },
-            "Discharge Voltage" = {
-              tmp_data <<- data.frame(x=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, y=cycle_facts[cycle_facts$cell %in% cellIndex,]$dchV, cell=cycle_facts[cycle_facts$cell %in% cellIndex,]$cell, cycle=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle)
-              
-              titleLabel <<- "Discharge Voltage Plot "
-              xlabel <<- "Cycle"
-              ylabel <<- "Voltage (V)"
-            },
-            "Average Voltage" = {
-              tmp_data <<- data.frame(x=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, y=cycle_facts[cycle_facts$cell %in% cellIndex,]$avgV, cell=cycle_facts[cycle_facts$cell %in% cellIndex,]$cell, cycle=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle)
-              
-              titleLabel <<- "Average Voltage Plot "
-              xlabel <<- "Cycle"
-              ylabel <<- "Voltage (V)"
-            },
-            "Delta Voltage" = {
-              tmp_data <<- data.frame(x=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, y=cycle_facts[cycle_facts$cell %in% cellIndex,]$dV, cell=cycle_facts[cycle_facts$cell %in% cellIndex,]$cell, cycle=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle)
-
-              titleLabel <<- "Delta Voltage Plot "
-              xlabel <<- "Cycle"
-              ylabel <<- "Voltage (V)"
-            },
-            "Discharge Capacity" = {
-              tmp_data <<- data.frame(x=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, y=cycle_facts[cycle_facts$cell %in% cellIndex,]$DCap, cell=cycle_facts[cycle_facts$cell %in% cellIndex,]$cell, cycle=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle)
-              
-              titleLabel <<- "Discharge Capacity Plot "
-              xlabel <<- "Cycle"
-              if (sum(data$Mass) != 0) {
-                ylabel <<- "Discharge Capacity (mAh/g)"
-              } else {
-                ylabel <<- "Discharge Capacity (Ah)"
+      if (input$perType =="Within Analysis") {
+        sheetName <<- input$cells
+        
+        # Get the indicies in which the desired cells are in the data frame containing the number of cycles
+        cellIndex <- match(input$cells, numCycles$sheet)
+        
+        switch(input$typeGraph,
+              "dQdV Graphs" = {
+                 tmp_data <<- data.frame(x=dQdVData[dQdVData$cell %in% cellIndex,]$voltage, y=dQdVData[dQdVData$cell %in% cellIndex,]$dQdV, cycle=dQdVData[dQdVData$cell %in% cellIndex,]$cycle, cell=dQdVData[dQdVData$cell %in% cellIndex,]$cell)
+                 tmp_data <<- tmp_data[tmp_data$cycle == sort(as.numeric(input$renderCycles)),]
+                 
+                 titleLabel <<-"dQdV Plot"
+                 xlabel <<-"Voltage (V)"
+                 ylabel <<-"dQdV (mAh/V)"
+               },
+              "Voltage Profiles" = {
+                 tmp_data <<- data.frame(x=(-1) * total[total$Cell %in% cellIndex,]$CC, y=total[total$Cell %in% cellIndex,]$`Voltage(V)`, cycle=total[total$Cell %in% cellIndex,]$`Cycle_Index`, cell=total[total$Cell %in% cellIndex,]$Cell)
+                 tmp_data <<- tmp_data[tmp_data$cycle == sort(as.numeric(input$renderCycles)),]
+                 
+                 titleLabel <<-"Voltage Profile"
+                 if (sum(data$Mass) != 0) {
+                   xlabel <-"Continuous Capacity (mAh/g)"
+                 } else {
+                   xlabel <-"Continuous Capacity (Ah)"
+                 }
+                 ylabel <<-"Voltage (V)"
+               },
+              "Voltage vs. Time" = {
+                 tmp_data <<- data.frame(x=(total[total$Cell %in% cellIndex,]$`Test_Time(s)` / 60), y=total[total$Cell %in% cellIndex,]$`Voltage(V)`, cycle=total[total$Cell %in% cellIndex,]$`Cycle_Index`, cell=total[total$Cell %in% cellIndex,]$Cell)
+                 tmp_data <<- tmp_data[tmp_data$cycle %in% input$renderCycles,]
+                 
+                 x <- 0
+                 
+                 for (cell in cellIndex) {
+                   normalTime <<- c(normalTime, t(aggregate(tmp_data[tmp_data$cell == cell,]$x, by=list(tmp_data[tmp_data$cell == cell,]$cycle), normalizeTime)[,2]))
+                 }
+                 
+                 tmp_data <<- data.frame(x=unlist(normalTime), y=tmp_data$y, cycle=tmp_data$cycle, cell=tmp_data$cell)
+                 tmp_data <<- tmp_data[tmp_data$y >= 0.01,]
+                 
+                 titleLabel <<-"Voltge vs. Time Plot"
+                 xlabel <<-"Time (min)"
+                 ylabel <<-"Voltage (V)"
+               },
+              "Charge Voltage" = {
+                tmp_data <<- data.frame(x=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, y=cycle_facts[cycle_facts$cell %in% cellIndex,]$chV, cycle=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, cell = cycle_facts[cycle_facts$cell %in% cellIndex,]$cell)
+  
+                titleLabel <<- "Charge Voltage Plot "
+                xlabel <<- "Cycle"
+                ylabel <<- "Voltage (V)"
+              },
+              "Discharge Voltage" = {
+                tmp_data <<- data.frame(x=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, y=cycle_facts[cycle_facts$cell %in% cellIndex,]$dchV, cell=cycle_facts[cycle_facts$cell %in% cellIndex,]$cell, cycle=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle)
+                
+                titleLabel <<- "Discharge Voltage Plot "
+                xlabel <<- "Cycle"
+                ylabel <<- "Voltage (V)"
+              },
+              "Average Voltage" = {
+                tmp_data <<- data.frame(x=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, y=cycle_facts[cycle_facts$cell %in% cellIndex,]$avgV, cell=cycle_facts[cycle_facts$cell %in% cellIndex,]$cell, cycle=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle)
+                
+                titleLabel <<- "Average Voltage Plot "
+                xlabel <<- "Cycle"
+                ylabel <<- "Voltage (V)"
+              },
+              "Delta Voltage" = {
+                tmp_data <<- data.frame(x=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, y=cycle_facts[cycle_facts$cell %in% cellIndex,]$dV, cell=cycle_facts[cycle_facts$cell %in% cellIndex,]$cell, cycle=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle)
+  
+                titleLabel <<- "Delta Voltage Plot "
+                xlabel <<- "Cycle"
+                ylabel <<- "Voltage (V)"
+              },
+              "Discharge Capacity" = {
+                tmp_data <<- data.frame(x=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, y=cycle_facts[cycle_facts$cell %in% cellIndex,]$DCap, cell=cycle_facts[cycle_facts$cell %in% cellIndex,]$cell, cycle=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle)
+                
+                titleLabel <<- "Discharge Capacity Plot "
+                xlabel <<- "Cycle"
+                if (sum(data$Mass) != 0) {
+                  ylabel <<- "Discharge Capacity (mAh/g)"
+                } else {
+                  ylabel <<- "Discharge Capacity (Ah)"
+                }
+              },
+              "Charge Capacity" = {
+                tmp_data <<- data.frame(x=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, y=cycle_facts[cycle_facts$cell %in% cellIndex,]$CCap, cell=cycle_facts[cycle_facts$cell %in% cellIndex,]$cell, cycle=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle)
+                
+                titleLabel <<- "Charge Capacity Plot "
+                xlabel <<- "Cycle"
+                if (sum(data$Mass) != 0) {
+                  ylabel <<- "Charge Capacity (mAh/g)"
+                } else {
+                  ylabel <<- "Charge Capacity (Ah)"
+                }
               }
-            },
-            "Charge Capacity" = {
-              tmp_data <<- data.frame(x=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, y=cycle_facts[cycle_facts$cell %in% cellIndex,]$CCap, cell=cycle_facts[cycle_facts$cell %in% cellIndex,]$cell, cycle=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle)
-              
-              titleLabel <<- "Charge Capacity Plot "
-              xlabel <<- "Cycle"
-              if (sum(data$Mass) != 0) {
-                ylabel <<- "Charge Capacity (mAh/g)"
-              } else {
-                ylabel <<- "Charge Capacity (Ah)"
-              }
-            }
-             
-      )
+        )
+        
+        tmp_data$color <<- sapply(tmp_data$cycle, function(x) {match(x, input$renderCycles, nomatch = 1)})
+        tmp_data$symbol <<- sapply(tmp_data$cell, function(x) {match(x, cellIndex)})
+        
+      } else if (input$perType == "Between Analyses") {
+        switch(input$typeGraph,
+               "Charge Voltage" = {
+                 chV <- cycle_facts[c("cycle","DCap")] %>% group_by(cycle) %>% summarise_each(mean)
+                 chvSE <- cycle_facts[c("cycle","CE")] %>% group_by(cycle) %>% summarise_each(se)
+                 tryCatch({
+                   comp_chV <- compCycleFacts[c("cycle","DCap")] %>% group_by(cycle) %>% summarise_each(mean)
+                   comp_chvSE <- compCycleFacts[c("cycle","CE")] %>% group_by(cycle) %>% summarise_each(se)
+                 
+                   tmp_data <<- data.frame(x=unique(rbind(cycle_facts$cycle, compCycleFacts$cycle)), y=rbind(chV, comp_chV), cell=rbind(rep(1, length(chV)), rep(2, length(comp_chV))), cycle=unique(rbind(cycle_facts$cycle, compCycleFacts$cycle)))
+                   tmp_data$color <<- sapply(tmp_data$cycle, function(x) {match(x, c(1,2), nomatch = 1)})
+                   tmp_data$symbol <<- sapply(tmp_data$cell, function(x) {match(x, c(1,2))})
+                 },
+                 error = function(x) {
+                   print(x)
+                 }
+               )
+               }
+        )
+      }
       
       tmp_data <<- tmp_data[is.finite(tmp_data$x),]
       tmp_data <<- tmp_data[is.finite(tmp_data$y),]
       tmp_data <<- tmp_data[is.finite(tmp_data$cycle),]
       tmp_data <<- tmp_data[is.finite(tmp_data$cell),]
-      
-      tmp_data$color <<- sapply(tmp_data$cycle, function(x) {match(x, input$renderCycles, nomatch = 1)})
-      tmp_data$symbol <<- sapply(tmp_data$cell, function(x) {match(x, cellIndex)})
       
       if (any(sapply(bounds, is.na))) {
         if (is.na(bounds[1])) bounds[1] <<- min(tmp_data$x)
@@ -994,6 +1025,12 @@ if (interactive()) {
       updateSelectInput(session,"renderCycles", choices = 1:numCycles[numCycles$sheet == input$cells,]$cycles, selected = tmp_cycles)
     })
     
+    observeEvent(input$compAnalysis, {
+      load(input$compAnalysis$datapath[[1]])
+      
+      compCycleFacts <<- cycle_facts
+    })
+    
     # Error handling for graphBuilder and then showing modal
     observeEvent(input$graphBuilder, {
       if(dim(numCycles)[1] == 0 | dim(dQdVData)[1] == 0 | dim(cycle_facts)[1] == 0 | dim(total) == 0) {
@@ -1007,6 +1044,27 @@ if (interactive()) {
     observeEvent(input$plot_click, {
       output$hoverCoordx <- renderText({input$plot_click$x})
       output$hoverCoordy <- renderText({input$plot_click$y})
+    })
+    
+    observeEvent(input$perType, {
+      if (input$perType == "Within Analysis") {
+        updateRadioButtons(session, "typeGraph", choices = c("dQdV Graphs","Voltage Profiles", "Voltage vs. Time", 
+                                                            "Charge Voltage", "Discharge Voltage", 
+                                                            "Average Voltage", "Delta Voltage", "Discharge Capacity", "Charge Capacity" ))
+        
+        show("cells")
+        show("renderCycles")
+        hide("compAnalysis")
+        hide("analysis")
+      } else if (input$perType == "Between Analyses") {
+        updateRadioButtons(session, "typeGraph", choices = c("Charge Voltage", "Discharge Voltage", 
+                                                             "Average Voltage", "Delta Voltage", "Discharge Capacity", "Charge Capacity" ))
+        
+        hide("cells")
+        hide("renderCycles")
+        show("compAnalysis")
+        show("analysis")
+      }
     })
     
     # Method for saving graph generated by graphBuilder
