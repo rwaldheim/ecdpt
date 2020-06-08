@@ -320,7 +320,7 @@ if (interactive()) {
             
             fluidRow(style = "padding:5%; border: 1px solid black;",
              strong("Basis for Plot Types"), tags$br(),
-             helpText("Between Analysis requires a second dataset to be imported"), tags$br(), tags$br(),
+             helpText("Between Analysis requires a second dataset to be imported"), tags$br(),
              radioButtons("perType", NULL, choices = c("Within Analysis", "Between Analyses"), inline = TRUE),
              hidden(fileInput("compAnalysis", "Data to Compare"))
             ),
@@ -331,7 +331,6 @@ if (interactive()) {
                                                                   "Average Voltage", "Delta Voltage", "Discharge Capacity", "Charge Capacity" ), inline = FALSE),
               radioButtons("plotStyle","Plot Style:", choiceNames = c("Point","Line","Both"), choiceValues = c("p","l","o"),  inline = TRUE),
               checkboxGroupInput("cells","Cell to Analyze:", choices = 1, inline = FALSE),
-              hidden(checkboxGroupInput("analysis","Analyses to Compare:", choices = 1, inline = FALSE)),
               selectInput("renderCycles","Cycles of Interest:", choices = 1, multiple = TRUE),
             ),
             
@@ -360,18 +359,22 @@ if (interactive()) {
                    h3("Graph Formatting"),
                    helpText("*If left blank, they will be calculated using the min and max of the data to be plotted."),
                    column(2,
-                   numericInput("xMin", "X Min", value = NULL),
-                   sliderInput("textSize", "Text Size", min = 0.1, max = 5, value = 1, ticks = FALSE),
+                    numericInput("xMin", "X Min", value = NULL),
+                    sliderInput("textSize", "Text Size", min = 0.1, max = 5, value = 1, ticks = FALSE),
                    ),
                    column(2,
-                   numericInput("xMax", "X Max", value = NULL),
-                   sliderInput("pointSize", "Point/Line Size", min = 0.1, max = 5, value = 1, ticks = FALSE),
+                    numericInput("xMax", "X Max", value = NULL),
+                    sliderInput("pointSize", "Point/Line Size", min = 0.1, max = 5, value = 1, ticks = FALSE),
                    ),
                    column(2, 
-                   numericInput("yMin", "Y Min", value = NULL),
+                    numericInput("yMin", "Y Min", value = NULL),
                    ),
                    column(2,
-                   numericInput("yMax", "Y Max", value = NULL),
+                    numericInput("yMax", "Y Max", value = NULL),
+                   ),
+                   column(4,
+                    textInput("originalData", "Original Data Name", value = "Original Data"),
+                    textInput("compareData", "Comparison Data Name", value = "Comparison Data"),
                    ),
                    style ="border: 1px dashed black; padding: 2%;",
                  )
@@ -628,7 +631,7 @@ if (interactive()) {
           }
           
           # Record charge and dischatge voltage, then calculate the delta and average voltage
-          cycle_facts <<- rbind(cycle_facts, data.frame(cycle=i, cell=row, chV=chV, dchV=dchV, avgV=(dchV + chV) / 2, dV=chV-dchV, DCap = DCap, CCap = CCap, CE = (DCap / CCap) * 100, lostCap = CCap - DCap))
+          cycle_facts <<- rbind(cycle_facts, data.frame(cycle=i, cell=row, chV=chV, dchV=dchV, avgV=(dchV + chV) / 2, dV=chV-dchV, DCap = DCap, CCap = CCap, CE = (DCap / CCap) * 100, lostCap = CCap - DCap, cellFade = if (i == 1) 0 else {DCap - tail(cycle_facts$DCap, 1)}))
           
           i <- i + 1
           ch_dch <- FALSE
@@ -772,8 +775,6 @@ if (interactive()) {
       }, error = function(cond) {
         print(cond)
       })
-      
-      cycle_facts$cellFade <<- c(0, diff(cycle_facts$DCap))
       
       # Save total data and stats
       write.csv(stats, file = paste(dirLocation(), "/",  input$dirName,"/", basename(dirLocation())," Summary.csv", sep =""))
@@ -957,23 +958,162 @@ if (interactive()) {
         tmp_data$symbol <<- sapply(tmp_data$cell, function(x) {match(x, cellIndex)})
         
       } else if (input$perType == "Between Analyses") {
+        
         switch(input$typeGraph,
                "Charge Voltage" = {
-                 chV <- cycle_facts[c("cycle","DCap")] %>% group_by(cycle) %>% summarise_each(mean)
-                 chvSE <- cycle_facts[c("cycle","CE")] %>% group_by(cycle) %>% summarise_each(se)
-                 tryCatch({
-                   comp_chV <- compCycleFacts[c("cycle","DCap")] %>% group_by(cycle) %>% summarise_each(mean)
-                   comp_chvSE <- compCycleFacts[c("cycle","CE")] %>% group_by(cycle) %>% summarise_each(se)
+                 x<-0
+                 chV <- cycle_facts[c("cycle","chV")] %>% group_by(cycle) %>% summarise_each(mean)
+                 chVSE <- cycle_facts[c("cycle","chV")] %>% group_by(cycle) %>% summarise_each(se)
                  
-                   tmp_data <<- data.frame(x=unique(rbind(cycle_facts$cycle, compCycleFacts$cycle)), y=rbind(chV, comp_chV), cell=rbind(rep(1, length(chV)), rep(2, length(comp_chV))), cycle=unique(rbind(cycle_facts$cycle, compCycleFacts$cycle)))
-                   tmp_data$color <<- sapply(tmp_data$cycle, function(x) {match(x, c(1,2), nomatch = 1)})
-                   tmp_data$symbol <<- sapply(tmp_data$cell, function(x) {match(x, c(1,2))})
+                 tryCatch({
+                   comp_chV <- compCycleFacts[c("cycle","chV")] %>% group_by(cycle) %>% summarise_each(mean)
+                   comp_chVSE <- compCycleFacts[c("cycle","chV")] %>% group_by(cycle) %>% summarise_each(se)
+
+                   tmp_data <<- data.frame(x=c(chV$cycle, comp_chV$cycle), y=c(chV$chV, comp_chV$chV), se=c(chVSE$chV, comp_chVSE$chV), cell=c(rep(1, length(chV$cycle)), rep(2, length(comp_chV$cycle))), cycle=c(chV$cycle, comp_chV$cycle))
+                   tmp_data$symbol <<- rep(1, nrow(tmp_data))
+                   tmp_data$color <<- sapply(tmp_data$cell, function(x) {match(x, c(1,2))})
+                   
+                   titleLabel <<- "Charge Voltage Plot "
+                   xlabel <<- "Cycle"
+                   ylabel <<- "Voltage (V)"
                  },
                  error = function(x) {
                    print(x)
-                 }
-               )
-               }
+                 })
+                 },
+                 "Discharge Voltage" = {
+                   x<-0
+                   dchV <- cycle_facts[c("cycle","dchV")] %>% group_by(cycle) %>% summarise_each(mean)
+                   dchVSE <- cycle_facts[c("cycle","dchV")] %>% group_by(cycle) %>% summarise_each(se)
+                   
+                   tryCatch({
+                     comp_dchV <- compCycleFacts[c("cycle","dchV")] %>% group_by(cycle) %>% summarise_each(mean)
+                     comp_dchVSE <- compCycleFacts[c("cycle","dchV")] %>% group_by(cycle) %>% summarise_each(se)
+                     
+                     tmp_data <<- data.frame(x=c(dchV$cycle, comp_dchV$cycle), y=c(dchV$dchV, comp_dchV$dchV), se=c(dchVSE$dchV, comp_dchVSE$dchV), cell=c(rep(1, length(dchV$cycle)), rep(2, length(comp_dchV$cycle))), cycle=c(dchV$cycle, comp_dchV$cycle))
+                     tmp_data$symbol <<- rep(1, nrow(tmp_data))
+                     tmp_data$color <<- sapply(tmp_data$cell, function(x) {match(x, c(1,2))})
+                     
+                     titleLabel <<- "Disharge Voltage Plot "
+                     xlabel <<- "Cycle"
+                     ylabel <<- "Voltage (V)"
+                   },
+                   error = function(x) {
+                     print(x)
+                   })
+                 },
+                 "Average Voltage" = {
+                   avgV <- cycle_facts[c("cycle","avgV")] %>% group_by(cycle) %>% summarise_each(mean)
+                   avgVSE <- cycle_facts[c("cycle","avgV")] %>% group_by(cycle) %>% summarise_each(se)
+                   
+                   tryCatch({
+                     comp_avgV <- compCycleFacts[c("cycle","avgV")] %>% group_by(cycle) %>% summarise_each(mean)
+                     comp_avgVSE <- compCycleFacts[c("cycle","avgV")] %>% group_by(cycle) %>% summarise_each(se)
+                     
+                     tmp_data <<- data.frame(x=c(avgV$cycle, comp_avgV$cycle), y=c(avgV$avgV, comp_avgV$avgV), se=c(avgVSE$avgV, comp_avgVSE$avgV), cell=c(rep(1, length(avgV$cycle)), rep(2, length(comp_avgV$cycle))), cycle=c(avgV$cycle, comp_avgV$cycle))
+                     tmp_data$symbol <<- rep(1, nrow(tmp_data))
+                     tmp_data$color <<- sapply(tmp_data$cell, function(x) {match(x, c(1,2))})
+                     
+                     titleLabel <<- "Average Voltage Plot "
+                     xlabel <<- "Cycle"
+                     ylabel <<- "Voltage (V)"
+                   },
+                   error = function(x) {
+                     print(x)
+                   })
+                 },
+               "Delta Voltage" = {
+                 dV <- cycle_facts[c("cycle","dV")] %>% group_by(cycle) %>% summarise_each(mean)
+                 dVSE <- cycle_facts[c("cycle","dV")] %>% group_by(cycle) %>% summarise_each(se)
+                 
+                 tryCatch({
+                   comp_dV <- compCycleFacts[c("cycle","dV")] %>% group_by(cycle) %>% summarise_each(mean)
+                   comp_dVSE <- compCycleFacts[c("cycle","dV")] %>% group_by(cycle) %>% summarise_each(se)
+                   
+                   tmp_data <<- data.frame(x=c(dV$cycle, comp_dV$cycle), y=c(dV$dV, comp_dV$dV), se=c(dVSE$dV, comp_dVSE$dV), cell=c(rep(1, length(dV$cycle)), rep(2, length(comp_dV$cycle))), cycle=c(dV$cycle, comp_dV$cycle))
+                   tmp_data$symbol <<- rep(1, nrow(tmp_data))
+                   tmp_data$color <<- sapply(tmp_data$cell, function(x) {match(x, c(1,2))})
+                   
+                   titleLabel <<- "Delta Voltage Plot "
+                   xlabel <<- "Cycle"
+                   ylabel <<- "Voltage (V)"
+                 },
+                 error = function(x) {
+                   print(x)
+                 })
+               },
+               "Discharge Capacity" = {
+                 DCap <- cycle_facts[c("cycle","DCap")] %>% group_by(cycle) %>% summarise_each(mean)
+                 DCapSE <- cycle_facts[c("cycle","DCap")] %>% group_by(cycle) %>% summarise_each(se)
+                 
+                 tryCatch({
+                   comp_DCap <- compCycleFacts[c("cycle","DCap")] %>% group_by(cycle) %>% summarise_each(mean)
+                   comp_DCapSE <- compCycleFacts[c("cycle","DCap")] %>% group_by(cycle) %>% summarise_each(se)
+                   
+                   tmp_data <<- data.frame(x=c(DCap$cycle, comp_DCap$cycle), y=c(DCap$DCap, comp_DCap$DCap), se=c(DCapSE$DCap, comp_DCapSE$DCap), cell=c(rep(1, length(DCap$cycle)), rep(2, length(comp_DCap$cycle))), cycle=c(DCap$cycle, comp_DCap$cycle))
+                   tmp_data$symbol <<- rep(1, nrow(tmp_data))
+                   tmp_data$color <<- sapply(tmp_data$cell, function(x) {match(x, c(1,2))})
+                   
+                   titleLabel <<- "Discharge Capacity Plot "
+                   xlabel <<- "Cycle"
+                   if (sum(data$Mass) != 0) {
+                     ylabel <<- "Discharge Capacity (mAh/g)"
+                   } else {
+                     ylabel <<- "Discharge Capacity (Ah)"
+                   }
+                 },
+                 error = function(x) {
+                   print(x)
+                 })
+               },
+               "Charge Capacity" = {
+                 CCap <- cycle_facts[c("cycle","CCap")] %>% group_by(cycle) %>% summarise_each(mean)
+                 CCapSE <- cycle_facts[c("cycle","CCap")] %>% group_by(cycle) %>% summarise_each(se)
+                 
+                 tryCatch({
+                   comp_CCap <- compCycleFacts[c("cycle","CCap")] %>% group_by(cycle) %>% summarise_each(mean)
+                   comp_CCapSE <- compCycleFacts[c("cycle","CCap")] %>% group_by(cycle) %>% summarise_each(se)
+                   
+                   tmp_data <<- data.frame(x=c(CCap$cycle, comp_CCap$cycle), y=c(CCap$CCap, comp_CCap$CCap), se=c(CCapSE$CCap, comp_CCapSE$CCap), cell=c(rep(1, length(CCap$cycle)), rep(2, length(comp_CCap$cycle))), cycle=c(CCap$cycle, comp_CCap$cycle))
+                   tmp_data$symbol <<- rep(1, nrow(tmp_data))
+                   tmp_data$color <<- sapply(tmp_data$cell, function(x) {match(x, c(1,2))})
+                   
+                   titleLabel <<- "Charge Capacity Plot "
+                   xlabel <<- "Cycle"
+                   if (sum(data$Mass) != 0) {
+                     ylabel <<- "Charge Capacity (mAh/g)"
+                   } else {
+                     ylabel <<- "Charge Capacity (Ah)"
+                   }
+                 },
+                 error = function(x) {
+                   print(x)
+                 })
+               },
+               "Capacity Loss" = {
+                 lostCap <- cycle_facts[c("cycle","lostCap")] %>% group_by(cycle) %>% summarise_each(mean)
+                 lostCapSE <- cycle_facts[c("cycle","lostCap")] %>% group_by(cycle) %>% summarise_each(se)
+                 
+                 tryCatch({
+                   comp_lostCap <- compCycleFacts[c("cycle","lostCap")] %>% group_by(cycle) %>% summarise_each(mean)
+                   comp_lostCapSE <- compCycleFacts[c("cycle","lostCap")] %>% group_by(cycle) %>% summarise_each(se)
+                   
+                   tmp_data <<- data.frame(x=c(lostCap$cycle, comp_lostCap$cycle), y=c(lostCap$lostCap, comp_lostCap$lostCap), se=c(lostCapSE$lostCap, comp_lostCapSE$lostCap), cell=c(rep(1, length(lostCap$cycle)), rep(2, length(comp_lostCap$cycle))), cycle=c(lostCap$cycle, comp_lostCap$cycle))
+                   tmp_data$symbol <<- rep(1, nrow(tmp_data))
+                   tmp_data$color <<- sapply(tmp_data$cell, function(x) {match(x, c(1,2))})
+                   
+                   titleLabel <<- "Charge Capacity Plot "
+                   xlabel <<- "Cycle"
+                   if (sum(data$Mass) != 0) {
+                     ylabel <<- "Charge Capacity (mAh/g)"
+                   } else {
+                     ylabel <<- "Charge Capacity (Ah)"
+                   }
+                 },
+                 error = function(x) {
+                   print(x)
+                 })
+               },
         )
       }
       
@@ -990,10 +1130,16 @@ if (interactive()) {
       }
       
       tryCatch({
-        if (input$plotStyle =="o" | input$plotStyle =="p") {
+        if (input$plotStyle =="o" | input$plotStyle =="p" | "se" %in% colnames(tmp_data)) {
           par(mar=c(5.1, 6.1, 4.1, 2.1))
+          
           plot(tmp_data$x, tmp_data$y, type = input$plotStyle, col = tmp_data$color, pch = tmp_data$symbol, main=titleLabel, xlim = c(bounds[1], bounds[2]), ylim = c(bounds[3], bounds[4]),  xlab=xlabel, ylab=ylabel, cex = input$pointSize, cex.axis = input$textSize, cex.lab = input$textSize, cex.main = input$textSize)
-          legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells), col = c(unique(tmp_data$color), rep("black", length(input$cells))), pch = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title ="Cycle", ncol=2)
+          if ("se" %in% colnames(tmp_data)) {
+            arrows(tmp_data$x, tmp_data$y - tmp_data$se, tmp_data$x, tmp_data$y + tmp_data$se, col = tmp_data$color, length=0.05, angle=90, code=3)
+            legend("bottomright", legend = c(input$originalData, input$compareData), col = c(1,2), pch = 19)
+          } else {
+            legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells), col = c(unique(tmp_data$color), rep("black", length(input$cells))), pch = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title ="Cycle", ncol=2)
+          }
         } else if (input$plotStyle =="l") {
           newLine <- subset(tmp_data, tmp_data$color == 1 & tmp_data$symbol == 1)
           plot(newLine$x, newLine$y, type ="l", col = newLine$color, lty = newLine$symbol, main=titleLabel, xlim = c(bounds[1], bounds[2]), ylim = c(bounds[3], bounds[4]),  xlab=xlabel, ylab=ylabel, lwd = input$pointSize, cex.axis = input$textSize, cex.lab = input$textSize, cex.main = input$textSize)
@@ -1005,7 +1151,7 @@ if (interactive()) {
             }
           }
           
-          legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells), col = c(unique(tmp_data$color), rep("black", length(input$cells))), lty = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title ="Cycle", ncol=2)
+          legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells, if ("se" %in% colnames(tmp_data)) {c(input$dirName, compName)}), col = c(unique(tmp_data$color), rep("black", length(input$cells))), lty = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title ="Cycle", ncol=2)
         }
       },
       error=function(cond) {
@@ -1028,6 +1174,7 @@ if (interactive()) {
     observeEvent(input$compAnalysis, {
       load(input$compAnalysis$datapath[[1]])
       
+      compName <<- basename(input$compAnalysis$datapath[[1]])
       compCycleFacts <<- cycle_facts
     })
     
@@ -1054,14 +1201,21 @@ if (interactive()) {
         
         show("cells")
         show("renderCycles")
+        show("plotStyle")
+        hide("originalData")
+        hide("compareData")
         hide("compAnalysis")
         hide("analysis")
       } else if (input$perType == "Between Analyses") {
         updateRadioButtons(session, "typeGraph", choices = c("Charge Voltage", "Discharge Voltage", 
-                                                             "Average Voltage", "Delta Voltage", "Discharge Capacity", "Charge Capacity" ))
+                                                             "Average Voltage", "Delta Voltage", "Discharge Capacity", "Charge Capacity",
+                                                             "Capacity Loss"))
         
         hide("cells")
-        hide("renderCycles")
+        hide("renderCycles")        
+        show("originalData")
+        show("compareData")
+        hide("plotStyle")
         show("compAnalysis")
         show("analysis")
       }
