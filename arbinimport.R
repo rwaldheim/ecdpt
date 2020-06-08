@@ -175,6 +175,9 @@ if (interactive()) {
     # This sets the maximum file size Shiny will import, the default of 5Mb is not large enough to handle Arbin files
     options(shiny.maxRequestSize=100*1024^2)
     
+    # Defines the equation for standard error of a vector
+    se <- function(x) {sd(x) / sqrt(length(x))}
+    
     split_path <- function(x) if (dirname(x)==x) x else c(basename(x),split_path(dirname(x)))
     
     export_to_origin <- function() {
@@ -800,18 +803,24 @@ if (interactive()) {
       
       save(dirLocation, dirName, data, dQdVData, total, cycle_facts, numCycles, file = paste(dirLocation(), "/history/", input$dirName, ".RData", sep = ""))
       
+      # Finish progress bar
+      progress$set(value = nrow(data))
+      
       # Modal for completed analysis
       shinyalert("Analysis Complete!", paste("All your data are now in ", dirLocation(), "/", input$dirName, sep = ""), 
                  type ="success", showConfirmButton = TRUE, showCancelButton = TRUE, confirmButtonText = "Generate Origin File", cancelButtonText = "Continue",
                  callbackR = function(x) {
                    if (x) {
+                     progress <- Progress$new(session)
+                     progress$set(message ="Generating Origin File...")
+                     
                      export_to_origin()
+                     
+                     progress$close()
+                     shinyalert("Origin File Generated!", "The Origin application should be open with all the data placed within it.", type = "success")
                    }
                  }
                  )
-      
-      # Finish progress bar
-      progress$set(value = nrow(data))
       
       # Re-enable all input fields, including graph builder
       enable("files")
