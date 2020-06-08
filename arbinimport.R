@@ -177,11 +177,20 @@ if (interactive()) {
     
     split_path <- function(x) if (dirname(x)==x) x else c(basename(x),split_path(dirname(x)))
     
-    # Defines the equation for standard error of a vector
-    se <- function(x) {sd(x) / sqrt(length(x))}
-    
-    export_to_origin <- function(data_path) {
-      system(paste("C:/Users/rwaldhei/AppData/Local/Programs/Python/Python38-32/python.exe rPyO.py ", dirLocation(), "/", input$dirName, sep = ''))
+    export_to_origin <- function() {
+      if (!("reticulate" %in% installed.packages()[, "Package"])) {
+        install.packages("reticulate")
+      }
+      require(reticulate)
+      
+      py_location <- py_config()
+      
+      py_install("OriginExt", pip = TRUE)
+      py_install("pandas", pip = TRUE)
+      
+      filtered_location <- shQuote(paste(dirLocation(), "/", input$dirName, sep = ''))
+      
+      system(paste(py_location$python, " rPyO.py ", filtered_location, sep=''))
     }
     
     # Defines the modal in which the cell masses can be exported from Excel

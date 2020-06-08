@@ -3,6 +3,7 @@ import os, os.path
 import csv
 import pandas as pd
 import sys
+import glob
 
 app = origin.Application()
 app.Visible = 1
@@ -16,10 +17,8 @@ for cell in cells:
         cells.remove(cell)
 
 files = [d for d in os.listdir(root) if os.path.isfile(os.path.join(root, d))]
-
-for file in files:
-    if file[-3:] != "csv":
-        files.remove(file)
+os.chdir(root)
+files = glob.glob('*.{}'.format('csv'))
 
 proj = app.CreatePage(app.OPT_WORKSHEET, "SummaryData")
 wbook = app.Pages(proj)
