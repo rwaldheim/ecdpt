@@ -184,7 +184,9 @@ if (interactive()) {
       py_install("OriginExt", pip = TRUE)
       py_install("pandas", pip = TRUE)
       
-      system(paste(py_location$python, " rPyO.py ", dirLocation(), "/", input$dirName, sep=''))
+      filtered_location <- shQuote(paste(dirLocation(), "/", input$dirName, sep = ''))
+      
+      system(paste(py_location$python, " rPyO.py ", filtered_location, sep=''))
     }
     
     # Defines the modal in which the cell masses can be exported from Excel
