@@ -1161,7 +1161,11 @@ if (interactive()) {
             arrows(tmp_data$x, tmp_data$y - tmp_data$se, tmp_data$x, tmp_data$y + tmp_data$se, col = tmp_data$color, length=0.05, angle=90, code=3)
             legend("bottomright", legend = c(input$originalData, input$compareData), col = c(1,2), pch = 19)
           } else {
-            legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells), col = c(unique(tmp_data$color), rep("black", length(input$cells))), pch = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title ="Cycle", ncol=2)
+            if (input$typeGraph %in% c("dQdV Graphs", "Voltage Profiles", "Voltage vs. Time")) {
+              legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells), col = c(unique(tmp_data$color), rep("black", length(input$cells))), pch = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title ="Cycle", ncol=2)
+            } else {
+              legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells), col = c(unique(tmp_data$color), rep("black", length(input$cells))), pch = c(1:length(input$cells)), title ="Cycle", ncol=2)
+            }
           }
         } else if (input$plotStyle =="l") {
           newLine <- subset(tmp_data, tmp_data$color == 1 & tmp_data$symbol == 1)
@@ -1173,8 +1177,11 @@ if (interactive()) {
               lines(newLine$x, newLine$y, col = newLine$color, lty = newLine$symbol, lwd = input$pointSize)
             }
           }
-          
-          legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells, if ("se" %in% colnames(tmp_data)) {c(input$dirName, compName)}), col = c(unique(tmp_data$color), rep("black", length(input$cells))), lty = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title ="Cycle", ncol=2)
+          if (input$typeGraph %in% c("dQdV Graphs", "Voltage Profiles", "Voltage vs. Time")) {
+            legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells, if ("se" %in% colnames(tmp_data)) {c(input$dirName, compName)}), col = c(unique(tmp_data$color), rep("black", length(input$cells))), lty = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title ="Cycle", ncol=2)
+          } else {
+            legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells, if ("se" %in% colnames(tmp_data)) {c(input$dirName, compName)}), col = c(unique(tmp_data$color), rep("black", length(input$cells))), lty = c(1:length(input$cells)), title ="Cycle", ncol=2)
+          }
         }
       },
       error=function(cond) {
