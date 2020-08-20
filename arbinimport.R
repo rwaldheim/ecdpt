@@ -307,7 +307,8 @@ if (interactive()) {
     })
     
     observeEvent(input$chooseDir, {
-      dirLocation(tk_choose.dir())
+      chosenDir = tk_choose.dir()
+      dirLocation(chosenDir)
       
       if (!is.na(dirLocation())) {
         output$currDir <- renderText({paste(split_path(dirLocation())[1], "(", split_path(dirLocation())[2], ")")})
@@ -584,7 +585,10 @@ if (interactive()) {
         # ######
         cycles <- split(tmp_excel, tmp_excel$Cycle_Index)
         prev_c <- 0
-        ch_dch <- FALSE
+        lastCC <- 0
+        ch_dch <- TRUE
+        durations <- vector(length = 4)
+        caps <- vector(length = 4)
         prev <- TRUE
         dchV <- 0
         chV <- 0
@@ -600,6 +604,8 @@ if (interactive()) {
           progress$set(detail = paste("Analyzing cell", row,", cycle", i))
           
           steps <- split(cycle, cycle$Step_Index)
+          n <- 1
+          
           for (step in steps) {
             
             # ######
@@ -617,15 +623,22 @@ if (interactive()) {
               # All code that should be executed for every charge/discharge cycles should be written here.
               # 
               # ######
-              ch_dch <- TRUE
+              lastCC <- n
               if (step$'Current(A)'[[1]] > 0) {
                 chV <- (1 / (tail(step$`Charge_Capacity(Ah)`,1) - step$`Charge_Capacity(Ah)`[[1]])) * trapz(step$`Charge_Capacity(Ah)`, step$`Voltage(V)`)
                 dQCdV <- diff(step$`Charge_Capacity(Ah)`)/diff(step$`Voltage(V)`)
                 dQdVData <<- rbind(dQdVData, data.frame(cycle=rep(i, length(dQCdV)+1), cell = rep(row, length(dQCdV)+1), c_d=rep(0, length(dQCdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQCdV), F_L=rep(0,length(dQCdV)+1)))
+                
+                durations[1] <- tail(step$'Test_Time(s)', 1) - step$'Test_Time(s)'[[1]]
+                caps[1] <- tail(step$'Charge_Capacity(Ah)', 1) - step$'Charge_Capacity(Ah)'[[1]]
+                ch_dch <- TRUE
               } else {
                 dchV <- (1 / (tail(step$`Discharge_Capacity(Ah)`,1) - step$`Discharge_Capacity(Ah)`[[1]])) * trapz(step$`Discharge_Capacity(Ah)`, step$`Voltage(V)`)
                 dQDdV <- diff(step$`Discharge_Capacity(Ah)`)/diff(step$`Voltage(V)`)
                 
+                durations[3] <- tail(step$'Test_Time(s)', 1) - step$'Test_Time(s)'[[1]]
+                caps[3] <- tail(step$'Discharge_Capacity(Ah)', 1) - step$'Discharge_Capacity(Ah)'[[1]]
+                ch_dch <- FALSE
                 if (abs(prev_c - step$`Current(A)`[[1]]) > 0.0005) {
                   dQdVData <<- rbind(dQdVData, data.frame(cycle=rep(i, length(dQDdV)+1), cell = rep(row, length(dQDdV)+1), c_d=rep(1, length(dQDdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQDdV), F_L=rep(1,length(dQDdV)+1)))
                   prev_c = step$`Current(A)`[[1]]
@@ -633,7 +646,17 @@ if (interactive()) {
                   dQdVData <<- rbind(dQdVData, data.frame(cycle=rep(i, length(dQDdV)+1), cell = rep(row, length(dQDdV)+1), c_d=rep(1, length(dQDdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQDdV), F_L=rep(0, length(dQDdV)+1)))
                 }
               }
+            } else if (n - lastCC == 1 & abs(tail(step$'Voltage(V)',1) - step$'Voltage(V)'[[1]]) < 0.001) {
+              if (step$'Current(A)'[[1]] > 0) {
+                durations[2] <- tail(step$'Test_Time(s)', 1) - step$'Test_Time(s)'[[1]]
+                caps[2] <- tail(step$'Charge_Capacity(Ah)', 1) - step$'Charge_Capacity(Ah)'[[1]]
+              } else {
+                durations[4] <- tail(step$'Test_Time(s)', 1) - step$'Test_Time(s)'[[1]]
+                caps[4] <- tail(step$'Discharge_Capacity(Ah)', 1) - step$'Discharge_Capacity(Ah)'[[1]]
+              }
             }
+            ch_dch <- FALSE
+            n <- n + 1
           }
             
           # ######
@@ -653,11 +676,18 @@ if (interactive()) {
             CCap <- tail(cycle$`Charge_Capacity(Ah)`, 1)
           }
           
-          # Record charge and dischatge voltage, then calculate the delta and average voltage
-          cycle_facts <<- rbind(cycle_facts, data.frame(cycle=i, cell=row, chV=chV, dchV=dchV, avgV=(dchV + chV) / 2, dV=chV-dchV, DCap = DCap, CCap = CCap, CE = (DCap / CCap) * 100, lostCap = CCap - DCap, cellFade = if (i == 1) 0 else {DCap - tail(cycle_facts$DCap, 1)}))
+          timeCVFracCh <- durations[1] / (durations[1] + durations[2])
+          timeCVFracDch <- durations[3] / (durations[3] + durations[4])
+          capCVFracCh <- caps[1] / (caps[1] + caps[2])
+          capCVFracDch <- caps[3] / (caps[3] + caps[4])
+          
+          # Record charge and discharge voltage, then calculate the delta and average voltage
+          cycle_facts <<- rbind(cycle_facts, data.frame(cycle=i, cell=row, chV=chV, dchV=dchV, avgV=(dchV + chV) / 2, 
+                                                        dV=chV-dchV, DCap = DCap, CCap = CCap, CE = (DCap / CCap) * 100, lostCap = CCap - DCap, cellFade = if (i == 1) 0 else {DCap - tail(cycle_facts$DCap, 1)}, 
+                                                        cycleTime = tail(cycle$`Test_Time(s)`, 1) - cycle$`Test_Time(s)`[[1]], timeCVFracCh = timeCVFracCh, timeCVFracDch = timeCVFracDch, 
+                                                        capCVFracCh = capCVFracCh, capCVRatioDch = capCVFracDch))
           
           i <- i + 1
-          ch_dch <- FALSE
         }
         
         # ######
