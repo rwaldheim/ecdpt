@@ -12,21 +12,24 @@
 # 
 # ######
 
-require(readxl)
-require(dplyr)
-require(shiny)
-require(tcltk)
-require(DT)
-require(shinyjs)
-require(shinyalert)
-require(pracma)
-require(purrr)
-require(zoo)
-require(plotrix)
-require(tools)
-require(shinyWidgets)
+list.of.packages <- c("readxl", "dplyr", "shiny", "tcltk", "DT", "shinyjs", "shinyalert", "pracma", "purrr", "zoo", "plotrix", "tools", "shinyWidgets", "gifski")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
 
-require(gifski)
+# require(readxl)
+# require(dplyr)
+# require(shiny)
+# require(tcltk)
+# require(DT)
+# require(shinyjs)
+# require(shinyalert)
+# require(pracma)
+# require(purrr)
+# require(zoo)
+# require(plotrix)
+# require(tools)
+# require(shinyWidgets)
+# require(gifski)
 
 # This line tests if the current R environment is interactive, RStudio makes an interactive environment by default
 if (interactive()) {
