@@ -683,7 +683,7 @@ if (interactive()) {
           
           # Record charge and discharge voltage, then calculate the delta and average voltage
           cycle_facts <<- rbind(cycle_facts, data.frame(cycle=i, cell=row, chV=chV, dchV=dchV, avgV=(dchV + chV) / 2, 
-                                                        dV=chV-dchV, DCap = DCap, CCap = CCap, CE = (CCap / DCap) * 100, lostCap = CCap - DCap, cellFade = if (i == 1) 0 else {DCap - tail(cycle_facts$DCap, 1)}, 
+                                                        dV=chV-dchV, DCap = DCap, raw_DCap = tail(cycle$'Discharge_Capacity(Ah)', 1), raw_CCap = tail(cycle$'Charge_Capacity(Ah)', 1), CCap = CCap, CE = (CCap / DCap) * 100, lostCap = CCap - DCap, cellFade = if (i == 1) 0 else {DCap - tail(cycle_facts$DCap, 1)}, 
                                                         cycleTime = tail(cycle$`Test_Time(s)`, 1) - cycle$`Test_Time(s)`[[1]], timeCVFracCh = timeCVFracCh, timeCVFracDch = timeCVFracDch, 
                                                         capCVFracCh = capCVFracCh, capCVRatioDch = capCVFracDch))
           
