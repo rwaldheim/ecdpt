@@ -16,21 +16,6 @@ list.of.packages <- c("readxl", "dplyr", "shiny", "tcltk", "DT", "shinyjs", "shi
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 
-# require(readxl)
-# require(dplyr)
-# require(shiny)
-# require(tcltk)
-# require(DT)
-# require(shinyjs)
-# require(shinyalert)
-# require(pracma)
-# require(purrr)
-# require(zoo)
-# require(plotrix)
-# require(tools)
-# require(shinyWidgets)
-# require(gifski)
-
 # This line tests if the current R environment is interactive, RStudio makes an interactive environment by default
 if (interactive()) {
   
@@ -84,14 +69,17 @@ if (interactive()) {
     
     fluidRow(headerPanel("Electrochemical Data Processing Tool (EcDPT)")),
     
+    fluidRow(div(style = "color: red; font-size: 20pt;", "!!! Pay Attention. Controls Have Moved !!!"), align = "center"),
+    
     # This first column is where most user inputs are, with the exception of the directory name
-    column(4,
+    column(4, align = "center",
            
       # This generates the optional block in which the user can import a previous R environment
       fluidRow(
-        strong("Files to be Analyzed*"), tags$br(),
-        "Import all Arbin files of interest.", tags$br(), tags$br(),
-        fileInput("files", NULL, multiple = TRUE),
+        strong("Start Here"), tags$br(),
+        "Current Cell Group: ", textOutput("currDir", inline = TRUE), tags$br(),
+        actionButton("chooseDir", "Cell Group Location*", class = "btn-secondary", style = "width:80%; margin:5%; font-size:100%"), tags$br(),
+        helpText("The analysis will create a folder within the selected folder."),
         style = "border: 1px solid black; padding: 5%; margin:5%"
       ),
       
@@ -136,10 +124,10 @@ if (interactive()) {
     # The final column is where all the"action" items are, aka clicking any of these buttons will trigger a process
     column(4, align ="center",
       fluidRow(
-        textInput("dirName", "Analysis Name*"), tags$br(),
-        "Current Location: ", textOutput("currDir", inline = TRUE), tags$br(),
-        actionButton("chooseDir", "Change Output Location*", class = "btn-secondary", style = "width:80%; margin:5%; font-size:100%"), tags$br(),
-        helpText("The analysis will create a folder within the selected folder."),
+        selectInput("dirName", "Analysis Name*", c("Formation", "RateCap", "Constant Current", "CC-CV"), selected = "RateCap"), tags$br(),
+          strong("Files to be Analyzed*"), tags$br(),
+          "Import all Arbin files of interest.", tags$br(), tags$br(),
+          fileInput("files", NULL, multiple = TRUE),
         actionButton("submit", "Begin Analysis", class = 'btn-success', style = "width:80%; height:100px; margin:5%; font-size:100%"),
         style = "border: 4px double black; padding: 5%; margin:5%"
       ),
@@ -310,8 +298,22 @@ if (interactive()) {
     })
     
     observeEvent(input$chooseDir, {
-      chosenDir = tk_choose.dir()
+      chosenDir <- tk_choose.dir()
       dirLocation(chosenDir)
+      
+      internal_folders <- list.dirs(path = dirLocation(), recursive = FALSE)
+      base_names = vector()
+      for (folder in internal_folders) {
+        base_names <- append(base_names, split_path(folder)[1])
+      }
+      if ("history" %in% base_names) {
+        load(paste(dirLocation(), "/history/", "Formation.RData", sep =""))
+        
+        data <<- data
+        
+        output$channels <- renderDataTable(data, editable = FALSE, options=list(columnDefs = list(list(visible=FALSE, targets=c(4)))), 
+                                           colnames = c("File","Sheet","Mass (g)","Filepath","Limiting Electrode Area (cm^2)"))
+      }
       
       if (!is.na(dirLocation())) {
         output$currDir <- renderText({paste(split_path(dirLocation())[1], "(", split_path(dirLocation())[2], ")")})
@@ -431,25 +433,31 @@ if (interactive()) {
     
     # After the validation of the Arbin files, they macros (file name, and sheets) are taken and rendered in to a datatable
     renderTable <- function() {
-      output$channels <- renderDataTable({
-        files <- input$files
-        
-        if (is.null(files)) {
-          return(NULL)
-        }
-        
-        file_sheet <- data.frame()
-        for (i in 1:nrow(files)) {
-          sheets <- excel_sheets(files[i, 4])
-          file_sheet <- rbind(file_sheet, data.frame(name = rep(files[["name"]][i], length(sheets)),"sheet" = sheets,"Mass" = rep(0, length(sheets)),
-                                                     datapath = rep(files[["datapath"]][i], length(sheets)), area = rep(input$area, length(sheets))))
-        }
-        
-        data <<- filter(file_sheet, grepl('Channel', sheet) & !grepl('Chart', sheet))
-        
-        data
-  
-      }, editable = FALSE, options=list(columnDefs = list(list(visible=FALSE, targets=c(4)))), 
+      
+      files <- input$files
+      
+      if (is.null(files)) {
+        return(NULL)
+      }
+      
+      file_sheet <- data.frame()
+      for (i in 1:nrow(files)) {
+        sheets <- excel_sheets(files[i, 4])
+        file_sheet <- rbind(file_sheet, data.frame(name = rep(files[["name"]][i], length(sheets)),"sheet" = sheets,"Mass" = rep(0, length(sheets)),
+                                                   datapath = rep(files[["datapath"]][i], length(sheets)), area = rep(input$area, length(sheets))))
+      }
+      
+      raw_data <- filter(file_sheet, grepl('Channel', sheet) & !grepl('Chart', sheet))
+
+      if (!is.null(dim(data)[1])) {
+        new_rows <- intersect(raw_data$sheet, data$sheet)
+        data <<- data[which(data$sheet %in% new_rows),]
+        data$datapath <<- raw_data$datapath
+      } else {
+        data <<- raw_data
+      }
+      
+      output$channels <- renderDataTable(data, editable = FALSE, options=list(columnDefs = list(list(visible=FALSE, targets=c(4)))), 
       colnames = c("File","Sheet","Mass (g)","Filepath","Limiting Electrode Area (cm^2)"))
     }
     
