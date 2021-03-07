@@ -793,7 +793,7 @@ if (interactive()) {
         
         # Save all data within the cell's directory
         write.csv(tmp_excel, file = paste(dirLocation(), "/",  input$dirName,"/", data$sheet[row],"/", data$sheet[row],".csv", sep =""))
-        
+
         # Append summation data to the larger datasets to be worked with later
         final <- rbind(final, tmp_excel)
         numCycles <<- rbind(numCycles, data.frame(sheet=data$sheet[row], cycles=nrow(cell_data)))
@@ -842,7 +842,6 @@ if (interactive()) {
       
       # Save total data and stats
       write.csv(stats, file = paste(dirLocation(), "/",  input$dirName,"/", basename(dirLocation())," Summary.csv", sep =""))
-      write.csv(final, file = paste(dirLocation(), "/",  input$dirName,"/", basename(dirLocation())," Total.csv", sep =""))
       write.csv(dQdVData, file = paste(dirLocation(), "/",  input$dirName,"/", basename(dirLocation())," dQdV Data.csv", sep =""))
       write.csv(cycle_facts, file = paste(dirLocation(), "/",  input$dirName,"/", basename(dirLocation())," Cycle Facts.csv", sep =""))
       
