@@ -42,6 +42,7 @@ if (interactive()) {
   xlabel <-""
   ylabel <-""
   addParams <- FALSE
+  arbinCM <- FALSE
   catMetric <<- vector()
   legTitle <<-""
   sheetName <<-""
@@ -165,7 +166,7 @@ if (interactive()) {
   server <- function(input, output, session) {
     
     # This sets the maximum file size Shiny will import, the default of 5Mb is not large enough to handle Arbin files
-    options(shiny.maxRequestSize=100*1024^2)
+    options(shiny.maxRequestSize=1000*1024^2)
     
     split_path <- function(x) if (dirname(x)==x) x else c(basename(x),split_path(dirname(x)))
     
@@ -286,7 +287,11 @@ if (interactive()) {
       validFile <- FALSE
       
       for (file in input$files) {
-        if (file_ext(file) =="xlsx" | file_ext(file) =="xls") {
+        if (file_ext(file) == "xlsx" | file_ext(file) == "xls") {
+          validFile <- TRUE
+          arbinCM <<- FALSE
+        } else if (file_ext(file) == "csv") {
+          arbinCM <<- TRUE
           validFile <- TRUE
         }
       }
@@ -294,7 +299,7 @@ if (interactive()) {
       if (validFile) {
         renderTable()
       } else {
-        shinyalert("That isn't right...","Please upload an Excel file.","error")
+        shinyalert("That isn't right...","Please upload an Excel or CSV file.","error")
       }
     })
     
@@ -308,7 +313,7 @@ if (interactive()) {
         base_names <- append(base_names, split_path(folder)[1])
       }
       if ("history" %in% base_names) {
-        load(paste(dirLocation(), "/history/", "Formation.RData", sep =""))
+        load(paste(dirLocation(), "/history/", "RateCap.RData", sep =""))
         
         data <<- data
         
@@ -442,14 +447,18 @@ if (interactive()) {
       }
       
       file_sheet <- data.frame()
-      for (i in 1:nrow(files)) {
-        sheets <- excel_sheets(files[i, 4])
-        file_sheet <- rbind(file_sheet, data.frame(name = rep(files[["name"]][i], length(sheets)),"sheet" = sheets,"Mass" = rep(0, length(sheets)),
-                                                   datapath = rep(files[["datapath"]][i], length(sheets)), area = rep(input$area, length(sheets))))
+      if (arbinCM) {
+        raw_data <- data.frame(name = files[["name"]], "sheet" = 1:nrow(files), datapath = files[["datapath"]])
+      } else {
+        for (i in 1:nrow(files)) {
+          sheets <- excel_sheets(files[i, 4])
+          file_sheet <- rbind(file_sheet, data.frame(name = rep(files[["name"]][i], length(sheets)),"sheet" = sheets,"Mass" = rep(0, length(sheets)),
+                                                     datapath = rep(files[["datapath"]][i], length(sheets)), area = rep(input$area, length(sheets))))
+        }
+        
+        raw_data <- filter(file_sheet, grepl('Channel', sheet) & !grepl('Chart', sheet))
       }
       
-      raw_data <- filter(file_sheet, grepl('Channel', sheet) & !grepl('Chart', sheet))
-
       if (!is.null(dim(data)[1])) {
         new_rows <- intersect(raw_data$sheet, data$sheet)
         data <<- data[which(data$sheet %in% new_rows),]
@@ -458,8 +467,13 @@ if (interactive()) {
         data <<- raw_data
       }
       
-      output$channels <- renderDataTable(data, editable = FALSE, options=list(columnDefs = list(list(visible=FALSE, targets=c(4)))), 
-      colnames = c("File","Sheet","Mass (g)","Filepath","Limiting Electrode Area (cm^2)"))
+      if (arbinCM) {
+        output$channels <- renderDataTable(data, editable = FALSE, options = list(columnDefs = list(list(visible=FALSE, targets=c(3)))), 
+                                           colnames = c("File", "Sheet", "Filepath"))
+      } else {
+        output$channels <- renderDataTable(data, editable = FALSE, options = list(columnDefs = list(list(visible=FALSE, targets=c(4)))), 
+                                           colnames = c("File","Sheet","Mass (g)","Filepath","Limiting Electrode Area (cm^2)"))
+      }
     }
     
     observeEvent(input$whatGraph, {
@@ -474,7 +488,7 @@ if (interactive()) {
       } else {
         tryCatch({
           masses <- lapply(strsplit(strRep(input$masses, "\n", ","), ",", fixed = TRUE), as.double)
-          names(masses)[names(masses) =="V1"] <-"Mass"
+          names(masses)[names(masses) =="V1"] <- "Mass"
           data$Mass <<- masses[[1]]
         }, error = function(cond) {
           print(cond)
@@ -564,7 +578,12 @@ if (interactive()) {
         # ######
         
         # Import the excel sheet corresponding to cell of interest
-        tmp_excel <- read_excel(toString(data$datapath[row]), toString(data$sheet[row]))
+        if (arbinCM) {
+          tmp_excel <- read.csv(toString(data$datapath[row]))
+          names(tmp_excel) <- c("Index", "Test_Time(s)", "Date_Time", "Step_Time(s)", "Step_Index", "Cycle_Index", "Current(A)", "Voltage(V)", "Charge_Capacity(Ah)", "Discharge_Capacity(Ah)", "Charge_Energy(Wh)", "Discharge_Energy(Wh)")
+        } else {
+          tmp_excel <- read_excel(toString(data$datapath[row]), toString(data$sheet[row]))
+        }
         
         # Create an nested directory for all the data and, if applicable, then further folders for graphs of interest
         dir.create(paste(dirLocation(), "/",  input$dirName, data$sheet[row], sep ="/"))
@@ -652,10 +671,10 @@ if (interactive()) {
                 caps[3] <- tail(step$'Discharge_Capacity(Ah)', 1) - step$'Discharge_Capacity(Ah)'[[1]]
                 ch_dch <- FALSE
                 if (abs(prev_c - step$`Current(A)`[[1]]) > 0.0005) {
-                  dQdVData <<- rbind(dQdVData, data.frame(cycle=rep(i, length(dQDdV)+1), cell = rep(row, length(dQDdV)+1), c_d=rep(1, length(dQDdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQDdV), F_L=rep(1,length(dQDdV)+1)))
+                  if (!arbinCM) dQdVData <<- rbind(dQdVData, data.frame(cycle=rep(i, length(dQDdV)+1), cell = rep(row, length(dQDdV)+1), c_d=rep(1, length(dQDdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQDdV), F_L=rep(1,length(dQDdV)+1)))
                   prev_c = step$`Current(A)`[[1]]
                 } else {
-                  dQdVData <<- rbind(dQdVData, data.frame(cycle=rep(i, length(dQDdV)+1), cell = rep(row, length(dQDdV)+1), c_d=rep(1, length(dQDdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQDdV), F_L=rep(0, length(dQDdV)+1)))
+                  if (!arbinCM) dQdVData <<- rbind(dQdVData, data.frame(cycle=rep(i, length(dQDdV)+1), cell = rep(row, length(dQDdV)+1), c_d=rep(1, length(dQDdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQDdV), F_L=rep(0, length(dQDdV)+1)))
                 }
               }
             } else if (n - lastCC == 1 & abs(tail(step$'Voltage(V)',1) - step$'Voltage(V)'[[1]]) < 0.001) {
@@ -677,8 +696,8 @@ if (interactive()) {
           # 
           # ######
           
-          dQdVData <<- dQdVData[is.finite(dQdVData$voltage),]
-          dQdVData <<- dQdVData[is.finite(dQdVData$dQdV),]
+          #dQdVData <<- dQdVData[is.finite(dQdVData$voltage),]
+          #dQdVData <<- dQdVData[is.finite(dQdVData$dQdV),]
           
           if (sum(data$Mass) != 0) {
             DCap <- tail(cycle$Q.d, 1)
@@ -849,7 +868,7 @@ if (interactive()) {
       
       # Save total data and stats
       write.csv(stats, file = paste(dirLocation(), "/",  input$dirName,"/", basename(dirLocation())," Summary.csv", sep =""))
-      write.csv(dQdVData, file = paste(dirLocation(), "/",  input$dirName,"/", basename(dirLocation())," dQdV Data.csv", sep =""))
+      if (!arbinCM) write.csv(dQdVData, file = paste(dirLocation(), "/",  input$dirName,"/", basename(dirLocation())," dQdV Data.csv", sep =""))
       write.csv(cycle_facts, file = paste(dirLocation(), "/",  input$dirName,"/", basename(dirLocation())," Cycle Facts.csv", sep =""))
       
       # If a histor directory does not exist, create it. Save all the data revelant to plotting to a RData file.
@@ -1259,7 +1278,7 @@ if (interactive()) {
     
     # Error handling for graphBuilder and then showing modal
     observeEvent(input$graphBuilder, {
-      if(dim(numCycles)[1] == 0 | dim(dQdVData)[1] == 0 | dim(cycle_facts)[1] == 0 | dim(total) == 0) {
+      if(dim(numCycles)[1] == 0 | dim(dQdVData)[1] == 0 | dim(cycle_facts)[1] == 0) {
         shinyalert("No Data!","Please run the analysis first or load a previous environment.","error")
       } else {
         updateCheckboxGroupInput(session,"cells", choices = data$sheet)
