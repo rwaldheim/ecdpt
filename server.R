@@ -1,170 +1,7 @@
-# ######
-#
-# Welcome to the Battery Analyzer Utility!
-#   
-# This script aims to make it quick and efficient to analyze data exported by an Arbin battery cycler
-#
-# ######
- 
-# ######
-# 
-# These are all the required packages to aid in several of the processes, ranging from data analysis to plotting
-# 
-# ######
+library(shiny)
 
-list.of.packages <- c("readxl", "dplyr", "shiny", "tcltk", "DT", "shinyjs", "shinyalert", "pracma", "purrr", "zoo", "plotrix", "tools", "shinyWidgets", "gifski")
-new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-if(length(new.packages)) install.packages(new.packages)
-lapply(list.of.packages, require, character.only = TRUE)
+server <- function(input, output, session) {
 
-# This line tests if the current R environment is interactive, RStudio makes an interactive environment by default
-if (interactive()) {
-  
-  # ######
-  # 
-  # All the global variables within the script, aka variables that need to be accessed by more than one
-  # function or session
-  #
-  #"Reactive Values" are ones that need to be readily changed, such as user inputs and variables to be displayed
-  # 
-  # ######
-  data <- reactiveValues(data = data.frame())
-  final <- data.frame()
-  dirLocation <- reactiveVal("")
-  numCycles <- data.frame()
-  dQdVData <- data.frame()
-  total <- data.frame()
-  cycle_facts <- data.frame()
-  tmp_data <- data.frame()
-  dirName <<- ""
-  tmp_cycles <- vector()
-  titleLabel <-""
-  xlabel <-""
-  ylabel <-""
-  addParams <- FALSE
-  arbinCM <- FALSE
-  catMetric <<- vector()
-  legTitle <<-""
-  sheetName <<-""
-  bounds <<- vector()
-  compCycleFacts <<- data.frame()
-
-  # ######
-  # 
-  # This is the UI function for Shiny, it defines how the layout of what the user sees
-  # 
-  # ######
-  ui <- fluidPage(
-    
-    # Utilizing javascript within Shiny allows for addd features such as enable/disable of inputs
-    useShinyjs(),
-    
-    # Shinyalert is a package that makes interactive"pop-ups" (modals) easy to generate
-    useShinyalert(),
-    
-    setBackgroundColor(
-      color = c("ghostwhite", "lightgrey"),
-      gradient = "linear",
-      direction = "bottom",
-      shinydashboard = FALSE
-    ),
-    
-    fluidRow(headerPanel("Electrochemical Data Processing Tool (EcDPT)")),
-    
-    fluidRow(div(style = "color: red; font-size: 20pt;", "!!! Pay Attention. Controls Have Moved !!!"), align = "center"),
-    
-    # This first column is where most user inputs are, with the exception of the directory name
-    column(4, align = "center",
-           
-      # This generates the optional block in which the user can import a previous R environment
-      fluidRow(
-        strong("Start Here"), tags$br(),
-        "Current Cell Group: ", textOutput("currDir", inline = TRUE), tags$br(),
-        actionButton("chooseDir", "Cell Group Location*", class = "btn-secondary", style = "width:80%; margin:5%; font-size:100%"), tags$br(),
-        helpText("The analysis will create a folder within the selected folder."),
-        style = "border: 1px solid black; padding: 5%; margin:5%"
-      ),
-      
-      fluidRow(
-        fileInput("rerun", "Optional: Import Previous R Environment", multiple = FALSE, accept = ".RData"),
-        actionButton("load", "Load"),
-        style = "border: 1px dashed black; margin: 5%; padding: 5%"
-      ),
-      
-      # These are the"optional" parameters that need to be filled out if select graphs are selected
-      fluidRow(
-        strong("Optional Parameters"), tags$br(),
-       "Parameters responsible for certain graphs.", tags$br(), tags$br(),
-        
-        # Used for dishcharge areal capacity graphs
-        numericInput("area","Limiting Electrode Area (cm^2)", 2.74, min = 0),
-        
-        # Used for C-Rate calculations
-        # numericInput("perActive","Active Loading of Limiting Electrode (wt%)", 96, min = 0, max = 100),
-        # numericInput("capActive","Capacity of Limiting Active Material (mAh/g)", 155, min = 0, max = 100),
-        style ="border: 1px dashed black; padding: 5%; margin:5%"
-      ),
-    ),
-    
-    # The second column is where selection of graphs and further features are selected
-    column(4, align ="left", 
-           fluidRow(
-             # Presents options for graphs to be generated
-            "Choose graphs to be generated:",
-            actionButton("whatGraph","What's this?", class ="btn-link"),
-            checkboxGroupInput("gGraphs", NULL, choices = c("Discharge Capacity","Discharge Areal Capacity",
-                                                             "Total Discharge Capacity","Average Voltage","Delta Voltage","Capacity Loss"), inline = FALSE),
-            "Choose graphs to animate:",
-            checkboxGroupInput("gAnim", NULL, choices = c("dQdV Plots", "Voltage Profiles"), inline = FALSE),
-            "Advanced Analysis",
-            #radioButtons("advCalc", NULL, choices = c("No", "Yes"), inline = TRUE),
-            #helpText(HTML("Advanced Analysis includes:<ul><li>C-Rate Calculations</li><li>Capacity Fade per Rate</li><li>Origin Export</ul>")),
-            style ="margin: 5%; border: 1px solid black; padding: 5%"
-           ),
-    ), 
-    
-    # The final column is where all the"action" items are, aka clicking any of these buttons will trigger a process
-    column(4, align ="center",
-      fluidRow(
-        selectInput("dirName", "Analysis Name*", c("Formation", "RateCap", "Constant Current", "CC-CV"), selected = "RateCap"), tags$br(),
-          strong("Files to be Analyzed*"), tags$br(),
-          "Import all Arbin files of interest.", tags$br(), tags$br(),
-          fileInput("files", NULL, multiple = TRUE),
-        actionButton("submit", "Begin Analysis", class = 'btn-success', style = "width:80%; height:100px; margin:5%; font-size:100%"),
-        style = "border: 4px double black; padding: 5%; margin:5%"
-      ),
-      
-      # This final block enables a button after data becomes available, which trigger the modal to build custom graphs
-      fluidRow(
-        strong("Custom Graph Builder"), tags$br(),
-       "Customize Graphs Once Data is Available",
-        disabled(actionButton("graphBuilder","Launch", width = '80%', class ="btn-primary", style ="height:50px; margin:5%; font-size:100%")), tags$br(),
-        style ="border: 1px solid black; padding: 5%; margin:5%"
-      ),
-      
-      fluidRow(
-        strong("Optional: Import Active Material Masses from Excel"), tags$br(),
-        "Running Analysis without Masses Will Render Raw Capacities (Ah)",
-        textAreaInput("masses", NULL, height = "100px", resize = "vertical"),
-        helpText("Enter the masses separated by a new line and in the order they appear in the data table below."),
-        actionButton("excelImport", "Import"),
-        style = "border: 1px dashed black; padding: 5%; margin:5%"
-      ),
-    ),
-    
-    # This renders the summary datatable at the bottom of the interface once data is imported
-    fluidRow(
-      dataTableOutput("channels")
-    )
-  )
-  
-  # ######
-  # 
-  # This is the server functon of Shiny. It defines all the"processing" of the data that the user initiated through the interface
-  # 
-  # ######
-  server <- function(input, output, session) {
-    
     # This sets the maximum file size Shiny will import, the default of 5Mb is not large enough to handle Arbin files
     options(shiny.maxRequestSize=1000*1024^2)
     
@@ -191,95 +28,95 @@ if (interactive()) {
     # Defines the modal in which the cell masses can be exported from Excel
     graphModal <- modalDialog({
       fluidPage(style ="font-size:15pt;",
-        tags$head(tags$style(".modal-dialog{min-width:60%}")),
-
-        fluidRow(align ="center",
-          HTML('
-            <style type="text/css">
-            .tg  {border-collapse:collapse;border-spacing:0;}
-            .tg td{font-family:Arial, sans-serif;font-size:14px;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:black;}
-            .tg th{font-family:Arial, sans-serif;font-size:14px;font-weight:normal;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:black;}
-            .tg .tg-gfnm{background-color:#efefef;border-color:#000000;text-align:center;vertical-align:middle}
-            .tg .tg-i0p4{font-weight:bold;background-color:#ecf4ff;border-color:#000000;text-align:center;vertical-align:middle}
-            .tg .tg-3fas{background-color:#efefef;border-color:#000000;text-align:left;vertical-align:middle}
-            .tg .tg-o3hj{background-color:#ecf4ff;border-color:#000000;text-align:center;vertical-align:middle}
-            .tg .tg-xwyw{border-color:#000000;text-align:center;vertical-align:middle}
-            .tg .tg-0a7q{border-color:#000000;text-align:left;vertical-align:middle}
-            </style>
-            <table class="tg">
-              <tr>
-                <th class="tg-i0p4">Graph</th>
-                <th class="tg-i0p4">X Axis</th>
-                <th class="tg-i0p4">Y Axis</th>
-                <th class="tg-o3hj"><span style="font-weight:bold">Plot Frequency</span><br></th>
-                <th class="tg-i0p4">Description</th>
-              </tr>
-              <tr>
-                <td class="tg-xwyw">dQdV Graph</td>
-                <td class="tg-xwyw">Voltage (V)</td>
-                <td class="tg-xwyw">dQdV (Ah/V)</td>
-                <td class="tg-xwyw">per cycle</td>
-                <td class="tg-0a7q">The differential capacity plot for each cycle<br></td>
-              </tr>
-              <tr>
-                <td class="tg-gfnm">Voltage Profile</td>
-                <td class="tg-gfnm">Continuous Capacity (mAh/g or Ah)</td>
-                <td class="tg-gfnm">Voltage (V)</td>
-                <td class="tg-gfnm">per cycle</td>
-                <td class="tg-3fas">Voltage vs. capacity plot for each cycle. Units depend if the masses are specified.</td>
-              </tr>
-              <tr>
-                <td class="tg-xwyw">Voltage vs. Time</td>
-                <td class="tg-xwyw">Time (min)</td>
-                <td class="tg-xwyw">Voltage (V)</td>
-                <td class="tg-xwyw">per cycle</td>
-                <td class="tg-0a7q">The voltage as a function of time, including all steps</td>
-              </tr>
-              <tr>
-                <td class="tg-gfnm">Discharge Capacity</td>
-                <td class="tg-gfnm">Cycle</td>
-                <td class="tg-gfnm">Discharge Capacity (mAh/g or Ah)</td>
-                <td class="tg-gfnm">per cell</td>
-                <td class="tg-3fas">Discharge capacity for each <span style="font-weight:bold">individual cell </span>per cycle. Coulombic efficiency is also plotted on a secondary axis. Units depend if the masses are specified.</td>
-              </tr>
-              <tr>
-                <td class="tg-xwyw">Discharge Areal Capacity</td>
-                <td class="tg-xwyw">Cycle</td>
-                <td class="tg-xwyw">Discharge Capacity (Ah/cm<sup>2</sup>)</td>
-                <td class="tg-xwyw">per cell</td>
-                <td class="tg-0a7q">Discharge areal capacity for each <span style="font-weight:bold">individual cell </span>per cycle. Coulombic efficiency is also plotted on a secondary axis.</td>
-              </tr>
-              <tr>
-                <td class="tg-gfnm">Total Discharge Capacity</td>
-                <td class="tg-gfnm">Cycle</td>
-                <td class="tg-gfnm">Discharge Capacity (mAh/g or Ah)</td>
-                <td class="tg-gfnm">per analysis</td>
-                <td class="tg-3fas">Discharge capacity summarized for <span style="font-weight:bold">all cells</span> in the analysis. Coulombic efficiency is also plotted on a secondary axis. Mean is plotted as a point with error bars presenting the standard error between the cells. Units depend if the masses are specified.</td>
-              </tr>
-              <tr>
-                <td class="tg-xwyw">Average Voltage</td>
-                <td class="tg-xwyw">Cycle</td>
-                <td class="tg-xwyw">Voltage (V)</td>
-                <td class="tg-xwyw">per cell</td>
-                <td class="tg-0a7q">The average voltage vs capacity for each cycle. The charge voltage (V<sub>charge</sub>) and discharge voltage (V<sub>discharge</sub>) were calculated using the average value theorem. The average voltage is then (V<sub>charge</sub> + V<sub>discharge</sub>)/2. Charge and discharge voltages are plotted alongside the average.</td>
-              </tr>
-              <tr>
-                <td class="tg-gfnm">Delta Voltage</td>
-                <td class="tg-gfnm">Cycle</td>
-                <td class="tg-gfnm">Voltage (V)</td>
-                <td class="tg-gfnm">per cell</td>
-                <td class="tg-3fas">The delta voltage vs capacity for each cycle. The charge voltage (V<sub>charge</sub>) and discharge voltage (V<sub>discharge</sub>) were calculated using the average value theorem. The delta voltage is then V<sub>charge</sub> - V<sub>discharge</sub>). Charge and discharge voltages are plotted alongside the average.</td>
-              </tr>
-              <tr>
-                <td class="tg-xwyw">Capacity Loss</td>
-                <td class="tg-xwyw">Cycle</td>
-                <td class="tg-xwyw">Capacity (mAh/g or Ah)</td>
-                <td class="tg-xwyw">per cell</td>
-                <td class="tg-0a7q">The discharge capacity minus the charge capacity for each cycle. Units depend if the masses are specified.</td>
-              </tr>
-            </table>
-          ')
-        ),
+                tags$head(tags$style(".modal-dialog{min-width:60%}")),
+                
+                fluidRow(align ="center",
+                         HTML('
+              <style type="text/css">
+              .tg  {border-collapse:collapse;border-spacing:0;}
+              .tg td{font-family:Arial, sans-serif;font-size:14px;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:black;}
+              .tg th{font-family:Arial, sans-serif;font-size:14px;font-weight:normal;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:black;}
+              .tg .tg-gfnm{background-color:#efefef;border-color:#000000;text-align:center;vertical-align:middle}
+              .tg .tg-i0p4{font-weight:bold;background-color:#ecf4ff;border-color:#000000;text-align:center;vertical-align:middle}
+              .tg .tg-3fas{background-color:#efefef;border-color:#000000;text-align:left;vertical-align:middle}
+              .tg .tg-o3hj{background-color:#ecf4ff;border-color:#000000;text-align:center;vertical-align:middle}
+              .tg .tg-xwyw{border-color:#000000;text-align:center;vertical-align:middle}
+              .tg .tg-0a7q{border-color:#000000;text-align:left;vertical-align:middle}
+              </style>
+              <table class="tg">
+                <tr>
+                  <th class="tg-i0p4">Graph</th>
+                  <th class="tg-i0p4">X Axis</th>
+                  <th class="tg-i0p4">Y Axis</th>
+                  <th class="tg-o3hj"><span style="font-weight:bold">Plot Frequency</span><br></th>
+                  <th class="tg-i0p4">Description</th>
+                </tr>
+                <tr>
+                  <td class="tg-xwyw">dQdV Graph</td>
+                  <td class="tg-xwyw">Voltage (V)</td>
+                  <td class="tg-xwyw">dQdV (Ah/V)</td>
+                  <td class="tg-xwyw">per cycle</td>
+                  <td class="tg-0a7q">The differential capacity plot for each cycle<br></td>
+                </tr>
+                <tr>
+                  <td class="tg-gfnm">Voltage Profile</td>
+                  <td class="tg-gfnm">Continuous Capacity (mAh/g or Ah)</td>
+                  <td class="tg-gfnm">Voltage (V)</td>
+                  <td class="tg-gfnm">per cycle</td>
+                  <td class="tg-3fas">Voltage vs. capacity plot for each cycle. Units depend if the masses are specified.</td>
+                </tr>
+                <tr>
+                  <td class="tg-xwyw">Voltage vs. Time</td>
+                  <td class="tg-xwyw">Time (min)</td>
+                  <td class="tg-xwyw">Voltage (V)</td>
+                  <td class="tg-xwyw">per cycle</td>
+                  <td class="tg-0a7q">The voltage as a function of time, including all steps</td>
+                </tr>
+                <tr>
+                  <td class="tg-gfnm">Discharge Capacity</td>
+                  <td class="tg-gfnm">Cycle</td>
+                  <td class="tg-gfnm">Discharge Capacity (mAh/g or Ah)</td>
+                  <td class="tg-gfnm">per cell</td>
+                  <td class="tg-3fas">Discharge capacity for each <span style="font-weight:bold">individual cell </span>per cycle. Coulombic efficiency is also plotted on a secondary axis. Units depend if the masses are specified.</td>
+                </tr>
+                <tr>
+                  <td class="tg-xwyw">Discharge Areal Capacity</td>
+                  <td class="tg-xwyw">Cycle</td>
+                  <td class="tg-xwyw">Discharge Capacity (Ah/cm<sup>2</sup>)</td>
+                  <td class="tg-xwyw">per cell</td>
+                  <td class="tg-0a7q">Discharge areal capacity for each <span style="font-weight:bold">individual cell </span>per cycle. Coulombic efficiency is also plotted on a secondary axis.</td>
+                </tr>
+                <tr>
+                  <td class="tg-gfnm">Total Discharge Capacity</td>
+                  <td class="tg-gfnm">Cycle</td>
+                  <td class="tg-gfnm">Discharge Capacity (mAh/g or Ah)</td>
+                  <td class="tg-gfnm">per analysis</td>
+                  <td class="tg-3fas">Discharge capacity summarized for <span style="font-weight:bold">all cells</span> in the analysis. Coulombic efficiency is also plotted on a secondary axis. Mean is plotted as a point with error bars presenting the standard error between the cells. Units depend if the masses are specified.</td>
+                </tr>
+                <tr>
+                  <td class="tg-xwyw">Average Voltage</td>
+                  <td class="tg-xwyw">Cycle</td>
+                  <td class="tg-xwyw">Voltage (V)</td>
+                  <td class="tg-xwyw">per cell</td>
+                  <td class="tg-0a7q">The average voltage vs capacity for each cycle. The charge voltage (V<sub>charge</sub>) and discharge voltage (V<sub>discharge</sub>) were calculated using the average value theorem. The average voltage is then (V<sub>charge</sub> + V<sub>discharge</sub>)/2. Charge and discharge voltages are plotted alongside the average.</td>
+                </tr>
+                <tr>
+                  <td class="tg-gfnm">Delta Voltage</td>
+                  <td class="tg-gfnm">Cycle</td>
+                  <td class="tg-gfnm">Voltage (V)</td>
+                  <td class="tg-gfnm">per cell</td>
+                  <td class="tg-3fas">The delta voltage vs capacity for each cycle. The charge voltage (V<sub>charge</sub>) and discharge voltage (V<sub>discharge</sub>) were calculated using the average value theorem. The delta voltage is then V<sub>charge</sub> - V<sub>discharge</sub>). Charge and discharge voltages are plotted alongside the average.</td>
+                </tr>
+                <tr>
+                  <td class="tg-xwyw">Capacity Loss</td>
+                  <td class="tg-xwyw">Cycle</td>
+                  <td class="tg-xwyw">Capacity (mAh/g or Ah)</td>
+                  <td class="tg-xwyw">per cell</td>
+                  <td class="tg-0a7q">The discharge capacity minus the charge capacity for each cycle. Units depend if the masses are specified.</td>
+                </tr>
+              </table>
+            ')
+                ),
       )}, title ="Graph Types", easyClose = TRUE)
     
     # Ensures the files imported for analysis are Excel files
@@ -313,7 +150,7 @@ if (interactive()) {
         base_names <- append(base_names, split_path(folder)[1])
       }
       if ("history" %in% base_names) {
-        load(paste(dirLocation(), "/history/", "RateCap.RData", sep =""))
+        load(paste(dirLocation(), "/history/", "Formation.RData", sep =""))
         
         data <<- data
         
@@ -325,7 +162,7 @@ if (interactive()) {
         output$currDir <- renderText({paste(split_path(dirLocation())[1], "(", split_path(dirLocation())[2], ")")})
       }
     })
-
+    
     graphbuilder <- modalDialog({
       fluidPage(
         useShinyjs(),
@@ -335,26 +172,26 @@ if (interactive()) {
         tags$head(tags$style(".modal-body{ min-height:1000px}")),
         
         sidebarLayout(
-        
+          
           sidebarPanel(
             fluidRow(
               headerPanel("Graph Options"),
             ),
             
             fluidRow(style = "padding:5%; border: 1px solid black;",
-             strong("Basis for Plot Types"), tags$br(),
-             helpText("Between Analysis requires a second dataset to be imported"), tags$br(),
-             radioButtons("perType", NULL, choices = c("Within Analysis", "Between Analyses"), inline = TRUE),
-             hidden(fileInput("compAnalysis", "Data to Compare"))
+                     strong("Basis for Plot Types"), tags$br(),
+                     helpText("Between Analysis requires a second dataset to be imported"), tags$br(),
+                     radioButtons("perType", NULL, choices = c("Within Analysis", "Between Analyses"), inline = TRUE),
+                     hidden(fileInput("compAnalysis", "Data to Compare"))
             ),
             
             fluidRow(style ="padding:5%; margin:5%;",
-              radioButtons("typeGraph","Graph Type:", choices = c("dQdV Graphs","Voltage Profiles", "Voltage vs. Time", 
-                                                                  "Charge Voltage", "Discharge Voltage", 
-                                                                  "Average Voltage", "Delta Voltage", "Discharge Capacity", "Charge Capacity" ), inline = FALSE),
-              radioButtons("plotStyle","Plot Style:", choiceNames = c("Point","Line","Both"), choiceValues = c("p","l","o"),  inline = TRUE),
-              checkboxGroupInput("cells","Cell to Analyze:", choices = 1, inline = FALSE),
-              selectInput("renderCycles","Cycles of Interest:", choices = 1, multiple = TRUE),
+                     radioButtons("typeGraph","Graph Type:", choices = c("dQdV Graphs","Voltage Profiles", "Voltage vs. Time", 
+                                                                         "Charge Voltage", "Discharge Voltage", 
+                                                                         "Average Voltage", "Delta Voltage", "Discharge Capacity", "Charge Capacity" ), inline = FALSE),
+                     radioButtons("plotStyle","Plot Style:", choiceNames = c("Point","Line","Both"), choiceValues = c("p","l","o"),  inline = TRUE),
+                     checkboxGroupInput("cells","Cell to Analyze:", choices = 1, inline = FALSE),
+                     selectInput("renderCycles","Cycles of Interest:", choices = 1, multiple = TRUE),
             ),
             
             fluidRow(
@@ -365,42 +202,42 @@ if (interactive()) {
               textOutput("hoverCoordy", inline = TRUE),
               style ="border: 1px solid black; padding: 5%; margin: 5%;"
             ),
-             
+            
             fluidRow(
-             textInput("fileName","Name of graph file:"),
-             actionButton("saveGraph","Save Graph", width = '100%', class = 'btn-primary'),
-             style ="border: 4px double black; padding: 5%; margin: 5%;"
+              textInput("fileName","Name of graph file:"),
+              actionButton("saveGraph","Save Graph", width = '100%', class = 'btn-primary'),
+              style ="border: 4px double black; padding: 5%; margin: 5%;"
             ),
           ),
           
           mainPanel(
-                 fluidRow(
-                  plotOutput("outputPlot", height ="800px", click = "plot_click"),
-                  style = "padding: 5%;",
-                 ),
-                 fluidRow(
-                   h3("Graph Formatting"),
-                   helpText("*If left blank, they will be calculated using the min and max of the data to be plotted."),
-                   column(2,
-                    numericInput("xMin", "X Min", value = NULL),
-                    sliderInput("textSize", "Text Size", min = 0.1, max = 5, value = 1, ticks = FALSE),
-                   ),
-                   column(2,
-                    numericInput("xMax", "X Max", value = NULL),
-                    sliderInput("pointSize", "Point/Line Size", min = 0.1, max = 5, value = 1, ticks = FALSE),
-                   ),
-                   column(2, 
-                    numericInput("yMin", "Y Min", value = NULL),
-                   ),
-                   column(2,
-                    numericInput("yMax", "Y Max", value = NULL),
-                   ),
-                   column(4,
-                    textInput("originalData", "Original Data Name", value = "Original Data"),
-                    textInput("compareData", "Comparison Data Name", value = "Comparison Data"),
-                   ),
-                   style ="border: 1px dashed black; padding: 2%;",
-                 )
+            fluidRow(
+              plotOutput("outputPlot", height ="800px", click = "plot_click"),
+              style = "padding: 5%;",
+            ),
+            fluidRow(
+              h3("Graph Formatting"),
+              helpText("*If left blank, they will be calculated using the min and max of the data to be plotted."),
+              column(2,
+                     numericInput("xMin", "X Min", value = NULL),
+                     sliderInput("textSize", "Text Size", min = 0.1, max = 5, value = 1, ticks = FALSE),
+              ),
+              column(2,
+                     numericInput("xMax", "X Max", value = NULL),
+                     sliderInput("pointSize", "Point/Line Size", min = 0.1, max = 5, value = 1, ticks = FALSE),
+              ),
+              column(2, 
+                     numericInput("yMin", "Y Min", value = NULL),
+              ),
+              column(2,
+                     numericInput("yMax", "Y Max", value = NULL),
+              ),
+              column(4,
+                     textInput("originalData", "Original Data Name", value = "Original Data"),
+                     textInput("compareData", "Comparison Data Name", value = "Comparison Data"),
+              ),
+              style ="border: 1px dashed black; padding: 2%;",
+            )
           )
         )
       )
@@ -590,7 +427,7 @@ if (interactive()) {
         if (is.element("dQdV Graphs", input$gGraphs)) dir.create(paste(dirLocation(), input$dirName, data$sheet[row],"dQdV Plots", sep ="/"))
         if (is.element("Voltage Profiles", input$gGraphs)) dir.create(paste(dirLocation(), input$dirName, data$sheet[row],"Voltage Profiles", sep ="/"))
         if (is.element("Voltage vs. Time", input$gGraphs)) dir.create(paste(dirLocation(), input$dirName, data$sheet[row],"Voltage v Time", sep ="/"))
-
+        
         # Check if masses have been imported, if they have not then all future calculations will be done on a raw capacity basis
         if (sum(data$Mass) != 0) {
           ylabel <-"Capacity (mAh/g)"
@@ -689,7 +526,7 @@ if (interactive()) {
             ch_dch <- FALSE
             n <- n + 1
           }
-            
+          
           # ######
           # 
           # Code meant to be run on data"per cycle" should be written here
@@ -763,7 +600,7 @@ if (interactive()) {
           axis(side = 4, col ="red", col.axis = "red")
           dev.off()        
         }
-
+        
         
         # Average voltage plotting
         if (is.element("Average Voltage", input$gGraphs)) {
@@ -798,7 +635,7 @@ if (interactive()) {
             lapply(datalist, function(plotData){
               p <- plot(plotData$voltage, plotData$dQdV, main=paste("dQdV Plot for",  input$dirName, data$sheet[row], "Cycle", plotData$cycle[[1]]), xlab="Voltage (V)", ylab= "dQdV (Ah/V)", 
                         xlim = c(min(tmp_data$voltage), max(tmp_data$voltage)), ylim = c(min(tmp_data$dQdV), max(tmp_data$dQdV))) + 
-                   points(first_cycle$voltage, first_cycle$dQdV, col = rgb(red = 1, green = 0, blue = 0, alpha = 0.5))
+                points(first_cycle$voltage, first_cycle$dQdV, col = rgb(red = 1, green = 0, blue = 0, alpha = 0.5))
             })
           }
           save_gif(dQdVplot(), paste(dirLocation(), input$dirName, data$sheet[row], "dQdV Animation.gif", sep = "/"), delay = 0.2)
@@ -819,7 +656,7 @@ if (interactive()) {
         
         # Save all data within the cell's directory
         write.csv(tmp_excel, file = paste(dirLocation(), "/",  input$dirName,"/", data$sheet[row],"/", data$sheet[row],".csv", sep =""))
-
+        
         # Append summation data to the larger datasets to be worked with later
         final <- rbind(final, tmp_excel)
         numCycles <<- rbind(numCycles, data.frame(sheet=data$sheet[row], cycles=nrow(cell_data)))
@@ -888,7 +725,7 @@ if (interactive()) {
                      export_to_origin()
                    }
                  }
-                 )
+      )
       
       # Finish progress bar
       progress$set(value = nrow(data))
@@ -916,10 +753,10 @@ if (interactive()) {
       disable("area")
       disable("perActive")
       disable("capActive")
-
+      
       choices <- c("dQdV Graphs","Voltage Profiles","Voltage vs. Time","Discharge Capacity","Discharge Areal Capacity",
-                  "Total Discharge Capacity","Average Voltage","Delta Voltage")
-
+                   "Total Discharge Capacity","Average Voltage","Delta Voltage")
+      
       if (is.element("Discharge Areal Capacity", input$gGraphs)) {
         enable("area")
       }
@@ -954,7 +791,7 @@ if (interactive()) {
         cellIndex <- match(input$cells, numCycles$sheet)
         
         switch(input$typeGraph,
-              "dQdV Graphs" = {
+               "dQdV Graphs" = {
                  tmp_data <<- data.frame(x=dQdVData[dQdVData$cell %in% cellIndex,]$voltage, y=dQdVData[dQdVData$cell %in% cellIndex,]$dQdV, cycle=dQdVData[dQdVData$cell %in% cellIndex,]$cycle, cell=dQdVData[dQdVData$cell %in% cellIndex,]$cell)
                  tmp_data <<- tmp_data[tmp_data$cycle == sort(as.numeric(input$renderCycles)),]
                  
@@ -962,7 +799,7 @@ if (interactive()) {
                  xlabel <<-"Voltage (V)"
                  ylabel <<-"dQdV (mAh/V)"
                },
-              "Voltage Profiles" = {
+               "Voltage Profiles" = {
                  tmp_data <<- data.frame(x=(-1) * total[total$Cell %in% cellIndex,]$CC, y=total[total$Cell %in% cellIndex,]$`Voltage(V)`, cycle=total[total$Cell %in% cellIndex,]$`Cycle_Index`, cell=total[total$Cell %in% cellIndex,]$Cell)
                  tmp_data <<- tmp_data[tmp_data$cycle == sort(as.numeric(input$renderCycles)),]
                  
@@ -974,7 +811,7 @@ if (interactive()) {
                  }
                  ylabel <<-"Voltage (V)"
                },
-              "Voltage vs. Time" = {
+               "Voltage vs. Time" = {
                  tmp_data <<- data.frame(x=(total[total$Cell %in% cellIndex,]$`Test_Time(s)` / 60), y=total[total$Cell %in% cellIndex,]$`Voltage(V)`, cycle=total[total$Cell %in% cellIndex,]$`Cycle_Index`, cell=total[total$Cell %in% cellIndex,]$Cell)
                  tmp_data <<- tmp_data[tmp_data$cycle %in% input$renderCycles,]
                  
@@ -991,56 +828,56 @@ if (interactive()) {
                  xlabel <<-"Time (min)"
                  ylabel <<-"Voltage (V)"
                },
-              "Charge Voltage" = {
-                tmp_data <<- data.frame(x=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, y=cycle_facts[cycle_facts$cell %in% cellIndex,]$chV, cycle=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, cell = cycle_facts[cycle_facts$cell %in% cellIndex,]$cell)
-  
-                titleLabel <<- "Charge Voltage Plot "
-                xlabel <<- "Cycle"
-                ylabel <<- "Voltage (V)"
-              },
-              "Discharge Voltage" = {
-                tmp_data <<- data.frame(x=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, y=cycle_facts[cycle_facts$cell %in% cellIndex,]$dchV, cell=cycle_facts[cycle_facts$cell %in% cellIndex,]$cell, cycle=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle)
-                
-                titleLabel <<- "Discharge Voltage Plot "
-                xlabel <<- "Cycle"
-                ylabel <<- "Voltage (V)"
-              },
-              "Average Voltage" = {
-                tmp_data <<- data.frame(x=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, y=cycle_facts[cycle_facts$cell %in% cellIndex,]$avgV, cell=cycle_facts[cycle_facts$cell %in% cellIndex,]$cell, cycle=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle)
-                
-                titleLabel <<- "Average Voltage Plot "
-                xlabel <<- "Cycle"
-                ylabel <<- "Voltage (V)"
-              },
-              "Delta Voltage" = {
-                tmp_data <<- data.frame(x=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, y=cycle_facts[cycle_facts$cell %in% cellIndex,]$dV, cell=cycle_facts[cycle_facts$cell %in% cellIndex,]$cell, cycle=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle)
-  
-                titleLabel <<- "Delta Voltage Plot "
-                xlabel <<- "Cycle"
-                ylabel <<- "Voltage (V)"
-              },
-              "Discharge Capacity" = {
-                tmp_data <<- data.frame(x=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, y=cycle_facts[cycle_facts$cell %in% cellIndex,]$DCap, cell=cycle_facts[cycle_facts$cell %in% cellIndex,]$cell, cycle=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle)
-                
-                titleLabel <<- "Discharge Capacity Plot "
-                xlabel <<- "Cycle"
-                if (sum(data$Mass) != 0) {
-                  ylabel <<- "Discharge Capacity (mAh/g)"
-                } else {
-                  ylabel <<- "Discharge Capacity (Ah)"
-                }
-              },
-              "Charge Capacity" = {
-                tmp_data <<- data.frame(x=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, y=cycle_facts[cycle_facts$cell %in% cellIndex,]$CCap, cell=cycle_facts[cycle_facts$cell %in% cellIndex,]$cell, cycle=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle)
-                
-                titleLabel <<- "Charge Capacity Plot "
-                xlabel <<- "Cycle"
-                if (sum(data$Mass) != 0) {
-                  ylabel <<- "Charge Capacity (mAh/g)"
-                } else {
-                  ylabel <<- "Charge Capacity (Ah)"
-                }
-              }
+               "Charge Voltage" = {
+                 tmp_data <<- data.frame(x=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, y=cycle_facts[cycle_facts$cell %in% cellIndex,]$chV, cycle=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, cell = cycle_facts[cycle_facts$cell %in% cellIndex,]$cell)
+                 
+                 titleLabel <<- "Charge Voltage Plot "
+                 xlabel <<- "Cycle"
+                 ylabel <<- "Voltage (V)"
+               },
+               "Discharge Voltage" = {
+                 tmp_data <<- data.frame(x=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, y=cycle_facts[cycle_facts$cell %in% cellIndex,]$dchV, cell=cycle_facts[cycle_facts$cell %in% cellIndex,]$cell, cycle=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle)
+                 
+                 titleLabel <<- "Discharge Voltage Plot "
+                 xlabel <<- "Cycle"
+                 ylabel <<- "Voltage (V)"
+               },
+               "Average Voltage" = {
+                 tmp_data <<- data.frame(x=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, y=cycle_facts[cycle_facts$cell %in% cellIndex,]$avgV, cell=cycle_facts[cycle_facts$cell %in% cellIndex,]$cell, cycle=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle)
+                 
+                 titleLabel <<- "Average Voltage Plot "
+                 xlabel <<- "Cycle"
+                 ylabel <<- "Voltage (V)"
+               },
+               "Delta Voltage" = {
+                 tmp_data <<- data.frame(x=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, y=cycle_facts[cycle_facts$cell %in% cellIndex,]$dV, cell=cycle_facts[cycle_facts$cell %in% cellIndex,]$cell, cycle=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle)
+                 
+                 titleLabel <<- "Delta Voltage Plot "
+                 xlabel <<- "Cycle"
+                 ylabel <<- "Voltage (V)"
+               },
+               "Discharge Capacity" = {
+                 tmp_data <<- data.frame(x=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, y=cycle_facts[cycle_facts$cell %in% cellIndex,]$DCap, cell=cycle_facts[cycle_facts$cell %in% cellIndex,]$cell, cycle=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle)
+                 
+                 titleLabel <<- "Discharge Capacity Plot "
+                 xlabel <<- "Cycle"
+                 if (sum(data$Mass) != 0) {
+                   ylabel <<- "Discharge Capacity (mAh/g)"
+                 } else {
+                   ylabel <<- "Discharge Capacity (Ah)"
+                 }
+               },
+               "Charge Capacity" = {
+                 tmp_data <<- data.frame(x=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle, y=cycle_facts[cycle_facts$cell %in% cellIndex,]$CCap, cell=cycle_facts[cycle_facts$cell %in% cellIndex,]$cell, cycle=cycle_facts[cycle_facts$cell %in% cellIndex,]$cycle)
+                 
+                 titleLabel <<- "Charge Capacity Plot "
+                 xlabel <<- "Cycle"
+                 if (sum(data$Mass) != 0) {
+                   ylabel <<- "Charge Capacity (mAh/g)"
+                 } else {
+                   ylabel <<- "Charge Capacity (Ah)"
+                 }
+               }
         )
         
         tmp_data$color <<- sapply(tmp_data$cycle, function(x) {match(x, input$renderCycles, nomatch = 1)})
@@ -1057,7 +894,7 @@ if (interactive()) {
                  tryCatch({
                    comp_chV <- compCycleFacts[c("cycle","chV")] %>% group_by(cycle) %>% summarise_each(mean)
                    comp_chVSE <- compCycleFacts[c("cycle","chV")] %>% group_by(cycle) %>% summarise_each(se)
-
+                   
                    tmp_data <<- data.frame(x=c(chV$cycle, comp_chV$cycle), y=c(chV$chV, comp_chV$chV), se=c(chVSE$chV, comp_chVSE$chV), cell=c(rep(1, length(chV$cycle)), rep(2, length(comp_chV$cycle))), cycle=c(chV$cycle, comp_chV$cycle))
                    tmp_data$symbol <<- rep(1, nrow(tmp_data))
                    tmp_data$color <<- sapply(tmp_data$cell, function(x) {match(x, c(1,2))})
@@ -1069,48 +906,48 @@ if (interactive()) {
                  error = function(x) {
                    print(x)
                  })
-                 },
-                 "Discharge Voltage" = {
-                   x<-0
-                   dchV <- cycle_facts[c("cycle","dchV")] %>% group_by(cycle) %>% summarise_each(mean)
-                   dchVSE <- cycle_facts[c("cycle","dchV")] %>% group_by(cycle) %>% summarise_each(se)
+               },
+               "Discharge Voltage" = {
+                 x<-0
+                 dchV <- cycle_facts[c("cycle","dchV")] %>% group_by(cycle) %>% summarise_each(mean)
+                 dchVSE <- cycle_facts[c("cycle","dchV")] %>% group_by(cycle) %>% summarise_each(se)
+                 
+                 tryCatch({
+                   comp_dchV <- compCycleFacts[c("cycle","dchV")] %>% group_by(cycle) %>% summarise_each(mean)
+                   comp_dchVSE <- compCycleFacts[c("cycle","dchV")] %>% group_by(cycle) %>% summarise_each(se)
                    
-                   tryCatch({
-                     comp_dchV <- compCycleFacts[c("cycle","dchV")] %>% group_by(cycle) %>% summarise_each(mean)
-                     comp_dchVSE <- compCycleFacts[c("cycle","dchV")] %>% group_by(cycle) %>% summarise_each(se)
-                     
-                     tmp_data <<- data.frame(x=c(dchV$cycle, comp_dchV$cycle), y=c(dchV$dchV, comp_dchV$dchV), se=c(dchVSE$dchV, comp_dchVSE$dchV), cell=c(rep(1, length(dchV$cycle)), rep(2, length(comp_dchV$cycle))), cycle=c(dchV$cycle, comp_dchV$cycle))
-                     tmp_data$symbol <<- rep(1, nrow(tmp_data))
-                     tmp_data$color <<- sapply(tmp_data$cell, function(x) {match(x, c(1,2))})
-                     
-                     titleLabel <<- "Disharge Voltage Plot "
-                     xlabel <<- "Cycle"
-                     ylabel <<- "Voltage (V)"
-                   },
-                   error = function(x) {
-                     print(x)
-                   })
-                 },
-                 "Average Voltage" = {
-                   avgV <- cycle_facts[c("cycle","avgV")] %>% group_by(cycle) %>% summarise_each(mean)
-                   avgVSE <- cycle_facts[c("cycle","avgV")] %>% group_by(cycle) %>% summarise_each(se)
+                   tmp_data <<- data.frame(x=c(dchV$cycle, comp_dchV$cycle), y=c(dchV$dchV, comp_dchV$dchV), se=c(dchVSE$dchV, comp_dchVSE$dchV), cell=c(rep(1, length(dchV$cycle)), rep(2, length(comp_dchV$cycle))), cycle=c(dchV$cycle, comp_dchV$cycle))
+                   tmp_data$symbol <<- rep(1, nrow(tmp_data))
+                   tmp_data$color <<- sapply(tmp_data$cell, function(x) {match(x, c(1,2))})
                    
-                   tryCatch({
-                     comp_avgV <- compCycleFacts[c("cycle","avgV")] %>% group_by(cycle) %>% summarise_each(mean)
-                     comp_avgVSE <- compCycleFacts[c("cycle","avgV")] %>% group_by(cycle) %>% summarise_each(se)
-                     
-                     tmp_data <<- data.frame(x=c(avgV$cycle, comp_avgV$cycle), y=c(avgV$avgV, comp_avgV$avgV), se=c(avgVSE$avgV, comp_avgVSE$avgV), cell=c(rep(1, length(avgV$cycle)), rep(2, length(comp_avgV$cycle))), cycle=c(avgV$cycle, comp_avgV$cycle))
-                     tmp_data$symbol <<- rep(1, nrow(tmp_data))
-                     tmp_data$color <<- sapply(tmp_data$cell, function(x) {match(x, c(1,2))})
-                     
-                     titleLabel <<- "Average Voltage Plot "
-                     xlabel <<- "Cycle"
-                     ylabel <<- "Voltage (V)"
-                   },
-                   error = function(x) {
-                     print(x)
-                   })
+                   titleLabel <<- "Disharge Voltage Plot "
+                   xlabel <<- "Cycle"
+                   ylabel <<- "Voltage (V)"
                  },
+                 error = function(x) {
+                   print(x)
+                 })
+               },
+               "Average Voltage" = {
+                 avgV <- cycle_facts[c("cycle","avgV")] %>% group_by(cycle) %>% summarise_each(mean)
+                 avgVSE <- cycle_facts[c("cycle","avgV")] %>% group_by(cycle) %>% summarise_each(se)
+                 
+                 tryCatch({
+                   comp_avgV <- compCycleFacts[c("cycle","avgV")] %>% group_by(cycle) %>% summarise_each(mean)
+                   comp_avgVSE <- compCycleFacts[c("cycle","avgV")] %>% group_by(cycle) %>% summarise_each(se)
+                   
+                   tmp_data <<- data.frame(x=c(avgV$cycle, comp_avgV$cycle), y=c(avgV$avgV, comp_avgV$avgV), se=c(avgVSE$avgV, comp_avgVSE$avgV), cell=c(rep(1, length(avgV$cycle)), rep(2, length(comp_avgV$cycle))), cycle=c(avgV$cycle, comp_avgV$cycle))
+                   tmp_data$symbol <<- rep(1, nrow(tmp_data))
+                   tmp_data$color <<- sapply(tmp_data$cell, function(x) {match(x, c(1,2))})
+                   
+                   titleLabel <<- "Average Voltage Plot "
+                   xlabel <<- "Cycle"
+                   ylabel <<- "Voltage (V)"
+                 },
+                 error = function(x) {
+                   print(x)
+                 })
+               },
                "Delta Voltage" = {
                  dV <- cycle_facts[c("cycle","dV")] %>% group_by(cycle) %>% summarise_each(mean)
                  dVSE <- cycle_facts[c("cycle","dV")] %>% group_by(cycle) %>% summarise_each(se)
@@ -1294,8 +1131,8 @@ if (interactive()) {
     observeEvent(input$perType, {
       if (input$perType == "Within Analysis") {
         updateRadioButtons(session, "typeGraph", choices = c("dQdV Graphs","Voltage Profiles", "Voltage vs. Time", 
-                                                            "Charge Voltage", "Discharge Voltage", 
-                                                            "Average Voltage", "Delta Voltage", "Discharge Capacity", "Charge Capacity" ))
+                                                             "Charge Voltage", "Discharge Voltage", 
+                                                             "Average Voltage", "Delta Voltage", "Discharge Capacity", "Charge Capacity" ))
         
         show("cells")
         show("renderCycles")
@@ -1346,6 +1183,4 @@ if (interactive()) {
       
       shinyalert("Success!", paste("Plot saved in working directory:\n", getwd()),"success")
     })
-  }
 }
-shinyApp(ui, server)
