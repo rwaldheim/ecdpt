@@ -9,6 +9,18 @@ server <- function(input, output, session) {
     
     se <- function(x) {sd(x) / length(x)}
     
+    proxy = dataTableProxy("channels")
+    
+    batch.elements <- c("rerun", "load", "area", "whatGraph", "gGraphs", "gAnim", "graphBuilder")
+    
+    observeEvent(input$batchProcessing, {
+      if (input$batchProcessing) {
+        lapply(batch.elements, hide)
+      } else {
+        lapply(batch.elements, show)
+      }
+    })
+    
     export_to_origin <- function() {
       if (!("reticulate" %in% installed.packages()[, "Package"])) {
         install.packages("reticulate")
@@ -20,7 +32,7 @@ server <- function(input, output, session) {
       py_install("OriginExt", pip = TRUE)
       py_install("pandas", pip = TRUE)
       
-      filtered_location <- shQuote(paste(dirLocation(), "/", input$dirName, sep = ''))
+      filtered_location <- shQuote(paste(dirLocation, "/", input$dirName, sep = ''))
       
       system(paste(py_location$python, " rPyO.py ", filtered_location, sep=''))
     }
@@ -30,101 +42,16 @@ server <- function(input, output, session) {
       fluidPage(style ="font-size:15pt;",
                 tags$head(tags$style(".modal-dialog{min-width:60%}")),
                 
-                fluidRow(align ="center",
-                         HTML('
-              <style type="text/css">
-              .tg  {border-collapse:collapse;border-spacing:0;}
-              .tg td{font-family:Arial, sans-serif;font-size:14px;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:black;}
-              .tg th{font-family:Arial, sans-serif;font-size:14px;font-weight:normal;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:black;}
-              .tg .tg-gfnm{background-color:#efefef;border-color:#000000;text-align:center;vertical-align:middle}
-              .tg .tg-i0p4{font-weight:bold;background-color:#ecf4ff;border-color:#000000;text-align:center;vertical-align:middle}
-              .tg .tg-3fas{background-color:#efefef;border-color:#000000;text-align:left;vertical-align:middle}
-              .tg .tg-o3hj{background-color:#ecf4ff;border-color:#000000;text-align:center;vertical-align:middle}
-              .tg .tg-xwyw{border-color:#000000;text-align:center;vertical-align:middle}
-              .tg .tg-0a7q{border-color:#000000;text-align:left;vertical-align:middle}
-              </style>
-              <table class="tg">
-                <tr>
-                  <th class="tg-i0p4">Graph</th>
-                  <th class="tg-i0p4">X Axis</th>
-                  <th class="tg-i0p4">Y Axis</th>
-                  <th class="tg-o3hj"><span style="font-weight:bold">Plot Frequency</span><br></th>
-                  <th class="tg-i0p4">Description</th>
-                </tr>
-                <tr>
-                  <td class="tg-xwyw">dQdV Graph</td>
-                  <td class="tg-xwyw">Voltage (V)</td>
-                  <td class="tg-xwyw">dQdV (Ah/V)</td>
-                  <td class="tg-xwyw">per cycle</td>
-                  <td class="tg-0a7q">The differential capacity plot for each cycle<br></td>
-                </tr>
-                <tr>
-                  <td class="tg-gfnm">Voltage Profile</td>
-                  <td class="tg-gfnm">Continuous Capacity (mAh/g or Ah)</td>
-                  <td class="tg-gfnm">Voltage (V)</td>
-                  <td class="tg-gfnm">per cycle</td>
-                  <td class="tg-3fas">Voltage vs. capacity plot for each cycle. Units depend if the masses are specified.</td>
-                </tr>
-                <tr>
-                  <td class="tg-xwyw">Voltage vs. Time</td>
-                  <td class="tg-xwyw">Time (min)</td>
-                  <td class="tg-xwyw">Voltage (V)</td>
-                  <td class="tg-xwyw">per cycle</td>
-                  <td class="tg-0a7q">The voltage as a function of time, including all steps</td>
-                </tr>
-                <tr>
-                  <td class="tg-gfnm">Discharge Capacity</td>
-                  <td class="tg-gfnm">Cycle</td>
-                  <td class="tg-gfnm">Discharge Capacity (mAh/g or Ah)</td>
-                  <td class="tg-gfnm">per cell</td>
-                  <td class="tg-3fas">Discharge capacity for each <span style="font-weight:bold">individual cell </span>per cycle. Coulombic efficiency is also plotted on a secondary axis. Units depend if the masses are specified.</td>
-                </tr>
-                <tr>
-                  <td class="tg-xwyw">Discharge Areal Capacity</td>
-                  <td class="tg-xwyw">Cycle</td>
-                  <td class="tg-xwyw">Discharge Capacity (Ah/cm<sup>2</sup>)</td>
-                  <td class="tg-xwyw">per cell</td>
-                  <td class="tg-0a7q">Discharge areal capacity for each <span style="font-weight:bold">individual cell </span>per cycle. Coulombic efficiency is also plotted on a secondary axis.</td>
-                </tr>
-                <tr>
-                  <td class="tg-gfnm">Total Discharge Capacity</td>
-                  <td class="tg-gfnm">Cycle</td>
-                  <td class="tg-gfnm">Discharge Capacity (mAh/g or Ah)</td>
-                  <td class="tg-gfnm">per analysis</td>
-                  <td class="tg-3fas">Discharge capacity summarized for <span style="font-weight:bold">all cells</span> in the analysis. Coulombic efficiency is also plotted on a secondary axis. Mean is plotted as a point with error bars presenting the standard error between the cells. Units depend if the masses are specified.</td>
-                </tr>
-                <tr>
-                  <td class="tg-xwyw">Average Voltage</td>
-                  <td class="tg-xwyw">Cycle</td>
-                  <td class="tg-xwyw">Voltage (V)</td>
-                  <td class="tg-xwyw">per cell</td>
-                  <td class="tg-0a7q">The average voltage vs capacity for each cycle. The charge voltage (V<sub>charge</sub>) and discharge voltage (V<sub>discharge</sub>) were calculated using the average value theorem. The average voltage is then (V<sub>charge</sub> + V<sub>discharge</sub>)/2. Charge and discharge voltages are plotted alongside the average.</td>
-                </tr>
-                <tr>
-                  <td class="tg-gfnm">Delta Voltage</td>
-                  <td class="tg-gfnm">Cycle</td>
-                  <td class="tg-gfnm">Voltage (V)</td>
-                  <td class="tg-gfnm">per cell</td>
-                  <td class="tg-3fas">The delta voltage vs capacity for each cycle. The charge voltage (V<sub>charge</sub>) and discharge voltage (V<sub>discharge</sub>) were calculated using the average value theorem. The delta voltage is then V<sub>charge</sub> - V<sub>discharge</sub>). Charge and discharge voltages are plotted alongside the average.</td>
-                </tr>
-                <tr>
-                  <td class="tg-xwyw">Capacity Loss</td>
-                  <td class="tg-xwyw">Cycle</td>
-                  <td class="tg-xwyw">Capacity (mAh/g or Ah)</td>
-                  <td class="tg-xwyw">per cell</td>
-                  <td class="tg-0a7q">The discharge capacity minus the charge capacity for each cycle. Units depend if the masses are specified.</td>
-                </tr>
-              </table>
-            ')
-                ),
+                fluidRow(align ="center", graphInfoTable),
+                
       )}, title ="Graph Types", easyClose = TRUE)
     
     # Ensures the files imported for analysis are Excel files
     observeEvent(input$files, {
       validFile <- FALSE
       
-      for (file in input$files) {
-        if (file_ext(file) == "xlsx" | file_ext(file) == "xls") {
+      for (file in 1:nrow(input$files)) {
+        if (file_ext(input$files[file, "name"]) == "xlsx" | file_ext(input$files[file,]) == "xls") {
           validFile <- TRUE
           arbinCM <<- FALSE
         } else if (file_ext(file) == "csv") {
@@ -142,24 +69,38 @@ server <- function(input, output, session) {
     
     observeEvent(input$chooseDir, {
       chosenDir <- tk_choose.dir()
-      dirLocation(chosenDir)
+      x<- 0
+      #if (input$batchProcessing) {
+      #  append(dirLocation, chosenDir)
+      #} else {
+      dirLocation <- chosenDir
+      #}
       
-      internal_folders <- list.dirs(path = dirLocation(), recursive = FALSE)
+      internal_folders <- list.dirs(path = dirLocation, recursive = FALSE)
       base_names = vector()
       for (folder in internal_folders) {
         base_names <- append(base_names, split_path(folder)[1])
       }
+      
       if ("history" %in% base_names) {
-        load(paste(dirLocation(), "/history/", "Formation.RData", sep =""))
+        past <- new.env()
         
-        data <<- data
+        load(paste(dirLocation, "/history/", "Formation.RData", sep =""), envir = past)
         
-        output$channels <- renderDataTable(data, editable = FALSE, options=list(columnDefs = list(list(visible=FALSE, targets=c(4)))), 
-                                           colnames = c("File","Sheet","Mass (g)","Filepath","Limiting Electrode Area (cm^2)"))
+        if (exists("past$group")) {
+          if (input$batchProcessing) {
+            data <<- rbind(data, past$data)
+          } else {
+            data <<- past$data
+          }
+          
+          output$channels <- renderDataTable(data, editable = FALSE, options=list(columnDefs = list(list(visible=FALSE, targets=c(5)))), 
+                                             colnames = c("Group", "File","Sheet","Mass (g)","Filepath","Limiting Electrode Area (cm^2)"))
+        }
       }
       
-      if (!is.na(dirLocation())) {
-        output$currDir <- renderText({paste(split_path(dirLocation())[1], "(", split_path(dirLocation())[2], ")")})
+      if (!is.na(dirLocation)) {
+        output$currDir <- renderText({paste(split_path(dirLocation)[1], "(", split_path(dirLocation)[2], ")")})
       }
     })
     
@@ -258,14 +199,14 @@ server <- function(input, output, session) {
         
         if (validFile) {
           data <<- filter(data, grepl('Channel', sheet))
-          dirLocation(dirLocation())
+          dirLocation(dirLocation)
           numCycles <<- numCycles
           dQdVData <<- dQdVData
           total <<- total
           cycle_facts <<- cycle_facts
           
           output$channels <- renderDataTable(data, editable = FALSE, options=list(columnDefs = list(list(visible=FALSE, targets=c(4)))), 
-                                             colnames = c("File","Sheet","Mass (g)","Filepath","Limiting Electrode Area (cm^2)"))
+                                             colnames = c("Group", "File","Sheet","Mass (g)","Filepath","Limiting Electrode Area (cm^2)"))
           
           enable("graphBuilder")
         } else {
@@ -289,27 +230,31 @@ server <- function(input, output, session) {
       } else {
         for (i in 1:nrow(files)) {
           sheets <- excel_sheets(files[i, 4])
-          file_sheet <- rbind(file_sheet, data.frame(name = rep(files[["name"]][i], length(sheets)),"sheet" = sheets,"Mass" = rep(0, length(sheets)),
+          file_sheet <- rbind(file_sheet, data.frame(group = basename(dirLocation), name = rep(files[["name"]][i], length(sheets)),"sheet" = sheets,"Mass" = rep(0, length(sheets)),
                                                      datapath = rep(files[["datapath"]][i], length(sheets)), area = rep(input$area, length(sheets))))
         }
         
         raw_data <- filter(file_sheet, grepl('Channel', sheet) & !grepl('Chart', sheet))
       }
       
-      if (!is.null(dim(data)[1])) {
-        new_rows <- intersect(raw_data$sheet, data$sheet)
+      if (!is.null(dim(data)[1]) & !is.null(size(raw_data))) {
+        new_rows <- intersect(raw_data$sheet, data[data["group"] == basename(dirLocation)]$sheet)
         data <<- data[which(data$sheet %in% new_rows),]
         data$datapath <<- raw_data$datapath
       } else {
-        data <<- raw_data
+        if (input$batchProcessing) {
+          data <<- rbind(data, raw_data)
+        } else {
+          data <<- raw_data
+        }
       }
       
       if (arbinCM) {
         output$channels <- renderDataTable(data, editable = FALSE, options = list(columnDefs = list(list(visible=FALSE, targets=c(3)))), 
                                            colnames = c("File", "Sheet", "Filepath"))
       } else {
-        output$channels <- renderDataTable(data, editable = FALSE, options = list(columnDefs = list(list(visible=FALSE, targets=c(4)))), 
-                                           colnames = c("File","Sheet","Mass (g)","Filepath","Limiting Electrode Area (cm^2)"))
+        output$channels <- renderDataTable(data, editable = FALSE, options = list(columnDefs = list(list(visible=FALSE, targets=c(5)))), 
+                                           colnames = c("Group", "File","Sheet","Mass (g)","Filepath","Limiting Electrode Area (cm^2)"))
       }
     }
     
@@ -332,7 +277,6 @@ server <- function(input, output, session) {
           shinyalert("Something isn't right...","The number of masses imported did not match the amount of cells present or the text contained some special characters. Please try again.","error")
           removeModal()
         }, finally = {
-          proxy = dataTableProxy("channels")
           replaceData(proxy, data)
           
           renderDataTable(data)
@@ -346,7 +290,7 @@ server <- function(input, output, session) {
     observeEvent(input$submit, {
       if (length(names(data)) <= 1) {
         shinyalert("Uh oh!", "You need to import cells first!", "error")
-      } else if (is.na(dirLocation()) | dirLocation() == "") {
+      } else if (is.na(dirLocation) | dirLocation == "") {
         shinyalert("Uh oh!", "You need to enter a directory name first!", "error")
       } else if (input$dirName == "") {
         shinyalert("Uh oh!", "You need to enter an analysis name first!", "error")
@@ -386,7 +330,7 @@ server <- function(input, output, session) {
       disable("files")
       disable("lowV")
       disable("highV")
-      disable("dirLocation()")
+      disable("dirLocation")
       disable("submit")
       disable("excelImport")
       disable("gGraphs")
@@ -396,7 +340,7 @@ server <- function(input, output, session) {
       disable("capActive")
       
       # Creates the directory in which all data will be stored
-      dir.create(paste(dirLocation(), input$dirName, sep = "/"))
+      dir.create(paste(dirLocation, input$dirName, sep = "/"))
       
       # Update the status once all set-up functions are complete
       progress$set(detail ="Starting first cell...")
@@ -423,10 +367,10 @@ server <- function(input, output, session) {
         }
         
         # Create an nested directory for all the data and, if applicable, then further folders for graphs of interest
-        dir.create(paste(dirLocation(), "/",  input$dirName, data$sheet[row], sep ="/"))
-        if (is.element("dQdV Graphs", input$gGraphs)) dir.create(paste(dirLocation(), input$dirName, data$sheet[row],"dQdV Plots", sep ="/"))
-        if (is.element("Voltage Profiles", input$gGraphs)) dir.create(paste(dirLocation(), input$dirName, data$sheet[row],"Voltage Profiles", sep ="/"))
-        if (is.element("Voltage vs. Time", input$gGraphs)) dir.create(paste(dirLocation(), input$dirName, data$sheet[row],"Voltage v Time", sep ="/"))
+        dir.create(paste(dirLocation, "/",  input$dirName, data$sheet[row], sep ="/"))
+        if (is.element("dQdV Graphs", input$gGraphs)) dir.create(paste(dirLocation, input$dirName, data$sheet[row],"dQdV Plots", sep ="/"))
+        if (is.element("Voltage Profiles", input$gGraphs)) dir.create(paste(dirLocation, input$dirName, data$sheet[row],"Voltage Profiles", sep ="/"))
+        if (is.element("Voltage vs. Time", input$gGraphs)) dir.create(paste(dirLocation, input$dirName, data$sheet[row],"Voltage v Time", sep ="/"))
         
         # Check if masses have been imported, if they have not then all future calculations will be done on a raw capacity basis
         if (sum(data$Mass) != 0) {
@@ -574,7 +518,7 @@ server <- function(input, output, session) {
         
         # Discharge capacity plotting, with coulombic efficiency being plotted alongside
         if (is.element("Discharge Capacity", input$gGraphs)) {
-          png(paste(dirLocation(), "/",  input$dirName,"/", data$sheet[row],"/", data$sheet[row]," Discharge Capacity Plot.png", sep =""))
+          png(paste(dirLocation, "/",  input$dirName,"/", data$sheet[row],"/", data$sheet[row]," Discharge Capacity Plot.png", sep =""))
           eol <- cell_data$`DCap`[[1]] * 0.8
           plot(cell_data$cycle, cell_data$DCap, type ="p", main=paste("Discharge Capacity for",  input$dirName), xlab=NA, ylab=paste("Discharge",  ylabel), mai=c(1,1,1,1))
           abline(h=eol, lty ="dotted")
@@ -587,7 +531,7 @@ server <- function(input, output, session) {
         
         # Discharge areal capacity plotting, with coulombic efficiency being plotted alongside
         if (is.element("Discharge Areal Capacity", input$gGraphs)) {
-          png(paste(dirLocation(), "/",  input$dirName,"/", data$sheet[row],"/", data$sheet[row]," Discharge Areal Capacity Plot.png", sep =""))
+          png(paste(dirLocation, "/",  input$dirName,"/", data$sheet[row],"/", data$sheet[row]," Discharge Areal Capacity Plot.png", sep =""))
           new_par <- old_par <- par("mar")
           new_par[4] <- old_par[2]
           par(mar = new_par)
@@ -604,7 +548,7 @@ server <- function(input, output, session) {
         
         # Average voltage plotting
         if (is.element("Average Voltage", input$gGraphs)) {
-          png(paste(dirLocation(), "/",  input$dirName,"/", data$sheet[row],"/", data$sheet[row]," Average Voltage Plot.png", sep =""))
+          png(paste(dirLocation, "/",  input$dirName,"/", data$sheet[row],"/", data$sheet[row]," Average Voltage Plot.png", sep =""))
           plot(cell_data$cycle, cell_data$chV, col="blue", main=paste("Average Voltage Plot for",  input$dirname, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)", ylim=c(min(cell_data[,2:4]), max(cell_data[,2:4])))
           points(cell_data$cycle, cell_data$dchV, col="red", main=paste("Average Voltage Plot for",  input$dirName, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)")
           points(cell_data$cycle, cell_data$avgV, col="black", main=paste("Average Voltage Plot for",  input$dirName, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)")
@@ -614,14 +558,14 @@ server <- function(input, output, session) {
         
         # Delta voltage plotting
         if (is.element("Delta Voltage", input$gGraphs)) {
-          png(paste(dirLocation(), "/",  input$dirName,"/", data$sheet[row],"/", data$sheet[row]," Delta Voltage Plot.png", sep =""))
+          png(paste(dirLocation, "/",  input$dirName,"/", data$sheet[row],"/", data$sheet[row]," Delta Voltage Plot.png", sep =""))
           plot(cell_data$cycle, cell_data$dV, main=paste("Delta Voltage Plot for",  input$dirName, data$sheet[row]), xlab="Cycle", ylab="Voltage (V)", ylim =c(0, 0.5))
           dev.off()
         }
         
         # Capacity Loss plotting
         if (is.element("Capacity Loss", input$gGraphs)) {
-          png(paste(dirLocation(), "/",  input$dirName,"/", data$sheet[row],"/", data$sheet[row]," Capacity Loss Plot.png", sep =""))
+          png(paste(dirLocation, "/",  input$dirName,"/", data$sheet[row],"/", data$sheet[row]," Capacity Loss Plot.png", sep =""))
           plot(cell_data$cycle, cell_data$lostCap, main=paste("Capacity Loss Plot for",  input$dirName, data$sheet[row]), xlab="Cycle", ylab= ylabel, ylim = c(mean(cell_data$lostCap) + (2* sd(cell_data$lostCap)), mean(cell_data$lostCap) - (1.5* sd(cell_data$lostCap))))
           abline(h=median(cell_data$lostCap), lty="dotted")
           dev.off()
@@ -638,7 +582,7 @@ server <- function(input, output, session) {
                 points(first_cycle$voltage, first_cycle$dQdV, col = rgb(red = 1, green = 0, blue = 0, alpha = 0.5))
             })
           }
-          save_gif(dQdVplot(), paste(dirLocation(), input$dirName, data$sheet[row], "dQdV Animation.gif", sep = "/"), delay = 0.2)
+          save_gif(dQdVplot(), paste(dirLocation, input$dirName, data$sheet[row], "dQdV Animation.gif", sep = "/"), delay = 0.2)
         }
         
         if (is.element("Voltage Profiles", input$gAnim)) {
@@ -651,11 +595,11 @@ server <- function(input, output, session) {
                 points(first_cycle$CC, first_cycle$`Voltage(V)`, col = rgb(red = 1, green = 0, blue = 0, alpha = 0.5))
             })
           }
-          save_gif(vpPlot(), paste(dirLocation(), input$dirName, data$sheet[row], "Voltage Profile Animation.gif", sep = "/"), delay = 0.2)
+          save_gif(vpPlot(), paste(dirLocation, input$dirName, data$sheet[row], "Voltage Profile Animation.gif", sep = "/"), delay = 0.2)
         }
         
         # Save all data within the cell's directory
-        write.csv(tmp_excel, file = paste(dirLocation(), "/",  input$dirName,"/", data$sheet[row],"/", data$sheet[row],".csv", sep =""))
+        write.csv(tmp_excel, file = paste(dirLocation, "/",  input$dirName,"/", data$sheet[row],"/", data$sheet[row],".csv", sep =""))
         
         # Append summation data to the larger datasets to be worked with later
         final <- rbind(final, tmp_excel)
@@ -687,7 +631,7 @@ server <- function(input, output, session) {
       tryCatch({
         # Total dishcharge capacity plotting
         if (is.element("Total Discharge Capacity", input$gGraphs)) {
-          png(paste(dirLocation(), "/",  input$dirName,"/", "Total Discharge Capacity Plot.png", sep =""))
+          png(paste(dirLocation, "/",  input$dirName,"/", "Total Discharge Capacity Plot.png", sep =""))
           eol <- max(stats$DCap) * 0.8
           plot(stats$cycle, stats$DCap, type ="p", main=paste("Discharge Capacity for",  input$dirName), xlab=NA, ylab=paste("Discharge", ylabel), mai=c(1,1,1,1))
           arrows(stats$cycle, stats$DCap - stats$capSE, stats$cycle, stats$DCap + stats$capSE, length=0.05, angle=90, code=3)
@@ -704,21 +648,21 @@ server <- function(input, output, session) {
       })
       
       # Save total data and stats
-      write.csv(stats, file = paste(dirLocation(), "/",  input$dirName,"/", basename(dirLocation())," Summary.csv", sep =""))
-      if (!arbinCM) write.csv(dQdVData, file = paste(dirLocation(), "/",  input$dirName,"/", basename(dirLocation())," dQdV Data.csv", sep =""))
-      write.csv(cycle_facts, file = paste(dirLocation(), "/",  input$dirName,"/", basename(dirLocation())," Cycle Facts.csv", sep =""))
+      write.csv(stats, file = paste(dirLocation, "/",  input$dirName,"/", basename(dirLocation)," Summary.csv", sep =""))
+      if (!arbinCM) write.csv(dQdVData, file = paste(dirLocation, "/",  input$dirName,"/", basename(dirLocation)," dQdV Data.csv", sep =""))
+      write.csv(cycle_facts, file = paste(dirLocation, "/",  input$dirName,"/", basename(dirLocation)," Cycle Facts.csv", sep =""))
       
       # If a histor directory does not exist, create it. Save all the data revelant to plotting to a RData file.
-      if (!dir.exists(paste(dirLocation(), "history", sep = "/"))) {
-        dir.create(paste(dirLocation(), "history", sep = "/"))
+      if (!dir.exists(paste(dirLocation, "history", sep = "/"))) {
+        dir.create(paste(dirLocation, "history", sep = "/"))
       }
       
       dirName <<- input$dirName
       
-      save(dirLocation, dirName, data, dQdVData, total, cycle_facts, numCycles, file = paste(dirLocation(), "/history/", input$dirName, ".RData", sep = ""))
+      save(dirLocation, dirName, data, dQdVData, total, cycle_facts, numCycles, file = paste(dirLocation, "/history/", input$dirName, ".RData", sep = ""))
       
       # Modal for completed analysis
-      shinyalert("Analysis Complete!", paste("All your data are now in ", dirLocation(), "/", input$dirName, sep = ""), 
+      shinyalert("Analysis Complete!", paste("All your data are now in ", dirLocation, "/", input$dirName, sep = ""), 
                  type ="success", showConfirmButton = TRUE, showCancelButton = TRUE, confirmButtonText = "Generate Origin File", cancelButtonText = "Continue",
                  callbackR = function(x) {
                    if (x) {
@@ -734,7 +678,7 @@ server <- function(input, output, session) {
       enable("files")
       enable("lowV")
       enable("highV")
-      enable("dirLocation()")
+      enable("dirLocation")
       enable("submit")
       enable("excelImport")
       enable("gGraphs")
@@ -800,7 +744,7 @@ server <- function(input, output, session) {
                  ylabel <<-"dQdV (mAh/V)"
                },
                "Voltage Profiles" = {
-                 tmp_data <<- data.frame(x=(-1) * total[total$Cell %in% cellIndex,]$CC, y=total[total$Cell %in% cellIndex,]$`Voltage(V)`, cycle=total[total$Cell %in% cellIndex,]$`Cycle_Index`, cell=total[total$Cell %in% cellIndex,]$Cell)
+                 tmp_data <<- data.frame(x = total[total$Cell %in% cellIndex,]$CC, y=total[total$Cell %in% cellIndex,]$`Voltage(V)`, cycle=total[total$Cell %in% cellIndex,]$`Cycle_Index`, cell=total[total$Cell %in% cellIndex,]$Cell)
                  tmp_data <<- tmp_data[tmp_data$cycle == sort(as.numeric(input$renderCycles)),]
                  
                  titleLabel <<-"Voltage Profile"
@@ -1062,12 +1006,12 @@ server <- function(input, output, session) {
           plot(tmp_data$x, tmp_data$y, type = input$plotStyle, col = tmp_data$color, pch = tmp_data$symbol, main=titleLabel, xlim = c(bounds[1], bounds[2]), ylim = c(bounds[3], bounds[4]),  xlab=xlabel, ylab=ylabel, cex = input$pointSize, cex.axis = input$textSize, cex.lab = input$textSize, cex.main = input$textSize)
           if ("se" %in% colnames(tmp_data)) {
             arrows(tmp_data$x, tmp_data$y - tmp_data$se, tmp_data$x, tmp_data$y + tmp_data$se, col = tmp_data$color, length=0.05, angle=90, code=3)
-            legend("bottomright", legend = c(input$originalData, input$compareData), col = c(1,2), pch = 19)
+            #legend("bottomright", legend = c(input$originalData, input$compareData), col = c(1,2), pch = 19)
           } else {
             if (input$typeGraph %in% c("dQdV Graphs", "Voltage Profiles", "Voltage vs. Time")) {
-              legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells), col = c(unique(tmp_data$color), rep("black", length(input$cells))), pch = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title ="Cycle", ncol=2)
+              #legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells), col = c(unique(tmp_data$color), rep("black", length(input$cells))), pch = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title ="Cycle", ncol=2)
             } else {
-              legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells), col = c(unique(tmp_data$color), rep("black", length(input$cells))), pch = c(1:length(input$cells)), title ="Cycle", ncol=2)
+              #legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells), col = c(unique(tmp_data$color), rep("black", length(input$cells))), pch = c(1:length(input$cells)), title ="Cycle", ncol=2)
             }
           }
         } else if (input$plotStyle =="l") {
@@ -1081,9 +1025,9 @@ server <- function(input, output, session) {
             }
           }
           if (input$typeGraph %in% c("dQdV Graphs", "Voltage Profiles", "Voltage vs. Time")) {
-            legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells, if ("se" %in% colnames(tmp_data)) {c(input$dirName, compName)}), col = c(unique(tmp_data$color), rep("black", length(input$cells))), lty = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title ="Cycle", ncol=2)
+            legend("topright", legend = c(sort(as.numeric(input$renderCycles)),  if ("se" %in% colnames(tmp_data)) {c(input$dirName, compName)}), col = c(unique(tmp_data$color), rep("black", length(input$cells))), lty = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title ="Cycle", ncol=2)
           } else {
-            legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells, if ("se" %in% colnames(tmp_data)) {c(input$dirName, compName)}), col = c(unique(tmp_data$color), rep("black", length(input$cells))), lty = c(1:length(input$cells)), title ="Cycle", ncol=2)
+            legend("topright", legend = c(sort(as.numeric(input$renderCycles)), input$cells, if ("se" %in% colnames(tmp_data)) {c(input$dirName, compName)}), col = c(unique(tmp_data$color), rep("black", length(input$cells))), lty = c(1:length(input$cells)), title ="Cycle", ncol=2)
           }
         }
       },
@@ -1164,7 +1108,7 @@ server <- function(input, output, session) {
       
       if (input$plotStyle =="o" | input$plotStyle =="p") {
         plot(tmp_data$x, tmp_data$y, type = input$plotStyle, col = tmp_data$color, pch = tmp_data$symbol, main=titleLabel, xlim = c(bounds[1], bounds[2]), ylim = c(bounds[3], bounds[4]),  xlab=xlabel, ylab=ylabel, cex = input$pointSize, cex.axis = input$textSize, cex.lab = input$textSize, cex.main = input$textSize)
-        legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells), col = c(unique(tmp_data$color), rep("black", length(input$cells))), pch = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title ="Cycle", ncol=2)
+        #legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells), col = c(unique(tmp_data$color), rep("black", length(input$cells))), pch = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title ="Cycle", ncol=2)
       } else if (input$plotStyle =="l") {
         newLine <- subset(tmp_data, tmp_data$color == 1 & tmp_data$symbol == 1)
         plot(newLine$x, newLine$y, type ="l", col = newLine$color, lty = newLine$symbol, main=titleLabel, xlim = c(bounds[1], bounds[2]), ylim = c(bounds[3], bounds[4]),  xlab=xlabel, ylab=ylabel, lwd = input$pointSize, cex.axis = input$textSize, cex.lab = input$textSize, cex.main = input$textSize)
@@ -1176,7 +1120,7 @@ server <- function(input, output, session) {
           }
         }
         
-        legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells), col = c(unique(tmp_data$color), rep("black", length(input$cells))), lty = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title ="Cycle", ncol=2)
+        #legend("bottomright", legend = c(sort(as.numeric(input$renderCycles)), input$cells), col = c(unique(tmp_data$color), rep("black", length(input$cells))), lty = c(rep(19, length(unique(tmp_data$color))), 1:length(input$cells)), title ="Cycle", ncol=2)
       }
       
       dev.off()

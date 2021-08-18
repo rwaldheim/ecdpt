@@ -18,7 +18,9 @@ ui <- shinyUI({
   
   fluidRow(headerPanel("Electrochemical Data Processing Tool (EcDPT)")),
   
-  fluidRow(div(style = "color: red; font-size: 20pt;", "!!! Pay Attention. Controls Have Moved !!!"), align = "center"),
+  fluidRow("Analysis Mode", 
+           switchInput("batchProcessing", onLabel = "Batch Processing", offLabel = "Single Analysis", handleWidth = "200px")
+           , align = "center", style = "margin: 0%"),
   
   # This first column is where most user inputs are, with the exception of the directory name
   column(4, align = "center",
@@ -34,7 +36,7 @@ ui <- shinyUI({
          
          fluidRow(
            fileInput("rerun", "Optional: Import Previous R Environment", multiple = FALSE, accept = ".RData"),
-           actionButton("load", "Load"),
+           actionButton("load", "Load"), 
            style = "border: 1px dashed black; margin: 5%; padding: 5%"
          ),
          
@@ -63,9 +65,9 @@ ui <- shinyUI({
                                                            "Total Discharge Capacity","Average Voltage","Delta Voltage","Capacity Loss"), inline = FALSE),
            "Choose graphs to animate:",
            checkboxGroupInput("gAnim", NULL, choices = c("dQdV Plots", "Voltage Profiles"), inline = FALSE),
-           "Advanced Analysis",
-           #radioButtons("advCalc", NULL, choices = c("No", "Yes"), inline = TRUE),
-           #helpText(HTML("Advanced Analysis includes:<ul><li>C-Rate Calculations</li><li>Capacity Fade per Rate</li><li>Origin Export</ul>")),
+           # "Advanced Analysis",
+           # radioButtons("advCalc", NULL, choices = c("No", "Yes"), inline = TRUE),
+           # helpText(HTML("Advanced Analysis includes:<ul><li>C-Rate Calculations</li><li>Capacity Fade per Rate</li><li>Origin Export</ul>")),
            style ="margin: 5%; border: 1px solid black; padding: 5%"
          ),
   ), 
@@ -73,7 +75,7 @@ ui <- shinyUI({
   # The final column is where all the"action" items are, aka clicking any of these buttons will trigger a process
   column(4, align ="center",
          fluidRow(
-           selectInput("dirName", "Analysis Name*", c("Formation", "RateCap", "Constant Current", "CC-CV"), selected = "RateCap"), tags$br(),
+           selectInput("dirName", "Analysis Name*", c("Formation", "RateCap", "HighRate", "Constant Current", "CC-CV"), selected = "RateCap"), tags$br(),
            strong("Files to be Analyzed*"), tags$br(),
            "Import all Arbin files of interest.", tags$br(), tags$br(),
            fileInput("files", NULL, multiple = TRUE),
