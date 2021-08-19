@@ -12,7 +12,7 @@
 # 
 # ######
 
-options(warn = 0)
+# options(warn = 0)
 
 list.of.packages <- c("readxl", "dplyr", "shiny", "tcltk", "DT", "shinyjs", "shinyalert", "pracma", "purrr", "zoo", "plotrix", "tools", "shinyWidgets", "gifski")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]

@@ -29,9 +29,12 @@ server <- function(input, output, session) {
     
       deleteCol <- unlist(lapply(seq_len(nrow(df)), f))
     
-      DT::datatable(cbind(df, delete = deleteCol),escape = FALSE, editable = FALSE, options = list(columnDefs = list(list(visible=FALSE, targets=c(5, 6, 7)))), 
-                    colnames = c("Group","Program","File","Sheet","Mass (g)","Filepath","Group Path","Limiting Electrode Area (cm^2)", "Delete"), rownames = FALSE)
+      cbind(data, delete = deleteCol)
+    }
     
+    generateDataTable <- function(df) {
+      DT::datatable(df,escape = FALSE, editable = FALSE, options = list(columnDefs = list(list(visible=FALSE, targets=c(5, 6, 7)))), 
+                    colnames = c("Group","Program","File","Sheet","Mass (g)","Filepath","Group Path","Limiting Electrode Area (cm^2)", "Delete"), rownames = FALSE)
     }
     
     parseDeleteEvent <- function(idstr) {
@@ -46,7 +49,7 @@ server <- function(input, output, session) {
       
       data <<- data[-rowNum,]
       
-      output$channels <- renderDataTable(deleteButtonCol(data, 'delete_button'))
+      output$channels <- renderDataTable(generateDataTable(deleteButtonCol(data, 'delete_button')))
     })
     
     observeEvent(input$batchProcessing, {
@@ -58,12 +61,12 @@ server <- function(input, output, session) {
     })
     
     observeEvent(input$clearTable, {
-      shinyalert("Danger!", "Are you sure you wish to clear all cells?", 
+      shinyalert("Warning!", "Are you sure you wish to clear all cells?", 
                  type ="warning", showConfirmButton = TRUE, showCancelButton = TRUE, confirmButtonText = "Continue", cancelButtonText = "Abort",
                  callbackR = function(x) {
                    if (x) {
                      data <<- data[0,]
-                     output$channels <- renderDataTable(deleteButtonCol(data, 'delete_button'))
+                     output$channels <- renderDataTable(generateDataTable(deleteButtonCol(data, 'delete_button')))
                    }
                  })
     })
@@ -132,7 +135,7 @@ server <- function(input, output, session) {
             data <<- past$data
           }
           
-          output$channels <- renderDataTable(deleteButtonCol(data, 'delete_button'))
+          output$channels <- renderDataTable(generateDataTable(deleteButtonCol(data, 'delete_button')))
         }
       }
       
@@ -148,21 +151,20 @@ server <- function(input, output, session) {
       } else {
         load(input$rerun$datapath[[1]])
         
-        validFile <- FALSE
-        
-        if (file_ext(input$rerun$datapath) =="RData") {
+
+        if (file_ext(input$rerun$datapath) == "RData") {
           validFile <- TRUE
         }
         
         if (validFile) {
-          data <<- filter(data, grepl('Channel', sheet))
-          dirLocation(dirLocation)
+          data <<- dataSubset
+          dirLocation <<- dirLocation
           numCycles <<- numCycles
           dQdVData <<- dQdVData
           total <<- total
           cycle_facts <<- cycle_facts
           
-          output$channels <- renderDataTable(deleteButtonCol(data, 'delete_button'))
+          output$channels <- renderDataTable(generateDataTable(deleteButtonCol(data, 'delete_button')))
           
           enable("graphBuilder")
         } else {
@@ -183,18 +185,13 @@ server <- function(input, output, session) {
       } else {
         tryCatch({
           masses <- lapply(strsplit(strRep(input$masses, "\n", ","), ",", fixed = TRUE), as.double)
-          names(masses)[names(masses) =="V1"] <- "Mass"
           data$Mass <<- masses[[1]]
         }, error = function(cond) {
           print(cond)
           shinyalert("Something isn't right...","The number of masses imported did not match the amount of cells present or the text contained some special characters. Please try again.","error")
           removeModal()
         }, finally = {
-          replaceData(proxy, data)
-          
-          renderDataTable(deleteButtonCol(data, 'delete_button'))
-          
-          removeModal()
+          output$channels <- renderDataTable(generateDataTable(deleteButtonCol(data, 'delete_button')))
         })
       }
     })
@@ -241,7 +238,7 @@ server <- function(input, output, session) {
         output$channels <- renderDataTable(data, editable = TRUE, options = list(columnDefs = list(list(visible=FALSE, targets=c(3)))), 
                                            colnames = c("File", "Sheet", "Filepath"))
       } else {
-        output$channels <- renderDataTable(deleteButtonCol(data, 'delete_button'))
+        output$channels <- renderDataTable(generateDataTable(deleteButtonCol(data, 'delete_button')))
       }
     }
     
@@ -289,7 +286,7 @@ server <- function(input, output, session) {
         
         # Resets the variables for the graph builder so new results are concatenated to old ones
         numCycles <<- data.frame()
-        dQdVdata <<- data.frame()
+        dQdVData <<- data.frame()
         total <<- data.frame()
         cycle_facts <<- data.frame()
         
@@ -406,7 +403,7 @@ server <- function(input, output, session) {
                 if (step$'Current(A)'[[1]] > 0) {
                   chV <- (1 / (tail(step$`Charge_Capacity(Ah)`,1) - step$`Charge_Capacity(Ah)`[[1]])) * trapz(step$`Charge_Capacity(Ah)`, step$`Voltage(V)`)
                   dQCdV <- diff(step$`Charge_Capacity(Ah)`)/diff(step$`Voltage(V)`)
-                  dQdVdata <<- rbind(dQdVdata, data.frame(cycle=rep(i, length(dQCdV)+1), cell = rep(row, length(dQCdV)+1), c_d=rep(0, length(dQCdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQCdV), F_L=rep(0,length(dQCdV)+1)))
+                  dQdVData <<- rbind(dQdVData, data.frame(cycle=rep(i, length(dQCdV)+1), cell = rep(row, length(dQCdV)+1), c_d=rep(0, length(dQCdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQCdV), F_L=rep(0,length(dQCdV)+1)))
                   
                   durations[1] <- tail(step$'Test_Time(s)', 1) - step$'Test_Time(s)'[[1]]
                   caps[1] <- tail(step$'Charge_Capacity(Ah)', 1) - step$'Charge_Capacity(Ah)'[[1]]
@@ -419,10 +416,10 @@ server <- function(input, output, session) {
                   caps[3] <- tail(step$'Discharge_Capacity(Ah)', 1) - step$'Discharge_Capacity(Ah)'[[1]]
                   ch_dch <- FALSE
                   if (abs(prev_c - step$`Current(A)`[[1]]) > 0.0005) {
-                    if (!arbinCM) dQdVdata <<- rbind(dQdVdata, data.frame(cycle=rep(i, length(dQDdV)+1), cell = rep(row, length(dQDdV)+1), c_d=rep(1, length(dQDdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQDdV), F_L=rep(1,length(dQDdV)+1)))
+                    if (!arbinCM) dQdVData <<- rbind(dQdVData, data.frame(cycle=rep(i, length(dQDdV)+1), cell = rep(row, length(dQDdV)+1), c_d=rep(1, length(dQDdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQDdV), F_L=rep(1,length(dQDdV)+1)))
                     prev_c = step$`Current(A)`[[1]]
                   } else {
-                    if (!arbinCM) dQdVdata <<- rbind(dQdVdata, data.frame(cycle=rep(i, length(dQDdV)+1), cell = rep(row, length(dQDdV)+1), c_d=rep(1, length(dQDdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQDdV), F_L=rep(0, length(dQDdV)+1)))
+                    if (!arbinCM) dQdVData <<- rbind(dQdVData, data.frame(cycle=rep(i, length(dQDdV)+1), cell = rep(row, length(dQDdV)+1), c_d=rep(1, length(dQDdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQDdV), F_L=rep(0, length(dQDdV)+1)))
                   }
                 }
               } else if (n - lastCC == 1 & abs(tail(step$'Voltage(V)',1) - step$'Voltage(V)'[[1]]) < 0.001) {
@@ -444,8 +441,8 @@ server <- function(input, output, session) {
             # 
             # ######
             
-            #dQdVdata <<- dQdVdata[is.finite(dQdVdata$voltage),]
-            #dQdVdata <<- dQdVdata[is.finite(dQdVdata$dQdV),]
+            dQdVData <<- dQdVData[is.finite(dQdVData$voltage),]
+            dQdVData <<- dQdVData[is.finite(dQdVData$dQdV),]
             
             if (sum(dataSubset$Mass) != 0) {
               DCap <- tail(cycle$Q.d, 1)
@@ -540,8 +537,8 @@ server <- function(input, output, session) {
           
           if (is.element("dQdV Plots", input$gAnim)) {
             dQdVplot <- function(){
-              tmp_dataSubset <- dQdVdata[dQdVdata$cell == row,]
-              first_cycle <- dQdVdata[dQdVdata$cell == row & dQdVdata$cycle == 2,]
+              tmp_dataSubset <- dQdVData[dQdVData$cell == row,]
+              first_cycle <- dQdVData[dQdVData$cell == row & dQdVData$cycle == 2,]
               dataSubsetlist <- split(tmp_dataSubset, tmp_dataSubset$cycle)
               lapply(dataSubsetlist, function(plotdataSubset){
                 p <- plot(plotdataSubset$voltage, plotdataSubset$dQdV, main=paste("dQdV Plot for",  programName, dataSubset$sheet[row], "Cycle", plotdataSubset$cycle[[1]]), xlab="Voltage (V)", ylab= "dQdV (Ah/V)", 
@@ -616,7 +613,7 @@ server <- function(input, output, session) {
         
         # Save total dataSubset and stats
         write.csv(stats, file = paste(dirLocation, "/",  programName,"/", basename(dirLocation)," Summary.csv", sep =""))
-        if (!arbinCM) write.csv(dQdVdata, file = paste(dirLocation, "/",  programName,"/", basename(dirLocation)," dQdV data.csv", sep =""))
+        if (!arbinCM) write.csv(dQdVData, file = paste(dirLocation, "/",  programName,"/", basename(dirLocation)," dQdV data.csv", sep =""))
         write.csv(cycle_facts, file = paste(dirLocation, "/",  programName,"/", basename(dirLocation)," Cycle Facts.csv", sep =""))
         
         # If a histor directory does not exist, create it. Save all the dataSubset revelant to plotting to a RdataSubset file.
@@ -626,7 +623,7 @@ server <- function(input, output, session) {
         
         dirName <<- programName
         
-        save(dirLocation, dirName, dataSubset, dQdVdata, total, cycle_facts, numCycles, file = paste(dirLocation, "/history/", programName, ".RdataSubset", sep = ""))
+        save(dirLocation, dirName, dataSubset, dQdVData, total, cycle_facts, numCycles, file = paste(dirLocation, "/history/", programName, ".Rdata", sep = ""))
       }
       
       # Modal for completed analysis
