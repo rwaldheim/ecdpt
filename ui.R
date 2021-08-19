@@ -3,7 +3,7 @@ library(shiny)
 ui <- shinyUI({
   fluidPage(
   
-  # Utilizing javascript within Shiny allows for addd features such as enable/disable of inputs
+  # Utilizing javascript within Shiny allows for added features such as enable/disable of inputs
   useShinyjs(),
   
   # Shinyalert is a package that makes interactive"pop-ups" (modals) easy to generate
@@ -80,6 +80,7 @@ ui <- shinyUI({
            "Import all Arbin files of interest.", tags$br(), tags$br(),
            fileInput("files", NULL, multiple = TRUE),
            actionButton("submit", "Begin Analysis", class = 'btn-success', style = "width:80%; height:100px; margin:5%; font-size:100%"),
+           actionButton("clearTable", "Clear Cells", class = 'btn-danger', style = "width:60%; margin:5%; font-size:100%"),
            style = "border: 4px double black; padding: 5%; margin:5%"
          ),
          
