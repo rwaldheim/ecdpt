@@ -403,7 +403,7 @@ server <- function(input, output, session) {
                 if (step$'Current(A)'[[1]] > 0) {
                   chV <- (1 / (tail(step$`Charge_Capacity(Ah)`,1) - step$`Charge_Capacity(Ah)`[[1]])) * trapz(step$`Charge_Capacity(Ah)`, step$`Voltage(V)`)
                   dQCdV <- diff(step$`Charge_Capacity(Ah)`)/diff(step$`Voltage(V)`)
-                  dQdVData <<- rbind(dQdVData, data.frame(cycle=rep(i, length(dQCdV)+1), cell = rep(row, length(dQCdV)+1), c_d=rep(0, length(dQCdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQCdV), F_L=rep(0,length(dQCdV)+1)))
+                  dQdVData <<- rbind(dQdVData, data.frame(cycle=rep(i, length(dQCdV)+1), cell = rep(row, length(dQCdV)+1), c_d=rep(0, length(dQCdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQCdV), F_L=rep(0,length(dQCdV)+1), CC=step[['CC']][1:nrow(step)]))
                   
                   durations[1] <- tail(step$'Test_Time(s)', 1) - step$'Test_Time(s)'[[1]]
                   caps[1] <- tail(step$'Charge_Capacity(Ah)', 1) - step$'Charge_Capacity(Ah)'[[1]]
@@ -416,10 +416,10 @@ server <- function(input, output, session) {
                   caps[3] <- tail(step$'Discharge_Capacity(Ah)', 1) - step$'Discharge_Capacity(Ah)'[[1]]
                   ch_dch <- FALSE
                   if (abs(prev_c - step$`Current(A)`[[1]]) > 0.0005) {
-                    if (!arbinCM) dQdVData <<- rbind(dQdVData, data.frame(cycle=rep(i, length(dQDdV)+1), cell = rep(row, length(dQDdV)+1), c_d=rep(1, length(dQDdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQDdV), F_L=rep(1,length(dQDdV)+1)))
+                    if (!arbinCM) dQdVData <<- rbind(dQdVData, data.frame(cycle=rep(i, length(dQDdV)+1), cell = rep(row, length(dQDdV)+1), c_d=rep(1, length(dQDdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQDdV), F_L=rep(1,length(dQDdV)+1), CC=step[['CC']][1:nrow(step)]))
                     prev_c = step$`Current(A)`[[1]]
                   } else {
-                    if (!arbinCM) dQdVData <<- rbind(dQdVData, data.frame(cycle=rep(i, length(dQDdV)+1), cell = rep(row, length(dQDdV)+1), c_d=rep(1, length(dQDdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQDdV), F_L=rep(0, length(dQDdV)+1)))
+                    if (!arbinCM) dQdVData <<- rbind(dQdVData, data.frame(cycle=rep(i, length(dQDdV)+1), cell = rep(row, length(dQDdV)+1), c_d=rep(1, length(dQDdV)+1), voltage=step$`Voltage(V)`, dQdV=c(0, dQDdV), F_L=rep(0, length(dQDdV)+1), CC=step[['CC']][1:nrow(step)]))
                   }
                 }
               } else if (n - lastCC == 1 & abs(tail(step$'Voltage(V)',1) - step$'Voltage(V)'[[1]]) < 0.001) {

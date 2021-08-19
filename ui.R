@@ -20,7 +20,7 @@ ui <- shinyUI({
   
   fluidRow("Analysis Mode", 
            switchInput("batchProcessing", onLabel = "Batch Processing", offLabel = "Single Analysis", handleWidth = "200px")
-           , align = "center", style = "margin: 0%"),
+           , align = "center", style = "margin:  0%"),
   
   # This first column is where most user inputs are, with the exception of the directory name
   column(4, align = "center",
@@ -28,16 +28,16 @@ ui <- shinyUI({
          # This generates the optional block in which the user can import a previous R environment
          fluidRow(
            strong("Start Here"), tags$br(),
-           "Current Cell Group: ", textOutput("currDir", inline = TRUE), tags$br(),
-           actionButton("chooseDir", "Cell Group Location*", class = "btn-secondary", style = "width:80%; margin:5%; font-size:100%"), tags$br(),
+           "Current Cell Group:  ", textOutput("currDir", inline = TRUE), tags$br(),
+           actionButton("chooseDir", "Cell Group Location*", class = "btn-secondary", style = "width: 80%; margin: 5%; font-size: 100%"), tags$br(),
            helpText("The analysis will create a folder within the selected folder."),
-           style = "border: 1px solid black; padding: 5%; margin:5%"
+           style = "border:  1px solid black; padding:  5%; margin: 5%"
          ),
          
          fluidRow(
-           fileInput("rerun", "Optional: Import Previous R Environment", multiple = FALSE, accept = ".RData"),
+           fileInput("rerun", "Optional:  Import Previous R Environment", multiple = FALSE, accept = ".RData"),
            actionButton("load", "Load"), 
-           style = "border: 1px dashed black; margin: 5%; padding: 5%"
+           style = "border:  1px dashed black; margin:  5%; padding:  5%"
          ),
          
          # These are the"optional" parameters that need to be filled out if select graphs are selected
@@ -51,7 +51,7 @@ ui <- shinyUI({
            # Used for C-Rate calculations
            # numericInput("perActive","Active Loading of Limiting Electrode (wt%)", 96, min = 0, max = 100),
            # numericInput("capActive","Capacity of Limiting Active Material (mAh/g)", 155, min = 0, max = 100),
-           style ="border: 1px dashed black; padding: 5%; margin:5%"
+           style ="border:  1px dashed black; padding:  5%; margin: 5%"
          ),
   ),
   
@@ -59,16 +59,16 @@ ui <- shinyUI({
   column(4, align ="left", 
          fluidRow(
            # Presents options for graphs to be generated
-           "Choose graphs to be generated:",
+           "Choose graphs to be generated: ",
            actionButton("whatGraph","What's this?", class ="btn-link"),
            checkboxGroupInput("gGraphs", NULL, choices = c("Discharge Capacity","Discharge Areal Capacity",
                                                            "Total Discharge Capacity","Average Voltage","Delta Voltage","Capacity Loss"), inline = FALSE),
-           "Choose graphs to animate:",
+           "Choose graphs to animate: ",
            checkboxGroupInput("gAnim", NULL, choices = c("dQdV Plots", "Voltage Profiles"), inline = FALSE),
            # "Advanced Analysis",
            # radioButtons("advCalc", NULL, choices = c("No", "Yes"), inline = TRUE),
-           # helpText(HTML("Advanced Analysis includes:<ul><li>C-Rate Calculations</li><li>Capacity Fade per Rate</li><li>Origin Export</ul>")),
-           style ="margin: 5%; border: 1px solid black; padding: 5%"
+           # helpText(HTML("Advanced Analysis includes: <ul><li>C-Rate Calculations</li><li>Capacity Fade per Rate</li><li>Origin Export</ul>")),
+           style ="margin:  5%; border:  1px solid black; padding:  5%"
          ),
   ), 
   
@@ -79,26 +79,26 @@ ui <- shinyUI({
            strong("Files to be Analyzed*"), tags$br(),
            "Import all Arbin files of interest.", tags$br(), tags$br(),
            fileInput("files", NULL, multiple = TRUE),
-           actionButton("submit", "Begin Analysis", class = 'btn-success', style = "width:80%; height:100px; margin:5%; font-size:100%"),
-           actionButton("clearTable", "Clear Cells", class = 'btn-danger', style = "width:60%; margin:5%; font-size:100%"),
-           style = "border: 4px double black; padding: 5%; margin:5%"
+           actionButton("submit", "Begin Analysis", class = 'btn-success', style = "width: 80%; height: 100px; margin: 5%; font-size: 100%"),
+           actionButton("clearTable", "Clear Cells", class = 'btn-danger', style = "width: 60%; margin: 5%; font-size: 100%"),
+           style = "border:  4px double black; padding:  5%; margin: 5%"
          ),
          
          # This final block enables a button after data becomes available, which trigger the modal to build custom graphs
          fluidRow(
            strong("Custom Graph Builder"), tags$br(),
            "Customize Graphs Once Data is Available",
-           disabled(actionButton("graphBuilder","Launch", width = '80%', class ="btn-primary", style ="height:50px; margin:5%; font-size:100%")), tags$br(),
-           style ="border: 1px solid black; padding: 5%; margin:5%"
+           disabled(actionButton("graphBuilder","Launch", width = '80%', class ="btn-primary", style ="height: 50px; margin: 5%; font-size: 100%")), tags$br(),
+           style ="border:  1px solid black; padding:  5%; margin: 5%"
          ),
          
          fluidRow(
-           strong("Optional: Import Active Material Masses from Excel"), tags$br(),
+           strong("Optional:  Import Active Material Masses from Excel"), tags$br(),
            "Running Analysis without Masses Will Render Raw Capacities (Ah)",
            textAreaInput("masses", NULL, height = "100px", resize = "vertical"),
            helpText("Enter the masses separated by a new line and in the order they appear in the data table below."),
            actionButton("excelImport", "Import"),
-           style = "border: 1px dashed black; padding: 5%; margin:5%"
+           style = "border:  1px dashed black; padding:  5%; margin: 5%"
          ),
   ),
   
