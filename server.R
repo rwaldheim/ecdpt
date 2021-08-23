@@ -109,13 +109,7 @@ server <- function(input, output, session) {
     })
     
     observeEvent(input$chooseDir, {
-      chosenDir <- tk_choose.dir()
-      x<- 0
-      #if (input$batchProcessing) {
-      #  append(dirLocation, chosenDir)
-      #} else {
-      dirLocation <<- chosenDir
-      #}
+      dirLocation <<- tk_choose.dir()
       
       internal_folders <- list.dirs(path = dirLocation, recursive = FALSE)
       base_names = vector()
@@ -126,17 +120,21 @@ server <- function(input, output, session) {
       if ("history" %in% base_names) {
         past <- new.env()
         
-        load(paste(dirLocation, "/history/", "Formation.RData", sep =""), envir = past)
-        
-        if (exists("past$group")) {
-          if (input$batchProcessing) {
-            data <<- rbind(data, past$data)
-          } else {
-            data <<- past$data
-          }
-          
-          output$channels <- renderDataTable(generateDataTable(deleteButtonCol(data, 'delete_button')))
+        if (file.exists(paste(dirLocation, "/history/", "Formation.RData", sep =""))) {
+          load(paste(dirLocation, "/history/", "Formation.RData", sep =""), envir = past)
+        } else if (file.exists(paste(dirLocation, "/history/", "RateCap.RData", sep =""))) {
+          load(paste(dirLocation, "/history/", "RateCap.RData", sep =""), envir = past)
+        } else {
+          return(NA)
         }
+        
+        if (input$batchProcessing) {
+          data <<- rbind(data, past$data)
+        } else {
+          data <<- past$dataSubset
+        }
+        
+        output$channels <- renderDataTable(generateDataTable(deleteButtonCol(data, 'delete_button')))
       }
       
       if (!is.na(dirLocation)) {
@@ -622,8 +620,9 @@ server <- function(input, output, session) {
         }
         
         dirName <<- programName
+        data <- dataSubset
         
-        save(dirLocation, dirName, dataSubset, dQdVData, total, cycle_facts, numCycles, file = paste(dirLocation, "/history/", programName, ".Rdata", sep = ""))
+        save(dirLocation, dirName, data, dQdVData, total, cycle_facts, numCycles, file = paste(dirLocation, "/history/", programName, ".Rdata", sep = ""))
       }
       
       # Modal for completed analysis
