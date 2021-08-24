@@ -12,9 +12,7 @@
 #
 # ######
 
-# options(warn = 0)
-
-list.of.packages <- c("readxl", "dplyr", "shiny", "tcltk", "DT", "shinyjs", "shinyalert", "pracma", "purrr", "zoo", "plotrix", "tools", "shinyWidgets", "gifski")
+list.of.packages <- c("readxl", "dplyr", "shiny", "tcltk", "DT", "shinyjs", "shinyalert", "pracma", "purrr", "zoo", "plotrix", "tools", "shinyWidgets", "gifski", "keyring", "readr", "shinybusy")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[, "Package"])]
 if (length(new.packages)) install.packages(new.packages)
 lapply(list.of.packages, require, character.only = TRUE)
@@ -54,6 +52,6 @@ if (interactive()) {
   sheetName <<- ""
   bounds <<- vector()
   compCycleFacts <<- data.frame()
+  
+  shinyApp(ui, server)
 }
-
-shinyApp(ui, server)

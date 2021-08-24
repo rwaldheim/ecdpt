@@ -1,8 +1,12 @@
 library(shiny)
 
 server <- function(input, output, session) {
+  shareCon <- ""
+  online <- FALSE
   utils <- c("modal.R")
   lapply(utils, source)
+  
+  show_modal_spinner()
 
   # This sets the maximum file size Shiny will import, the default of 5Mb is not large enough to handle Arbin files
   options(shiny.maxRequestSize = 1000 * 1024^2)
@@ -35,8 +39,11 @@ server <- function(input, output, session) {
 
   generateDataTable <- function(df) {
     DT::datatable(df,
-      escape = FALSE, editable = FALSE, options = list(columnDefs = list(list(visible = FALSE, targets = c(5, 6, 7)))),
-      colnames = c("Group", "Program", "File", "Sheet", "Mass (g)", "Filepath", "Group Path", "Limiting Electrode Area (cm^2)", "Delete"), rownames = FALSE
+      escape = FALSE, 
+      editable = FALSE, 
+      options = list(columnDefs = list(list(visible = FALSE, targets = c("filepath", "grouppath", "area")))),
+      colnames = c("Group", "Program", "File", "Channel", "Sheet", "Mass (g)", "Filepath", "Group Path", "Limiting Electrode Area (cm^2)", "Delete"), 
+      rownames = FALSE
     )
   }
 
@@ -45,6 +52,30 @@ server <- function(input, output, session) {
     if (!is.na(res)) {
       res
     }
+  }
+  
+  ping <- function(x, stderr = FALSE, stdout = FALSE, ...){
+    pingvec <- system2("ping", x,
+                       stderr = FALSE,
+                       stdout = FALSE,...)
+    if (pingvec == 0) TRUE else FALSE
+  }
+  
+  if (ping("google.com")) {
+    if (ping("ATLD137177")) {
+      if (nrow(key_list()) == 0) {
+        key_set("sharePass", username= Sys.info()[['login']], keyring = "Rcreds")
+        shareCon <- sp_connection("https://adityabirlaeur.sharepoint.com/sites/MIEnergySystems", Username = Sys.info()[['login']], Password = key_get("sharePass"), Office365 = TRUE)
+        remove_modal_spinner()
+      }
+    } else {
+      shinyalert("Battery Book Offline", "Please connect to VPN to enable Battery Book connection.", type = "warning")
+      remove_modal_spinner()
+      online <- TRUE
+    }
+  } else {
+    shinyalert("No Internet Connection", "You're not connected to the internet.", type = "warning")
+    remove_modal_spinner()
   }
 
   observeEvent(input$deletePressed, {
@@ -132,13 +163,18 @@ server <- function(input, output, session) {
         return(NA)
       }
 
-      if (input$batchProcessing) {
-        data <<- rbind(data, past$data)
-      } else {
-        data <<- past$dataSubset
+      if ("channel" %in% colnames(past$dataSubet)) {
+        if (input$batchProcessing) {
+          data <<- rbind(data, past$dataSubset)
+        } else {
+          data <<- past$dataSubset
+        }
+        
+        output$channels <- renderDataTable(generateDataTable(deleteButtonCol(data, "delete_button")))
       }
-
-      output$channels <- renderDataTable(generateDataTable(deleteButtonCol(data, "delete_button")))
+    } else if (online) {
+      cells <- sp_list(shareCon, "CELL") %>% sp_filter(group_name == baseName(dirLocation)) %>% sp_collect()
+      
     }
 
     if (!is.na(dirLocation)) {
@@ -218,13 +254,14 @@ server <- function(input, output, session) {
     } else {
       for (i in 1:nrow(files)) {
         sheets <- excel_sheets(files[i, 4])
+        sheets <- sheets[grepl("Channel", sheets) & !grepl("Chart", sheets)]
+        channelList <- lapply(sheets, parse_number)
         file_sheet <- rbind(file_sheet, data.frame(
-          group = basename(dirLocation), program = rep(input$dirName, length(sheets)), name = rep(files[["name"]][i], length(sheets)), "sheet" = sheets, "Mass" = rep(0, length(sheets)),
+          group = basename(dirLocation), program = rep(input$dirName, length(sheets)), name = rep(files[["name"]][i], length(sheets)), "channel" = unlist(channelList[!is.na(channelList)], use.names = FALSE), "sheet" = sheets, "Mass" = rep(0, length(sheets)),
           datapath = rep(files[["datapath"]][i], length(sheets)), grouppath = rep(dirLocation, length(sheets)), area = rep(input$area, length(sheets))
         ))
       }
-
-      raw_data <- filter(file_sheet, grepl("Channel", sheet) & !grepl("Chart", sheet))
+      raw_data <- file_sheet
     }
 
     if (!is.null(dim(data)[1]) & !is.null(size(raw_data))) {
@@ -253,6 +290,7 @@ server <- function(input, output, session) {
       )
     } else {
       output$channels <- renderDataTable(generateDataTable(deleteButtonCol(data, "delete_button")))
+      delay(1000, browser())
     }
   }
 
